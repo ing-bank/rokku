@@ -8,10 +8,7 @@ scalaVersion := "2.12.6"
 
 val akkaVersion       = "10.1.3"
 val akkaStreamVersion = "2.5.12"
-val loggingVersion    = "3.9.0"
-val logbackVersion    = "1.2.3"
-val scalatestVersion  = "3.0.5"
-val scalaMockVersion  = "4.1.0"
+
 
 scalacOptions := Seq(
   "-unchecked",
@@ -28,16 +25,22 @@ lazy val akka = Seq(
   "com.typesafe.akka" %% "akka-http-testkit" % akkaVersion
 )
 lazy val scalaTests = Seq(
-  "org.scalatest" %% "scalatest" % scalatestVersion % Test,
-  "org.scalamock" %% "scalamock" % scalaMockVersion % Test
+  "org.scalatest" %% "scalatest" % "3.0.5" % Test,
+  "org.scalamock" %% "scalamock" % "4.1.0" % Test
 )
-
 lazy val logging = Seq(
-  "com.typesafe.scala-logging" %% "scala-logging" % loggingVersion,
-  "ch.qos.logback" % "logback-classic" % logbackVersion
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
+  "ch.qos.logback" % "logback-classic" % "1.2.3"
+)
+lazy val swagger = Seq(
+  "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.14.0"
+)
+lazy val aws3sdk = Seq(
+  "com.amazonaws" % "aws-java-sdk-s3" % "1.11.360"
 )
 
-libraryDependencies ++= akka ++ logging
+
+libraryDependencies ++= akka ++ scalaTests ++ logging ++ aws3sdk
 
 enablePlugins(JavaAppPackaging)
 

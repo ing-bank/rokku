@@ -27,6 +27,7 @@ class S3Proxy(port: Int, provider: StorageProvider)(implicit system: ActorSystem
         DeleteRoute().route() ~
         PutRoute().route()
 
+
     // interface 0.0.0.0 needed in case of docker
     bind = Await.result(http.bindAndHandle(allRoutes, "0.0.0.0", port), Duration.Inf)
     bind

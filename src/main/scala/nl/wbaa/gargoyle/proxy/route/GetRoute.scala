@@ -8,6 +8,7 @@ import nl.wbaa.gargoyle.proxy.route.CustomDirectives._
 
 case class GetRoute()(implicit provider: StorageProvider) extends LazyLogging {
 
+  // accepts all GET requests
   def route() =
     validateToken { tokenOk =>
       get {
