@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.HttpRequest
   */
 trait StorageProvider {
 
-  def translateRequest(request: HttpRequest)
+  def translateRequest(request: HttpRequest): String
+  def verifyS3Signature() // if we decide to use aws keys instead of token
 
 }

@@ -8,9 +8,9 @@ object CustomDirectives {
 
   val validateToken: Directive1[String] =
     // exact header field to be determined
-    optionalHeaderValueByName("Authorization").flatMap {
+    optionalHeaderValueByName("authorization").flatMap {
       case Some(token) =>
-        // validate token logic here
+        //todo: validate token logic here
         provide(token)
       case _           =>
         complete(StatusCodes.Unauthorized)

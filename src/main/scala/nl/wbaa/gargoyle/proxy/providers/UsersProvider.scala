@@ -8,7 +8,7 @@ case class User(username: String) // we need to adjust this
 
 trait UsersProvider {
 
-  def sync()
+  def sync(): List[User]
   def getUser(username: String): User
   def getUserSecret(username: String): String
 
