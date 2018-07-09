@@ -1,0 +1,9 @@
+# IntelliJ project files.
+/.idea/
+*.iml
+
+# SBT build artifacts.
+target/
+
+# macOS detritus
+.DS_Store
