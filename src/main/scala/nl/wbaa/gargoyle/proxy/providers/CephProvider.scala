@@ -16,6 +16,9 @@ import com.typesafe.config.ConfigFactory
 class CephProvider extends StorageProvider {
   import CephProvider._
 
+  def endpoint = s3Endpoint
+  def credentials = s3credentials
+
   def verifyS3Signature() = {}
 
   /**
@@ -51,9 +54,9 @@ object CephProvider {
   private val config         = ConfigFactory.load().getConfig("s3.settings")
   private val accessKey      = config.getString("aws_access_key")
   private val secretKey      = config.getString("aws_secret_key")
-  private val s3Endpoint     = config.getString("s3_endpoint")
+  val s3Endpoint             = config.getString("s3_endpoint")
 
-  private val credentials = new BasicAWSCredentials(accessKey, secretKey)
+  val s3credentials = new BasicAWSCredentials(accessKey, secretKey)
   private val cephRGW     = new URI(s3Endpoint)
 
   private def s3Request(service: String): DefaultRequest[Nothing] = new DefaultRequest(service)
@@ -116,7 +119,7 @@ object CephProvider {
       val clientConf = new ClientConfiguration()
       clientConf.addHeader("x-amz-content-sha256", calculateContentHash(request))
 
-      signS3Request(request, credentials)
+      signS3Request(request, s3credentials)
 
       val response = new AmazonHttpClient(clientConf)
         .requestExecutionBuilder()

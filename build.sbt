@@ -38,9 +38,12 @@ lazy val swagger = Seq(
 lazy val aws3sdk = Seq(
   "com.amazonaws" % "aws-java-sdk-s3" % "1.11.360"
 )
+lazy val alpakkaS3 = Seq(
+  "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "0.20"
+)
 
 
-libraryDependencies ++= akka ++ scalaTests ++ logging ++ aws3sdk
+libraryDependencies ++= akka ++ scalaTests ++ logging ++ aws3sdk ++ alpakkaS3
 
 enablePlugins(JavaAppPackaging)
 

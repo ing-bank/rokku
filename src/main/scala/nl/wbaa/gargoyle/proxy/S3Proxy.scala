@@ -16,6 +16,7 @@ import scala.concurrent.duration.Duration
 class S3Proxy(port: Int, provider: StorageProvider)(implicit system: ActorSystem = ActorSystem.create("gargoyle-s3proxy")) extends LazyLogging {
 
   implicit val p = provider
+  implicit val ec = system.dispatcher
   private var bind: Http.ServerBinding = _
 
   def start(): Http.ServerBinding = {
