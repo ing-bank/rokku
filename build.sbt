@@ -48,7 +48,7 @@ libraryDependencies ++= akka ++ scalaTests ++ logging ++ aws3sdk ++ alpakkaS3
 enablePlugins(JavaAppPackaging)
 
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
-dockerBaseImage    := "openjdk:jre"
+dockerBaseImage    := "openjdk:8u171-jre-alpine3.7"
 
 dockerRepository :=  Some("registry.somewhere.com")
 dockerUsername := Some(name.value)
