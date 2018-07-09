@@ -6,6 +6,9 @@ version := "0.1"
 
 scalaVersion := "2.12.6"
 
+// Experimental: improved update resolution.
+updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
+
 val akkaVersion       = "10.1.3"
 val akkaStreamVersion = "2.5.12"
 
