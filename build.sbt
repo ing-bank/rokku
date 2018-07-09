@@ -54,7 +54,6 @@ javaOptions += "-Djava.awt.headless=true"
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerBaseImage    := "openjdk:8u171-jre-alpine3.7"
 
-dockerRepository :=  Some("registry.somewhere.com")
 dockerUsername := Some(name.value)
 dockerBuildOptions ++= {
   val alias = docker.DockerAlias(dockerRepository.value, dockerUsername.value, name.value, Some(version.value))
