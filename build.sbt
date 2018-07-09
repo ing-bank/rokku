@@ -47,6 +47,8 @@ libraryDependencies ++= akka ++ scalaTests ++ logging ++ aws3sdk ++ alpakkaS3
 
 enablePlugins(JavaAppPackaging)
 
+fork := true
+
 // Some default options at runtime: the G1 garbage collector, and headless mode.
 javaOptions += "-XX:+UseG1GC"
 javaOptions += "-Djava.awt.headless=true"
