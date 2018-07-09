@@ -47,6 +47,10 @@ libraryDependencies ++= akka ++ scalaTests ++ logging ++ aws3sdk ++ alpakkaS3
 
 enablePlugins(JavaAppPackaging)
 
+// Some default options at runtime: the G1 garbage collector, and headless mode.
+javaOptions += "-XX:+UseG1GC"
+javaOptions += "-Djava.awt.headless=true"
+
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerBaseImage    := "openjdk:8u171-jre-alpine3.7"
 
