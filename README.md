@@ -19,3 +19,11 @@ To run it:
 -DS3_ENDPOINT=          - RadosGW (or S3 backend) endpoint, eg. http://localhost:8080
 ```
 * sbt run
+
+## Local Testing
+
+To test the proxy locally, we need a running S3 API. For this we use a CEPH docker container with Rados Gateway.
+The `docker-compose.yml` defines this, run it using:
+
+    docker-compose up
+

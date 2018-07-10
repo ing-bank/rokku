@@ -1,0 +1,15 @@
+version: "2"
+services:
+  ceph:
+    image: ceph/daemon
+    environment:
+      - CEPH_DEMO_UID=ceph-admin
+      - CEPH_DEMO_ACCESS_KEY=accesskey
+      - CEPH_DEMO_SECRET_KEY=secretkey
+      - CEPH_DEMO_BUCKET=demobucket
+      - RGW_NAME=localhost
+      - RGW_CIVETWEB_PORT=8010
+      - NETWORK_AUTO_DETECT=4
+    ports:
+      - 8010:8010
+    command: demo
