@@ -12,7 +12,7 @@ object CustomDirectives {
       case Some(token) =>
         //todo: validate token logic here
         provide(token)
-      case _           =>
+      case _ =>
         complete(StatusCodes.Unauthorized)
     }
 
