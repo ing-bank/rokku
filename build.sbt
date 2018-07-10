@@ -43,7 +43,7 @@ javaOptions += "-XX:+UseG1GC"
 javaOptions += "-Djava.awt.headless=true"
 
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
-dockerBaseImage    := "openjdk:8u171-jre-alpine3.7"
+dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
 
 dockerUsername := Some(name.value)
 dockerBuildOptions ++= {
