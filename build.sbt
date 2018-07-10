@@ -1,4 +1,5 @@
 import com.typesafe.sbt.packager.docker
+import com.typesafe.sbt.packager.docker.ExecCmd
 
 name := "gargoyle-s3proxy"
 version := "0.1"
@@ -43,6 +44,7 @@ javaOptions += "-XX:+UseG1GC"
 javaOptions += "-Djava.awt.headless=true"
 
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
+dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
 
 dockerUsername := Some(name.value)
