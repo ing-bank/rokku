@@ -1,5 +1,6 @@
 import com.typesafe.sbt.packager.docker
 import com.typesafe.sbt.packager.docker.ExecCmd
+import scalariform.formatter.preferences._
 
 name := "gargoyle-s3proxy"
 version := "0.1"
@@ -47,3 +48,9 @@ dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
 dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("arempter"), "gargoyle-s3proxy", Some(Option(System.getenv("TRAVIS_BRANCH")).getOrElse("latest")))
+
+scalariformPreferences := scalariformPreferences.value
+    .setPreference(AlignSingleLineCaseStatements, true)
+    .setPreference(DoubleIndentConstructorArguments, true)
+    .setPreference(DanglingCloseParenthesis, Preserve)
+
