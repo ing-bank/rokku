@@ -12,17 +12,16 @@ case class GetRoute()(implicit provider: StorageProvider) extends LazyLogging {
 
   // accepts all GET requests
   def route() =
-    validateToken { tokenOk =>
-      get {
-        extractRequestContext { ctx =>
-          Try(provider.translateRequest(ctx.request)) match {
-            case Success(s3Response) =>
-              stringComplete(s3Response)
-            case Failure(ex) => // all exceptions for now
-              throw new Exception(ex.getMessage)
+    validateRequest { tokenOk =>
+        get {
+          extractRequestContext { ctx =>
+            Try(provider.translateRequest(ctx.request)) match {
+              case Success(s3Response) =>
+                stringComplete(s3Response)
+              case Failure(ex) => // all exceptions for now
+                throw new Exception(ex.getMessage)
+            }
           }
         }
       }
-    }
-
 }

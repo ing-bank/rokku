@@ -8,7 +8,7 @@ import akka.stream.alpakka.s3.impl.ListBucketVersion2
 import akka.stream.alpakka.s3.scaladsl.S3Client
 import com.amazonaws.regions.AwsRegionProvider
 import com.typesafe.scalalogging.LazyLogging
-import nl.wbaa.gargoyle.proxy.route.CustomDirectives.validateToken
+import nl.wbaa.gargoyle.proxy.route.CustomDirectives.validateRequest
 import akka.stream.alpakka.s3.{ MemoryBufferType, S3Settings }
 import com.amazonaws.auth.AWSStaticCredentialsProvider
 import nl.wbaa.gargoyle.proxy.providers.StorageProvider
@@ -23,7 +23,7 @@ case class PutRoute()(implicit provider: StorageProvider, system: ActorSystem, m
    * @return
    */
   def route() =
-    validateToken { tokenOk =>
+    validateRequest { tokenOk =>
       put {
 
         // alpakka settings

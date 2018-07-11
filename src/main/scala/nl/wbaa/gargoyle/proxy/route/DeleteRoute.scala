@@ -4,12 +4,12 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives.{ complete, delete }
 import com.typesafe.scalalogging.LazyLogging
 import nl.wbaa.gargoyle.proxy.providers.StorageProvider
-import nl.wbaa.gargoyle.proxy.route.CustomDirectives.validateToken
+import nl.wbaa.gargoyle.proxy.route.CustomDirectives.validateRequest
 
 case class DeleteRoute()(implicit provider: StorageProvider) extends LazyLogging {
 
   def route() =
-    validateToken { tokenOk =>
+    validateRequest { tokenOk =>
       delete {
         complete {
           HttpResponse(

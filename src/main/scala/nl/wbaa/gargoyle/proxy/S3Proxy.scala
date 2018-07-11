@@ -25,7 +25,7 @@ class S3Proxy(port: Int, provider: StorageProvider)(implicit system: ActorSystem
 
     val allRoutes =
       // concat new routes here
-      GetRoute().route() ~
+        GetRoute().route() ~
         PostRoute().route() ~
         DeleteRoute().route() ~
         PutRoute().route()
