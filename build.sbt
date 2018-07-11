@@ -47,12 +47,7 @@ javaOptions += "-Djava.awt.headless=true"
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
-
-dockerUsername := Some(name.value)
-dockerBuildOptions ++= {
-  val alias = docker.DockerAlias(dockerRepository.value, dockerUsername.value, name.value, Some(version.value))
-  Seq("-t", alias.versioned)
-}
+dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("arempter"), "gargoyle-s3proxy", Some(Option(System.getenv("TRAVIS_BRANCH")).getOrElse("latest")))
 
 scalariformPreferences := scalariformPreferences.value
     .setPreference(AlignSingleLineCaseStatements, true)
