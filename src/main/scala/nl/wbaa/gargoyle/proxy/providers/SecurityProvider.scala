@@ -1,8 +1,8 @@
 package nl.wbaa.gargoyle.proxy.providers
 
 /**
-  * Interface for security provider implementations.
-  */
+ * Interface for security provider implementations.
+ */
 trait SecurityProvider {
 
   def syncPolicies()

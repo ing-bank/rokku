@@ -1,5 +1,6 @@
 import com.typesafe.sbt.packager.docker
 import com.typesafe.sbt.packager.docker.ExecCmd
+import scalariform.formatter.preferences._
 
 name := "gargoyle-s3proxy"
 version := "0.1"
@@ -31,7 +32,7 @@ libraryDependencies += "com.github.swagger-akka-http" %% "swagger-akka-http"    
 
 libraryDependencies += "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.362"
 libraryDependencies += "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20"
-                                                     
+
 libraryDependencies += "org.scalatest"                %% "scalatest"              % "3.0.5"           % Test
 libraryDependencies += "org.scalamock"                %% "scalamock"              % "4.1.0"           % Test
 
@@ -52,3 +53,9 @@ dockerBuildOptions ++= {
   val alias = docker.DockerAlias(dockerRepository.value, dockerUsername.value, name.value, Some(version.value))
   Seq("-t", alias.versioned)
 }
+
+scalariformPreferences := scalariformPreferences.value
+    .setPreference(AlignSingleLineCaseStatements, true)
+    .setPreference(DoubleIndentConstructorArguments, true)
+    .setPreference(DanglingCloseParenthesis, Preserve)
+
