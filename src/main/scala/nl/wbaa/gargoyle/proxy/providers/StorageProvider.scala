@@ -4,8 +4,8 @@ import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.auth.BasicAWSCredentials
 
 /**
-  * Interface for storage provider backend implementations.
-  */
+ * Interface for storage provider backend implementations.
+ */
 trait StorageProvider {
 
   def credentials: BasicAWSCredentials

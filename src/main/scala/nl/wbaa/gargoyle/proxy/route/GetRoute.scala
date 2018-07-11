@@ -6,7 +6,7 @@ import nl.wbaa.gargoyle.proxy.providers.StorageProvider
 import nl.wbaa.gargoyle.proxy.route.CustomDirectives._
 import nl.wbaa.gargoyle.proxy.response.ResponseHelpers._
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 case class GetRoute()(implicit provider: StorageProvider) extends LazyLogging {
 

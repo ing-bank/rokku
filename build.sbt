@@ -1,5 +1,6 @@
 import com.typesafe.sbt.packager.docker
 import com.typesafe.sbt.packager.docker.ExecCmd
+import scalariform.formatter.preferences._
 
 name := "gargoyle-s3proxy"
 version := "0.1"
@@ -54,3 +55,9 @@ dockerBuildOptions ++= {
   val alias = docker.DockerAlias(dockerRepository.value, dockerUsername.value, name.value, Some(version.value))
   Seq("-t", alias.versioned)
 }
+
+scalariformPreferences := scalariformPreferences.value
+    .setPreference(AlignSingleLineCaseStatements, true)
+    .setPreference(DoubleIndentConstructorArguments, true)
+    .setPreference(DanglingCloseParenthesis, Preserve)
+
