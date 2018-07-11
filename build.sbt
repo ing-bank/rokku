@@ -31,7 +31,9 @@ libraryDependencies += "com.github.swagger-akka-http" %% "swagger-akka-http"    
 
 libraryDependencies += "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.362"
 libraryDependencies += "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20"
-                                                     
+
+libraryDependencies += "org.apache.ranger"            % "ranger-plugins-common"   % "1.0.0"
+
 libraryDependencies += "org.scalatest"                %% "scalatest"              % "3.0.5"           % Test
 libraryDependencies += "org.scalamock"                %% "scalamock"              % "4.1.0"           % Test
 
