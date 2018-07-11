@@ -4,12 +4,12 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives.{ complete, post }
 import com.typesafe.scalalogging.LazyLogging
 import nl.wbaa.gargoyle.proxy.providers.StorageProvider
-import nl.wbaa.gargoyle.proxy.route.CustomDirectives.validateRequest
+import nl.wbaa.gargoyle.proxy.route.CustomDirectives.checkPermission
 
 case class PostRoute()(implicit provider: StorageProvider) extends LazyLogging {
 
   def route() =
-    validateRequest { tokenOk =>
+    checkPermission { tokenOk =>
       post {
         complete {
           HttpResponse(

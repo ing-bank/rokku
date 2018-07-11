@@ -2,16 +2,16 @@ package nl.wbaa.gargoyle.proxy.route
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Directives.{ complete, extractRequestContext, put }
+import akka.http.scaladsl.server.Directives.{complete, extractRequestContext, put}
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.impl.ListBucketVersion2
 import akka.stream.alpakka.s3.scaladsl.S3Client
 import com.amazonaws.regions.AwsRegionProvider
 import com.typesafe.scalalogging.LazyLogging
-import nl.wbaa.gargoyle.proxy.route.CustomDirectives.validateRequest
-import akka.stream.alpakka.s3.{ MemoryBufferType, S3Settings }
+import nl.wbaa.gargoyle.proxy.route.CustomDirectives.{checkPermission, validateUserRequest}
+import akka.stream.alpakka.s3.{MemoryBufferType, S3Settings}
 import com.amazonaws.auth.AWSStaticCredentialsProvider
-import nl.wbaa.gargoyle.proxy.providers.StorageProvider
+import nl.wbaa.gargoyle.proxy.providers.{Secret, StorageProvider}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -23,7 +23,7 @@ case class PutRoute()(implicit provider: StorageProvider, system: ActorSystem, m
    * @return
    */
   def route() =
-    validateRequest { tokenOk =>
+    checkPermission { secretKey =>
       put {
 
         // alpakka settings
@@ -39,12 +39,17 @@ case class PutRoute()(implicit provider: StorageProvider, system: ActorSystem, m
 
         //response
         extractRequestContext { ctx =>
-          val dis = system.dispatcher
-          val path = ctx.request.uri.path.toString().split("/").toList
-          val sink = s3Client.multipartUpload(path(1), path(2), ContentTypes.`application/octet-stream`)
-          val resp = ctx.request.entity.withoutSizeLimit().dataBytes.runWith(sink).map(resp => resp.toString)
+          if (validateUserRequest(ctx.request, Secret(secretKey))) {
 
-          complete(resp)
+            val dis = system.dispatcher
+            val path = ctx.request.uri.path.toString().split("/").toList
+            val sink = s3Client.multipartUpload(path(1), path(2), ContentTypes.`application/octet-stream`)
+            val resp = ctx.request.entity.withoutSizeLimit().dataBytes.runWith(sink).map(resp => resp.toString)
+
+            complete(resp)
+          } else {
+            complete(StatusCodes.Unauthorized)
+          }
         }
       }
     }

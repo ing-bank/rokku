@@ -9,5 +9,4 @@ case class Secret(secretKey: String)
 trait AuthenticationProvider {
   def getUser(accessKey: String): User = User("test")
   def isAuthenticated(accessKey: String, token: Option[String] = None): Option[Secret] = Some(Secret("secret"))
-
 }

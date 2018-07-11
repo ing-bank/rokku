@@ -5,7 +5,7 @@ import nl.wbaa.gargoyle.proxy.providers.Secret
 
 class RequestHandler {
 
-  def validateUserRequest(request: HttpRequest, secret: Secret): Boolean = ???
+  def validateUserRequest(request: HttpRequest, secret: Secret): Boolean = true
   def translateRequest(request: HttpRequest): HttpRequest = ???
 
 }
