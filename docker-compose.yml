@@ -13,3 +13,15 @@ services:
     ports:
       - 8010:8010
     command: demo
+  postgres-server:
+    image: coheigea/ranger-postgres
+    ports:
+      - "5432:5432"
+  ranger-admin:
+    image: coheigea/ranger-admin
+    stdin_open: true
+    tty: true
+    depends_on:
+      - "postgres-server"
+    ports:
+      - "6080:6080"
