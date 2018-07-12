@@ -15,6 +15,8 @@ object CustomDirectives extends AuthenticationProvider with AuthorizationProvide
         //todo: validate token logic here
         val secretOpt = isAuthenticated("accessKey").getOrElse(Secret(""))
 
+        println("auth: " + secretOpt.secretKey.split(" "))
+
         if (isAuthorized("READ", "/test", "test")) {
           provide(secretOpt.secretKey)
         } else {
