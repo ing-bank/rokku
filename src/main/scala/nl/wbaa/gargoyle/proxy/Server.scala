@@ -7,7 +7,7 @@ object Server extends App {
   {
     val config = ConfigFactory.load().getConfig("proxy.server")
 
-    val server = new S3Proxy(config.getInt("port"), new CephProvider)
+    val server = new S3Proxy(config.getString("listen_on"), config.getInt("port"), new CephProvider)
     server.start()
   }
 }
