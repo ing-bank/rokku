@@ -20,13 +20,13 @@ case class PutRoute()(implicit system: ActorSystem) extends LazyLogging with Req
       put {
         //response
         extractRequestContext { ctx =>
-          if (validateUserRequest(ctx.request, Secret(secretKey))) {
+            if (validateUserRequest(ctx.request, Secret(secretKey))) {
 
-            complete("ok")
-          } else {
-            complete(StatusCodes.Unauthorized)
+              complete("ok")
+            } else {
+              complete(StatusCodes.Unauthorized)
+            }
           }
         }
       }
-    }
 }
