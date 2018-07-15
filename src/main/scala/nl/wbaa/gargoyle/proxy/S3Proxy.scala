@@ -23,10 +23,8 @@ class S3Proxy(port: Int)(implicit system: ActorSystem = ActorSystem.create("garg
 
     val allRoutes =
       // concat new routes here
-        GetRoute().route() ~
-            PostRoute().route() ~
-            DeleteRoute().route()
-            PutRoute().route()
+      ProxyRoute().route()
+    //GetRoute.route()
 
     // interface 0.0.0.0 needed in case of docker
 
