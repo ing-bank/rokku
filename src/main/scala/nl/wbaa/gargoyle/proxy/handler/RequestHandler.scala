@@ -5,5 +5,5 @@ import nl.wbaa.gargoyle.proxy.providers.Secret
 
 trait RequestHandler {
   def validateUserRequest(request: HttpRequest, secret: Secret): Boolean = true
-  def translateRequest(request: HttpRequest) = ???
+  def translateRequest(request: HttpRequest): HttpRequest = request
 }
