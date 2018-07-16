@@ -32,3 +32,6 @@ The `docker-compose.yml` defines this, run it using:
 
     docker-compose up
 
+### Apache Ranger 
+Pickup the files from https://github.com/coheigea/testcases/tree/master/apache/docker/ranger and follow instructions to
+build the needed docker-containers for Ranger.
