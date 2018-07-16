@@ -20,23 +20,20 @@ updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true
 val akkaVersion       = "10.1.3"
 val akkaStreamVersion = "2.5.13"
 
-libraryDependencies += "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0"
-libraryDependencies += "ch.qos.logback"               %  "logback-classic"        % "1.2.3"           % Runtime
-
-libraryDependencies += "com.typesafe.akka"            %% "akka-http"              % akkaVersion
-libraryDependencies += "com.typesafe.akka"            %% "akka-stream"            % akkaStreamVersion
-libraryDependencies += "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaVersion
-libraryDependencies += "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion
-
-libraryDependencies += "com.github.swagger-akka-http" %% "swagger-akka-http"      % "0.14.1"
-
-libraryDependencies += "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.362"
-libraryDependencies += "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20"
-
-libraryDependencies += "org.apache.ranger"            % "ranger-plugins-common"   % "1.0.0"
-
-libraryDependencies += "org.scalatest"                %% "scalatest"              % "3.0.5"           % Test
-libraryDependencies += "org.scalamock"                %% "scalamock"              % "4.1.0"           % Test
+libraryDependencies ++= Seq(
+    "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
+    "ch.qos.logback"               %  "logback-classic"        % "1.2.3"           % Runtime,
+    "com.typesafe.akka"            %% "akka-http"              % akkaVersion,
+    "com.typesafe.akka"            %% "akka-stream"            % akkaStreamVersion,
+    "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaVersion,
+    "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion,
+    "com.github.swagger-akka-http" %% "swagger-akka-http"      % "0.14.1",
+    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.362",
+    "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
+    "org.apache.ranger"            % "ranger-plugins-common"   % "1.0.0",
+    "org.scalatest"                %% "scalatest"              % "3.0.5"           % Test,
+    "org.scalamock"                %% "scalamock"              % "4.1.0"           % Test
+)
 
 enablePlugins(JavaAppPackaging)
 
