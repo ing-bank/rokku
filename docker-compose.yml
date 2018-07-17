@@ -10,6 +10,8 @@ services:
       - RGW_NAME=localhost
       - RGW_CIVETWEB_PORT=8010
       - NETWORK_AUTO_DETECT=4
+      - RESTAPI_LOG_LEVEL=debug
     ports:
       - 8010:8010
+      - 5000:5000
     command: demo

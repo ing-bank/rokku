@@ -1,16 +1,18 @@
 package nl.wbaa.gargoyle.proxy
 
+import java.net.InetSocketAddress
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import nl.wbaa.gargoyle.proxy.handler.RequestHandler
-import nl.wbaa.gargoyle.proxy.providers.{ AuthenticationProvider, AuthorizationProvider }
+import nl.wbaa.gargoyle.proxy.providers.{AuthenticationProvider, AuthorizationProvider}
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 object S3Proxy extends App
   with LazyLogging
@@ -23,7 +25,7 @@ object S3Proxy extends App
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   // TODO: review whether it's better to use high level Akka API (routes)
-  val requestProcessor: HttpRequest => Future[HttpResponse] = htr =>
+  def requestProcessor(remoteAddress: InetSocketAddress): HttpRequest => Future[HttpResponse] = htr =>
     isAuthenticated("accesskey", Some("token")).flatMap {
       case None => Future(HttpResponse(StatusCodes.ProxyAuthenticationRequired))
       case Some(secret) =>
@@ -33,7 +35,8 @@ object S3Proxy extends App
     }.flatMap {
       case false => Future(HttpResponse(StatusCodes.Unauthorized))
       case true =>
-        val newHtr = translateRequest(htr)
+        logger.debug(s"OLD: $htr")
+        val newHtr = translateRequest(htr, remoteAddress)
         logger.debug(s"NEW: $newHtr")
         val response = Http().singleRequest(newHtr)
         response.map(r => logger.debug(s"RESPONSE: $r"))
@@ -48,11 +51,11 @@ object S3Proxy extends App
   val serverSource = Http().bind(interface = proxyInterface, port = proxyPort)
 
   val bindingFuture: Future[Http.ServerBinding] = {
-    println("Server has started")
+    logger.info("Server has started")
     serverSource.to(Sink.foreach { connection =>
-      println("Accepted new connection from " + connection.remoteAddress)
+      logger.debug("Accepted new connection from " + connection.remoteAddress)
 
-      connection handleWithAsyncHandler requestProcessor
+      connection handleWithAsyncHandler requestProcessor(connection.remoteAddress)
     }).run()
   }
 }

@@ -32,7 +32,10 @@ libraryDependencies ++= Seq(
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
     "org.apache.ranger"            % "ranger-plugins-common"   % "1.0.0",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % Test,
-    "org.scalamock"                %% "scalamock"              % "4.1.0"           % Test
+    "org.scalamock"                %% "scalamock"              % "4.1.0"           % Test,
+    "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7"     % Test,
+    "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"     % Test
+
 )
 
 enablePlugins(JavaAppPackaging)
