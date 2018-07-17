@@ -18,19 +18,9 @@ object S3Proxy extends App
   with AuthorizationProvider
   with RequestHandler {
 
-  // TODO: centralise configuration
-  private val configProxy = ConfigFactory.load().getConfig("proxy.server")
-  val proxyInterface = configProxy.getString("interface")
-  val proxyPort = configProxy.getInt("port")
-  private val configS3 = ConfigFactory.load().getConfig("s3.server")
-  val s3Host = configS3.getString("host")
-  val s3Port = configS3.getInt("port")
-
   implicit val system: ActorSystem = ActorSystem.create("gargoyle-s3proxy")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
-
-  val serverSource = Http().bind(interface = proxyInterface, port = proxyPort)
 
   // TODO: review whether it's better to use high level Akka API (routes)
   val requestProcessor: HttpRequest => Future[HttpResponse] = htr =>
@@ -43,12 +33,19 @@ object S3Proxy extends App
     }.flatMap {
       case false => Future(HttpResponse(StatusCodes.Unauthorized))
       case true =>
-        println(s"OLD: $htr")
-        val newHtr = htr.copy(uri = htr.uri.withAuthority(s3Host, s3Port))
-        println(s"NEW: $newHtr")
-
-        Http().singleRequest(translateRequest(newHtr))
+        val newHtr = translateRequest(htr)
+        logger.debug(s"NEW: $newHtr")
+        val response = Http().singleRequest(newHtr)
+        response.map(r => logger.debug(s"RESPONSE: $r"))
+        response
     }
+
+  // TODO: centralise configuration
+  private val configProxy = ConfigFactory.load().getConfig("proxy.server")
+  val proxyInterface = configProxy.getString("interface")
+  val proxyPort = configProxy.getInt("port")
+
+  val serverSource = Http().bind(interface = proxyInterface, port = proxyPort)
 
   val bindingFuture: Future[Http.ServerBinding] = {
     println("Server has started")
