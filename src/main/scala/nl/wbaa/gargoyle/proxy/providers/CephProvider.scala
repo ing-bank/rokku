@@ -2,6 +2,8 @@ package nl.wbaa.gargoyle.proxy.providers
 
 import java.net.URI
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.{ ClientConfiguration, DefaultRequest, SignableRequest }
 import com.amazonaws.auth.{ AWS3Signer, AWS4Signer, BasicAWSCredentials }
@@ -130,6 +132,17 @@ object CephProvider {
       response
     } catch {
       case e: Exception => throw new Exception(e.getMessage)
+    }
+  }
+
+  // request by Akka HTTP change
+  //
+  def akkaS3Request(request: HttpRequest)(implicit system: ActorSystem) = {
+    implicit val ex = system.dispatcher
+
+    Http().singleRequest(request).map {
+      case resp => resp.entity.dataBytes
+      case _    => throw new Exception("Failed to execute request")
     }
   }
 }

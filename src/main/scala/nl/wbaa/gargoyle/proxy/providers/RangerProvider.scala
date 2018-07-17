@@ -1,23 +1,40 @@
 import java.util.Date
 
 import com.typesafe.config.ConfigFactory
-import nl.wbaa.gargoyle.proxy.providers.{PolicyProvider, S3Request}
-import org.apache.ranger.plugin.policyengine.{RangerAccessRequestImpl, RangerAccessResourceImpl, RangerAccessResult}
+import nl.wbaa.gargoyle.proxy.providers.{ AuthorizationProvider }
+import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl, RangerAccessResult }
 import org.apache.ranger.plugin.service.RangerBasePlugin
 
 import scala.collection.JavaConverters
 
-object RangerProvider extends PolicyProvider {
-  private val config         = ConfigFactory.load().getConfig("ranger.settings")
+case class S3Request() {
+  def WRITE = s"write"
+  def READ = s"read"
+  def WRITE_ACP = s"write_acp"
+  def READ_ACP = s"read_acp"
 
-  private val plugin         = new RangerBasePlugin(
+  var path: String = ""
+  var owner: String = ""
+  var method: String = ""
+  var accessType: String = ""
+  var username: String = ""
+  var userGroups: Array[String] = Array[String]()
+  var clientIp: String = ""
+  var remoteAddr: String = ""
+  var fwdAddresses: Array[String] = Array[String]()
+}
+
+object RangerProvider {
+  private val config = ConfigFactory.load().getConfig("ranger.settings")
+
+  private val plugin = new RangerBasePlugin(
     config.getString("service_type"),
     config.getString("app_id")
   )
 
   plugin.init()
 
-  override def isAccessible(request: S3Request): Boolean = {
+  def isAccessible(request: S3Request): Boolean = {
     val rangerRequest = new RangerAccessRequestImpl()
     val resource = new RangerAccessResourceImpl()
 
