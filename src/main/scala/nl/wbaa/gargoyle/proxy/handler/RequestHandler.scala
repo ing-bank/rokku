@@ -1,9 +1,7 @@
 package nl.wbaa.gargoyle.proxy.handler
 
-import java.net.InetSocketAddress
-
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest, RemoteAddress}
 import com.typesafe.config.ConfigFactory
 import nl.wbaa.gargoyle.proxy.providers.Secret
 
@@ -11,9 +9,9 @@ trait RequestHandler {
   import RequestHandler._
 
   def validateUserRequest(request: HttpRequest, secret: Secret): Boolean = true
-  def translateRequest(request: HttpRequest, remoteAddress: InetSocketAddress): HttpRequest = {
+  def translateRequest(request: HttpRequest, remoteAddress: RemoteAddress): HttpRequest = {
     val headersIn: Seq[HttpHeader] =
-      request.headers :+ RawHeader("X-Forwarded-For", remoteAddress.getAddress.toString)
+      request.headers :+ RawHeader("X-Forwarded-For", remoteAddress.toOption.map(_.getHostAddress).getOrElse("unknown"))
 
     request.copy(uri = request.uri.withAuthority(s3Host, s3Port), headers = headersIn.toList)
   }

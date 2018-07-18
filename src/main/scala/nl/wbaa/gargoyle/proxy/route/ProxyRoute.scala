@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
+import akka.http.scaladsl.server.Directives._
 import nl.wbaa.gargoyle.proxy.handler.RequestHandler
 import nl.wbaa.gargoyle.proxy.providers.{AuthenticationProvider, AuthorizationProvider}
 
@@ -19,27 +20,29 @@ case class ProxyRoute()(implicit system: ActorSystem, mat: Materializer) extends
 
   // no validation of request currently
   // once we get comfortable with get/put/del we can add permCheck
-  def route() =
-    Route { ctx =>
+  val route: Route =
+    withoutSizeLimit {
+      extractClientIP { remoteAddress =>
+        Route { ctx =>
+          val requestProcessor: HttpRequest => Future[HttpResponse] = htr =>
+            isAuthenticated("accesskey", Some("token")).flatMap {
+              case None => Future(HttpResponse(StatusCodes.ProxyAuthenticationRequired))
+              case Some(secret) =>
+                if (validateUserRequest(htr, secret))
+                  isAuthorized("accessMode", "path", "username")
+                else Future(HttpResponse(StatusCodes.BadRequest))
+            }.flatMap {
+              case false => Future(HttpResponse(StatusCodes.Unauthorized))
+              case true =>
+                val newHtr = translateRequest(htr, remoteAddress)
+                logger.debug(s"NEW: $newHtr")
+                val response = Http().singleRequest(newHtr)
+                response.map(r => logger.debug(s"RESPONSE: $r"))
+                response
+            }
 
-      val requestProcessor: HttpRequest => Future[HttpResponse] = htr =>
-        isAuthenticated("accesskey", Some("token")).flatMap {
-          case None => Future(HttpResponse(StatusCodes.ProxyAuthenticationRequired))
-          case Some(secret) =>
-            if (validateUserRequest(htr, secret))
-              isAuthorized("accessMode", "path", "username")
-            else Future(HttpResponse(StatusCodes.BadRequest))
-        }.flatMap {
-          case false => Future(HttpResponse(StatusCodes.Unauthorized))
-          case true =>
-            val newHtr = translateRequest(htr)
-            logger.debug(s"NEW: $newHtr")
-            val response = Http().singleRequest(newHtr)
-            response.map(r => logger.debug(s"RESPONSE: $r"))
-            response
+          requestProcessor(ctx.request).flatMap(r => ctx.complete(r))
         }
-
-      requestProcessor(ctx.request).flatMap(r => ctx.complete(r))
+      }
     }
-
 }

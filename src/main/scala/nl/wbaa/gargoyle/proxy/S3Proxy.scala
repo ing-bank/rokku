@@ -24,13 +24,12 @@ class S3Proxy()(implicit system: ActorSystem = ActorSystem.create("gargoyle-s3pr
 
     val allRoutes =
       // concat new routes here
-      ProxyRoute().route()
-    //GetRoute.route()
+      ProxyRoute().route
 
     // interface 0.0.0.0 needed in case of docker
 
     // no debug
-    //bind = Await.result(http.bindAndHandle(allRoutes, "0.0.0.0", port), Duration.Inf)
+//    bind = Await.result(http.bindAndHandle(allRoutes, proxyInterface, proxyPort), Duration.Inf)
 
     //debug all requests
     bind = Await.result(http.bindAndHandle(DebuggingDirectives.logRequest(("debug", Logging.InfoLevel))(allRoutes), proxyInterface, proxyPort), Duration.Inf)
