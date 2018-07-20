@@ -5,7 +5,7 @@ import scala.util.Try
 
 
 trait AwaitAtMostTrait {
-  private val maxWaitTimeForContainers: Int = 120
+  private val maxWaitTimeForContainers: Int = 300
 
   lazy val waitAtMostDuration: FiniteDuration = {
     val secondsTimeout = sys.env.get("INTEGRATION_TEST_TIMEOUT") match {
