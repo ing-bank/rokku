@@ -25,6 +25,7 @@ resolvers ++= Seq(
     Resolver.jcenterRepo
 )
 
+// Excludes (javax.ws.rs and com.sun.jersey) to fix conflicts for the method: javax.ws.rs.core.MultivaluedMap.addAll
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
     "ch.qos.logback"               %  "logback-classic"        % "1.2.3"           % Runtime,
@@ -32,25 +33,15 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-stream"            % akkaStreamVersion,
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaVersion,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion,
-    "com.github.swagger-akka-http" %% "swagger-akka-http"      % "0.14.1",
+    "com.github.swagger-akka-http" %% "swagger-akka-http"      % "0.14.1" exclude("javax.ws.rs", "jsr311-api"),
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.362",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
-    "org.apache.ranger"            % "ranger-plugins-common"   % "1.0.0",
+    "org.apache.ranger"            % "ranger-plugins-common"   % "1.0.0" exclude("javax.ws.rs", "jsr311-api") exclude("com.sun.jersey", "jersey-core") exclude("com.sun.jersey", "jersey-json") exclude("com.sun.jersey", "jersey-server") exclude("com.sun.jersey", "jersey-bundle"),
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
     "org.scalamock"                %% "scalamock"              % "4.1.0"           % "it,test",
-    "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7",//     % "it,test",// exclude("javax.ws.rs", "javax.ws.rs-api"),
-    "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"//     % "it,test" //exclude("javax.ws.rs", "javax.ws.rs-api")//,
-////    "org.glassfish.jersey.core" % "jersey-server" % "2.27"
-//    "org.glassfish.jersey.core" % "jersey-client" % "2.27",
-//    "org.glassfish.hk2" % "hk2-api" % "2.1.9"
-//    ,"javax.ws.rs" % "javax.ws.rs-api" % "2.0.1"
+    "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7"     % "it",
+    "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"     % "it"
 )
-
-//val workaround = {
-//    sys.props += "packaging.type" -> "jar"
-//    ()
-//}
-
 
 configs(IntegrationTest)
 Defaults.itSettings
