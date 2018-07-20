@@ -3,22 +3,20 @@ package nl.wbaa.gargoyle.proxy
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.server.directives.DebuggingDirectives
 import akka.stream.ActorMaterializer
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import nl.wbaa.gargoyle.proxy.route._
-import akka.http.scaladsl.server.directives.DebuggingDirectives
-import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.Future
 
 class S3Proxy()(implicit system: ActorSystem = ActorSystem.create("gargoyle-s3proxy")) extends LazyLogging {
   import S3Proxy._
 
   implicit val ec = system.dispatcher
-  private var bind: Http.ServerBinding = _
 
-  def start(): Http.ServerBinding = {
+  def start(): Future[Http.ServerBinding] = {
     implicit val mat = ActorMaterializer()
     val http = Http(system)
 
@@ -29,11 +27,11 @@ class S3Proxy()(implicit system: ActorSystem = ActorSystem.create("gargoyle-s3pr
     // interface 0.0.0.0 needed in case of docker
 
     // no debug
-//    bind = Await.result(http.bindAndHandle(allRoutes, proxyInterface, proxyPort), Duration.Inf)
+    //    bind = Await.result(http.bindAndHandle(allRoutes, proxyInterface, proxyPort), Duration.Inf)
 
     //debug all requests
-    bind = Await.result(http.bindAndHandle(DebuggingDirectives.logRequest(("debug", Logging.InfoLevel))(allRoutes), proxyInterface, proxyPort), Duration.Inf)
-    logger.info("Server started")
+    val bind = http.bindAndHandle(DebuggingDirectives.logRequest(("debug", Logging.InfoLevel))(allRoutes), proxyInterface, proxyPort)
+    bind.foreach(_ => logger.info(s"Server started on $proxyInterface:$proxyPort"))
     bind
   }
 }

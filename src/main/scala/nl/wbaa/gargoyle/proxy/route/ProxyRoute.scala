@@ -2,13 +2,13 @@ package nl.wbaa.gargoyle.proxy.route
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import akka.http.scaladsl.server.Directives._
 import nl.wbaa.gargoyle.proxy.handler.RequestHandler
-import nl.wbaa.gargoyle.proxy.providers.{AuthenticationProvider, AuthorizationProvider}
+import nl.wbaa.gargoyle.proxy.providers.{ AuthenticationProvider, AuthorizationProvider }
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

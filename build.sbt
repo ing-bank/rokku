@@ -20,6 +20,11 @@ updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true
 val akkaVersion       = "10.1.3"
 val akkaStreamVersion = "2.5.13"
 
+resolvers ++= Seq(
+    Resolver.bintrayRepo("cakesolutions", "maven"),
+    Resolver.jcenterRepo
+)
+
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
     "ch.qos.logback"               %  "logback-classic"        % "1.2.3"           % Runtime,
@@ -31,12 +36,26 @@ libraryDependencies ++= Seq(
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.362",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
     "org.apache.ranger"            % "ranger-plugins-common"   % "1.0.0",
-    "org.scalatest"                %% "scalatest"              % "3.0.5"           % Test,
-    "org.scalamock"                %% "scalamock"              % "4.1.0"           % Test,
-    "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7"     % Test,
-    "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"     % Test
-
+    "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
+    "org.scalamock"                %% "scalamock"              % "4.1.0"           % "it,test",
+    "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7"     % "it,test",// exclude("javax.ws.rs", "javax.ws.rs-api"),
+    "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"     % "it,test" //exclude("javax.ws.rs", "javax.ws.rs-api")//,
+////    "org.glassfish.jersey.core" % "jersey-server" % "2.27"
+//    "org.glassfish.jersey.core" % "jersey-client" % "2.27",
+//    "org.glassfish.hk2" % "hk2-api" % "2.1.9"
+//    ,"javax.ws.rs" % "javax.ws.rs-api" % "2.0.1"
 )
+
+//val workaround = {
+//    sys.props += "packaging.type" -> "jar"
+//    ()
+//}
+
+
+configs(IntegrationTest)
+Defaults.itSettings
+
+parallelExecution in IntegrationTest := false
 
 enablePlugins(JavaAppPackaging)
 
@@ -56,3 +75,7 @@ scalariformPreferences := scalariformPreferences.value
     .setPreference(DoubleIndentConstructorArguments, true)
     .setPreference(DanglingCloseParenthesis, Preserve)
 
+//Coverage settings
+coverageMinimum := 70
+coverageFailOnMinimum := false
+coverageHighlighting := true
