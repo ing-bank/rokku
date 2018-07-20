@@ -2,6 +2,7 @@ package nl.wbaa.testkit.docker
 
 import java.util.concurrent.TimeUnit
 
+import com.typesafe.config.ConfigFactory
 import com.whisk.docker.{DockerContainer, DockerKit, DockerReadyChecker}
 import nl.wbaa.testkit.AwaitAtMostTrait
 
@@ -11,7 +12,8 @@ trait DockerCephS3Service extends DockerKit with DockerPortPicker with AwaitAtMo
   override val StartContainersTimeout: FiniteDuration = waitAtMostDuration
   override val StopContainersTimeout: FiniteDuration = waitAtMostDuration
 
-  val exposedPort: Int = 8111 // For now this port is static, if we need multiple versions, use randomAvailablePort()
+  private val configS3 = ConfigFactory.load().getConfig("s3.server")
+  val exposedPort: Int = configS3.getInt("port") // For now this port is static, if we need multiple versions, use randomAvailablePort()
 
   private val port = 8010
 
@@ -28,7 +30,7 @@ trait DockerCephS3Service extends DockerKit with DockerPortPicker with AwaitAtMo
     )
     .withPorts(port -> Some(exposedPort))
     .withReadyChecker(
-        DockerReadyChecker.LogLineContains("Running on http://0.0.0.0:5000/").looped(15, FiniteDuration(20, TimeUnit.SECONDS))
+        DockerReadyChecker.LogLineContains("Running on http://0.0.0.0:5000/").looped(30, FiniteDuration(10, TimeUnit.SECONDS))
     )
     .withCommand("demo")
 

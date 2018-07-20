@@ -4,6 +4,7 @@ import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
+import com.typesafe.config.ConfigFactory
 import com.whisk.docker.impl.spotify.DockerKitSpotify
 import com.whisk.docker.scalatest.DockerTestKit
 import nl.wbaa.testkit.docker.DockerCephS3Service
@@ -18,6 +19,9 @@ class S3ProxyItTest extends WordSpec with DiagrammedAssertions
   with DockerCephS3Service
   with BeforeAndAfterAll {
   private val logger = LoggerFactory.getLogger(this.getClass)
+
+  private val configProxy = ConfigFactory.load().getConfig("proxy.server")
+  val proxyPort: Int = configProxy.getInt("port")
 
   override def beforeAll(): Unit = {
     logger.info(s"Starting Ceph docker  images and S3 Proxy")
@@ -35,7 +39,7 @@ class S3ProxyItTest extends WordSpec with DiagrammedAssertions
         .standard()
         .withClientConfiguration(cliConf)
         .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("accesskey", "secretkey")))
-        .withEndpointConfiguration(new EndpointConfiguration("http://127.0.0.1:8081", "us-west-2"))
+        .withEndpointConfiguration(new EndpointConfiguration(s"http://127.0.0.1:$proxyPort", "us-west-2"))
         .build()
 
       "list the current buckets" in {
