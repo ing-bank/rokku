@@ -3,9 +3,9 @@ package nl.wbaa.gargoyle.proxy.handler
 import java.net.InetAddress
 
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
+import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{DiagrammedAssertions, WordSpec}
+import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
 class RequestHandlerTest extends WordSpec with DiagrammedAssertions {
   private val configS3 = ConfigFactory.load().getConfig("s3.server")
