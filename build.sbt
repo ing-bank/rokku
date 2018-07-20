@@ -38,8 +38,8 @@ libraryDependencies ++= Seq(
     "org.apache.ranger"            % "ranger-plugins-common"   % "1.0.0",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
     "org.scalamock"                %% "scalamock"              % "4.1.0"           % "it,test",
-    "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7"     % "it,test",// exclude("javax.ws.rs", "javax.ws.rs-api"),
-    "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"     % "it,test" //exclude("javax.ws.rs", "javax.ws.rs-api")//,
+    "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7",//     % "it,test",// exclude("javax.ws.rs", "javax.ws.rs-api"),
+    "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"//     % "it,test" //exclude("javax.ws.rs", "javax.ws.rs-api")//,
 ////    "org.glassfish.jersey.core" % "jersey-server" % "2.27"
 //    "org.glassfish.jersey.core" % "jersey-client" % "2.27",
 //    "org.glassfish.hk2" % "hk2-api" % "2.1.9"
