@@ -70,3 +70,4 @@ scalariformPreferences := scalariformPreferences.value
 coverageMinimum := 70
 coverageFailOnMinimum := false
 coverageHighlighting := true
+coverageEnabled := true
