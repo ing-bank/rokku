@@ -30,7 +30,7 @@ libraryDependencies ++= Seq(
     "com.github.swagger-akka-http" %% "swagger-akka-http"      % "0.14.1",
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.362",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
-    "org.apache.ranger"            % "ranger-plugins-common"   % "1.0.0",
+    "org.apache.ranger"            %  "ranger-plugins-common"  % "1.0.0",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % Test,
     "org.scalamock"                %% "scalamock"              % "4.1.0"           % Test
 )
@@ -46,10 +46,12 @@ javaOptions += "-Djava.awt.headless=true"
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
-dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("arempter"), "gargoyle-s3proxy", Some(Option(System.getenv("TRAVIS_BRANCH")).getOrElse("latest")))
+dockerAlias        := docker.DockerAlias(Some("docker.io"),
+                                         Some("arempter"),
+                                         "gargoyle-s3proxy",
+                                         Some(Option(System.getenv("TRAVIS_BRANCH")).getOrElse("latest")))
 
 scalariformPreferences := scalariformPreferences.value
     .setPreference(AlignSingleLineCaseStatements, true)
     .setPreference(DoubleIndentConstructorArguments, true)
     .setPreference(DanglingCloseParenthesis, Preserve)
-
