@@ -25,9 +25,6 @@ class CephProvider extends StorageProvider {
 
   /**
    * Translates user request and executes it using Proxy credentials
-   *
-   * @param request
-   * @return
    */
   def translateRequest(request: HttpRequest): String = {
     val path = request.uri.path.toString()
@@ -46,7 +43,6 @@ class CephProvider extends StorageProvider {
 /**
  * Sample S3 request generation methods, based on AWS Signer class
  * requires admin user AWS credentials
- *
  */
 private class ContentHash extends AWS4Signer {
   def calculate(request: SignableRequest[_]) = super.calculateContentHash(request)
@@ -65,12 +61,6 @@ object CephProvider {
 
   /**
    * Prepares S3 request based on user request
-   *
-   * @param method
-   * @param path
-   * @param request
-   * @param endpoint
-   * @return
    */
   def generateS3Request(method: HttpMethodName, path: String, request: DefaultRequest[_] = s3Request("s3"), endpoint: URI = cephRGW): DefaultRequest[_] = {
     request.setHttpMethod(method)
@@ -82,11 +72,6 @@ object CephProvider {
 
   /**
    * Signs S3 request with provided credentials. During sign AWS specific headers are added to request
-   *
-   * @param request
-   * @param cred
-   * @param signerVer
-   * @param region
    */
   private def signS3Request(request: DefaultRequest[_], cred: BasicAWSCredentials, signerVer: String = "v4", region: String = "us-east-1"): Unit = {
     signerVer match {
@@ -104,17 +89,11 @@ object CephProvider {
 
   /**
    * aws requires x-amz-content-sha256 even for UNSIGNED_PAYLOAD
-   *
-   * @param request
-   * @return
    */
   private def calculateContentHash(request: DefaultRequest[_]): String = new ContentHash().calculate(request)
 
   /**
    * Sends request to S3 backend
-   *
-   * @param request
-   * @return
    */
   def execS3Request(request: DefaultRequest[_]): String = {
     try {
