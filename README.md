@@ -13,16 +13,9 @@ It interacts with
 * [Ranger](https://ranger.apache.org/) to get bucket policies. On ranger, custom [ranger plugin](https://github.com/bolkedebruin/rangers3plugin) is used to define policies. 
 * actual S3 Backend
 
-## usage
+## Usage
 To run it:
-* Set Environment vars
-```
--DPROXY_HOST=proxy_host - name or IP of the proxy server 
--DPROXY_PORT=port       - port to listen on
--DAWS_ACCESS_KEY=       - admin credentials on Ceph RadosGW
--DAWS_SECRET_KEY=       - admin secret on Ceph RadosGW   
--DS3_ENDPOINT=          - RadosGW (or S3 backend) endpoint, eg. http://localhost:8080
-```
+
 * sbt run
 
 ## Local Testing
@@ -34,8 +27,7 @@ The `docker-compose.yml` defines this, run it using:
 
 ### Apache Ranger 
 
-Pickup the files from https://github.com/coheigea/testcases/tree/master/apache/docker/ranger and follow instructions to
-build the needed docker-containers for Ranger.
+The Apache Ranger docker images are created from this repo: https://github.com/nielsdenissen/ranger-for-gargoyle.git
 
 ## Setting Up AWS CLI
 

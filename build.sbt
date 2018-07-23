@@ -30,7 +30,7 @@ libraryDependencies ++= Seq(
     "com.github.swagger-akka-http" %% "swagger-akka-http"      % "0.14.1",
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.362",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
-    "org.apache.ranger"            % "ranger-plugins-common"   % "1.0.0",
+    "org.apache.ranger"            % "ranger-plugins-common"   % "1.1.0",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % Test,
     "org.scalamock"                %% "scalamock"              % "4.1.0"           % Test
 )

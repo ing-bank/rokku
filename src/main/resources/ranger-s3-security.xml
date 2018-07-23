@@ -19,7 +19,7 @@
 <configuration xmlns:xi="http://www.w3.org/2001/XInclude">
   <property>
     <name>ranger.plugin.s3.service.name</name>
-    <value>s3</value>
+    <value>ceph</value>
     <description>
       Name of the Ranger service containing policies for this S3 instance
     </description>

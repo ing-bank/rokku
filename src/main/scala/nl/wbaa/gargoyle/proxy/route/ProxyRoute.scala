@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
+import nl.wbaa.gargoyle.proxy.data.S3Request
 import nl.wbaa.gargoyle.proxy.handler.RequestHandler
 import nl.wbaa.gargoyle.proxy.providers.{AuthenticationProvider, AuthorizationProvider}
 
@@ -27,7 +28,9 @@ case class ProxyRoute()(implicit system: ActorSystem, mat: Materializer) extends
           case None => Future(HttpResponse(StatusCodes.ProxyAuthenticationRequired))
           case Some(secret) =>
             if (validateUserRequest(htr, secret))
-              isAuthorized("accessMode", "path", "username")
+              isAuthorized(
+                S3Request("path", "owner", "method", "read", "username", Array("usergroup"), "clientIp", "remoteAddr", Array("fwdAddress"))
+              )
             else Future(HttpResponse(StatusCodes.BadRequest))
         }.flatMap {
           case false => Future(HttpResponse(StatusCodes.Unauthorized))
