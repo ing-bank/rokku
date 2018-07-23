@@ -5,11 +5,15 @@ import java.net.URI
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
-import com.amazonaws.{ ClientConfiguration, DefaultRequest, SignableRequest }
-import com.amazonaws.auth.{ AWS3Signer, AWS4Signer, BasicAWSCredentials }
-import com.amazonaws.http.{ AmazonHttpClient, ExecutionContext, HttpMethodName }
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import com.amazonaws.auth.{ AWS3Signer, AWS4Signer, AWSCredentials, BasicAWSCredentials }
+import com.amazonaws.http.{ AmazonHttpClient, HttpMethodName, ExecutionContext => AmazonExecutionContext }
 import com.amazonaws.services.s3.internal.S3StringResponseHandler
+import com.amazonaws.{ ClientConfiguration, DefaultRequest, SignableRequest }
 import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * Sample S3 Provider, ceph
@@ -18,10 +22,10 @@ import com.typesafe.config.ConfigFactory
 class CephProvider extends StorageProvider {
   import CephProvider._
 
-  def endpoint = s3Endpoint
-  def credentials = s3credentials
+  def endpoint: String = s3Endpoint
+  def credentials: AWSCredentials = s3credentials
 
-  def verifyS3Signature() = {}
+  def verifyS3Signature(): Unit = {}
 
   /**
    * Translates user request and executes it using Proxy credentials
@@ -45,14 +49,14 @@ class CephProvider extends StorageProvider {
  * requires admin user AWS credentials
  */
 private class ContentHash extends AWS4Signer {
-  def calculate(request: SignableRequest[_]) = super.calculateContentHash(request)
+  def calculate(request: SignableRequest[_]): String = super.calculateContentHash(request)
 }
 
 object CephProvider {
   private val config = ConfigFactory.load().getConfig("s3.settings")
   private val accessKey = config.getString("aws_access_key")
   private val secretKey = config.getString("aws_secret_key")
-  val s3Endpoint = config.getString("s3_endpoint")
+  val s3Endpoint: String = config.getString("s3_endpoint")
 
   val s3credentials = new BasicAWSCredentials(accessKey, secretKey)
   private val cephRGW = new URI(s3Endpoint)
@@ -104,7 +108,7 @@ object CephProvider {
 
       val response = new AmazonHttpClient(clientConf)
         .requestExecutionBuilder()
-        .executionContext(new ExecutionContext(true))
+        .executionContext(new AmazonExecutionContext(true))
         .request(request)
         .execute(new S3StringResponseHandler()).getAwsResponse.getResult
 
@@ -116,8 +120,8 @@ object CephProvider {
 
   // request by Akka HTTP change
   //
-  def akkaS3Request(request: HttpRequest)(implicit system: ActorSystem) = {
-    implicit val ex = system.dispatcher
+  def akkaS3Request(request: HttpRequest)(implicit system: ActorSystem): Future[Source[ByteString, Any]] = {
+    implicit val ex: ExecutionContext = system.dispatcher
 
     Http().singleRequest(request).map(_.entity.dataBytes)
   }
