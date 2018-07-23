@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Route
-import akka.stream.Materializer
 import com.typesafe.scalalogging.LazyLogging
 import nl.wbaa.gargoyle.proxy.handler.RequestHandler
 import nl.wbaa.gargoyle.proxy.providers.{AuthenticationProvider, AuthorizationProvider}
@@ -12,7 +11,7 @@ import nl.wbaa.gargoyle.proxy.providers.{AuthenticationProvider, AuthorizationPr
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class ProxyRoute()(implicit system: ActorSystem, mat: Materializer) extends LazyLogging
+case class ProxyRoute()(implicit system: ActorSystem) extends LazyLogging
   with AuthenticationProvider
   with AuthorizationProvider
   with RequestHandler {
