@@ -11,12 +11,12 @@ import nl.wbaa.gargoyle.proxy.route._
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
-  * Setup a proxy towards S3 (Ceph)
-  *
-  * @param s3Host Hostaddress where s3 runs
-  * @param s3Port Port where s3 runs
-  * @param system implicit actorSystem
-  */
+ * Setup a proxy towards S3 (Ceph)
+ *
+ * @param s3Host Hostaddress where s3 runs
+ * @param s3Port Port where s3 runs
+ * @param system implicit actorSystem
+ */
 class S3Proxy(s3Host: String, s3Port: Int)(implicit system: ActorSystem = ActorSystem.create("gargoyle-s3proxy")) extends LazyLogging {
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
