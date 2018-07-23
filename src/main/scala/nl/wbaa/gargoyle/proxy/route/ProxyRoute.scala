@@ -13,7 +13,7 @@ import nl.wbaa.gargoyle.proxy.providers.{ AuthenticationProvider, AuthorizationP
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class ProxyRoute()(implicit system: ActorSystem, mat: Materializer) extends LazyLogging
+case class ProxyRoute(s3Host: String, s3Port: Int)(implicit system: ActorSystem, mat: Materializer) extends LazyLogging
   with AuthenticationProvider
   with AuthorizationProvider
   with RequestHandler {

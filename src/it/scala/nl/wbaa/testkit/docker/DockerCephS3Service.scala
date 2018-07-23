@@ -2,22 +2,19 @@ package nl.wbaa.testkit.docker
 
 import java.util.concurrent.TimeUnit
 
-import com.typesafe.config.ConfigFactory
 import com.whisk.docker.{DockerContainer, DockerKit, DockerReadyChecker}
-import nl.wbaa.testkit.AwaitAtMostTrait
 
 import scala.concurrent.duration.FiniteDuration
 
-trait DockerCephS3Service extends DockerKit with DockerPortPicker with AwaitAtMostTrait {
+trait DockerCephS3Service extends DockerKit {
+  import WaitForDocker.waitAtMostDuration
+
   override val StartContainersTimeout: FiniteDuration = waitAtMostDuration
   override val StopContainersTimeout: FiniteDuration = waitAtMostDuration
 
-  private val configS3 = ConfigFactory.load().getConfig("s3.server")
-  val exposedPort: Int = configS3.getInt("port") // For now this port is static, if we need multiple versions, use randomAvailablePort()
-
   private val port = 8010
 
-  lazy val cephContainer: DockerContainer = DockerContainer("ceph/daemon:latest", Some("cephittest"))
+  lazy val cephContainer: DockerContainer = DockerContainer("ceph/daemon:latest", None)
     .withEnv(
       "CEPH_DEMO_UID=ceph-admin",
       "CEPH_DEMO_ACCESS_KEY=accesskey",
@@ -28,7 +25,7 @@ trait DockerCephS3Service extends DockerKit with DockerPortPicker with AwaitAtMo
       "NETWORK_AUTO_DETECT=4",
       "RESTAPI_LOG_LEVEL=debug"
     )
-    .withPorts(port -> Some(exposedPort))
+    .withPorts(port -> None)
     .withReadyChecker(
         DockerReadyChecker.LogLineContains("Running on http://0.0.0.0:5000/").looped(30, FiniteDuration(10, TimeUnit.SECONDS))
     )

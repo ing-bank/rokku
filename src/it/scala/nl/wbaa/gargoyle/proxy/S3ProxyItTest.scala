@@ -1,23 +1,26 @@
 package nl.wbaa.gargoyle.proxy
 
 import java.io.{File, RandomAccessFile}
+import java.util.concurrent.TimeUnit
 
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.whisk.docker.impl.spotify.DockerKitSpotify
 import com.whisk.docker.scalatest.DockerTestKit
 import nl.wbaa.testkit.docker.DockerCephS3Service
-import nl.wbaa.testkit.s3sdk.sdkSetup
+import nl.wbaa.testkit.s3sdk.SdkSetup
 import org.scalatest._
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 class S3ProxyItTest extends WordSpec with DiagrammedAssertions
   with DockerTestKit
   with DockerKitSpotify
   with DockerCephS3Service
   with BeforeAndAfterAll
-  with sdkSetup {
+  with SdkSetup {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   val filesWithSizes: Map[String, Long] = Map(
@@ -25,6 +28,8 @@ class S3ProxyItTest extends WordSpec with DiagrammedAssertions
     "file100mb.test" -> 100 * 1024 * 1024,
     "file1gb.test" -> 1024 * 1024 * 1024
   )
+
+  var proxyServerPort: Int = _
 
   override def beforeAll(): Unit = {
     logger.info(s"Starting Ceph docker images and S3 Proxy")
@@ -36,11 +41,16 @@ class S3ProxyItTest extends WordSpec with DiagrammedAssertions
       file.close()
     }
 
-    // Start our proxy
-    new S3Proxy().start()
-
     // Start docker containers mixed in with traits
     super.beforeAll()
+
+    val cephPort = Await.result(cephContainer.getPorts(), Duration(30, TimeUnit.SECONDS))(8010)
+
+    // Start our proxy
+    val bindFuture = new S3Proxy("127.0.0.1", cephPort).start("127.0.0.1", 0)
+
+    // Get the port of the server before starting
+    proxyServerPort = Await.result(bindFuture, Duration(30, TimeUnit.SECONDS)).localAddress.getPort
   }
 
   override def afterAll(): Unit = {
@@ -61,7 +71,7 @@ class S3ProxyItTest extends WordSpec with DiagrammedAssertions
 
     awsSignerTypes.foreach { awsSignerType =>
       s"proxy with $awsSignerType" that {
-        val sdk = getAmazonS3(awsSignerType)
+        lazy val sdk = getAmazonS3(awsSignerType, proxyServerPort)
 
         def getKeysInBucket(bucket: String = "demobucket"): List[String] =
           sdk
