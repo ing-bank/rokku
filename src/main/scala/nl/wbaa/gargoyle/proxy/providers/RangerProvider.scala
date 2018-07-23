@@ -1,3 +1,5 @@
+package nl.wbaa.gargoyle.proxy.providers
+
 import java.util.Date
 
 import com.typesafe.config.ConfigFactory
