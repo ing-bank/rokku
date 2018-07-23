@@ -51,5 +51,8 @@ dockerAlias        := docker.DockerAlias(Some("docker.io"),
 
 scalariformPreferences := scalariformPreferences.value
     .setPreference(AlignSingleLineCaseStatements, true)
-    .setPreference(DoubleIndentConstructorArguments, true)
     .setPreference(DanglingCloseParenthesis, Preserve)
+    .setPreference(DoubleIndentConstructorArguments, true)
+    .setPreference(DoubleIndentMethodDeclaration, true)
+    .setPreference(NewlineAtEndOfFile, true)
+    .setPreference(SingleCasePatternOnNewline, false)
