@@ -1,7 +1,6 @@
 import java.util.Date
 
 import com.typesafe.config.ConfigFactory
-import nl.wbaa.gargoyle.proxy.providers.{ AuthorizationProvider }
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl, RangerAccessResult }
 import org.apache.ranger.plugin.service.RangerBasePlugin
 
