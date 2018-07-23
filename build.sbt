@@ -13,6 +13,7 @@ scalacOptions ++= Seq("-encoding", "utf-8")
 scalacOptions += "-target:jvm-1.8"
 scalacOptions += "-feature"
 scalacOptions += "-Xlint"
+scalacOptions += "-Xfatal-warnings"
 
 // Experimental: improved update resolution.
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
