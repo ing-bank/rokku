@@ -18,7 +18,7 @@ scalacOptions += "-Xlint"
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
 val akkaVersion       = "10.1.3"
-val akkaStreamVersion = "2.5.13"
+val akkaStreamVersion = "2.5.14"
 
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
