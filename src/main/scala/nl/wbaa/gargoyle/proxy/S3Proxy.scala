@@ -1,25 +1,21 @@
 package nl.wbaa.gargoyle.proxy
 
 import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.LazyLogging
-import nl.wbaa.gargoyle.proxy.handler.RequestHandler
-import nl.wbaa.gargoyle.proxy.providers.{AuthenticationProvider, AuthorizationProvider}
+import nl.wbaa.gargoyle.proxy.route._
+import akka.http.scaladsl.server.directives.DebuggingDirectives
+import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.Future
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
-class S3Proxy(port: Int)(implicit system: ActorSystem = ActorSystem.create("gargoyle-s3proxy")) extends LazyLogging
-  with AuthenticationProvider
-  with AuthorizationProvider
-  with RequestHandler {
+class S3Proxy()(implicit system: ActorSystem = ActorSystem.create("gargoyle-s3proxy")) extends LazyLogging {
+  import S3Proxy._
 
-  implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
-
-  /* ------------------------ PREVIOUS SOLUTION ---------------------------------
   private var bind: Http.ServerBinding = _
 
   def start(): Http.ServerBinding = {
@@ -28,10 +24,8 @@ class S3Proxy(port: Int)(implicit system: ActorSystem = ActorSystem.create("garg
 
     val allRoutes =
       // concat new routes here
-        GetRoute().route() ~
-            PostRoute().route() ~
-            DeleteRoute().route()
-            PutRoute().route()
+      ProxyRoute().route()
+    //GetRoute.route()
 
     // interface 0.0.0.0 needed in case of docker
 
@@ -39,39 +33,14 @@ class S3Proxy(port: Int)(implicit system: ActorSystem = ActorSystem.create("garg
     //bind = Await.result(http.bindAndHandle(allRoutes, "0.0.0.0", port), Duration.Inf)
 
     //debug all requests
-    bind = Await.result(http.bindAndHandle(DebuggingDirectives.logRequest(("debug", Logging.InfoLevel))(allRoutes), "0.0.0.0", port), Duration.Inf)
+    bind = Await.result(http.bindAndHandle(DebuggingDirectives.logRequest(("debug", Logging.InfoLevel))(allRoutes), proxyInterface, proxyPort), Duration.Inf)
+    logger.info("Server started")
     bind
   }
-  // -------------------------------------------------------------------------*/
+}
 
-  val serverSource = Http().bind(interface = "localhost", port = port)
-
-  val requestHandler: HttpRequest => Future[HttpResponse] = htr =>
-    isAuthenticated("accesskey", Some("token")).flatMap {
-        case None => Future(HttpResponse(StatusCodes.ProxyAuthenticationRequired))
-        case Some(secret) =>
-          if(validateUserRequest(htr, secret))
-            isAuthorized("accessMode", "path", "username")
-          else Future(HttpResponse(StatusCodes.BadRequest))
-      }.flatMap {
-        case false => Future(HttpResponse(StatusCodes.Unauthorized))
-        case true =>
-          println(s"OLD: $htr")
-          val newHtr = htr.copy(uri = htr.uri.withAuthority("localhost", 8010))
-          println(s"NEW: $newHtr")
-
-          Http().singleRequest(translateRequest(newHtr))
-      }
-
-
-  val bindingFuture: Future[Http.ServerBinding] = {
-    println("Server has started")
-    serverSource.to(Sink.foreach { connection =>
-      println("Accepted new connection from " + connection.remoteAddress)
-
-      connection handleWithAsyncHandler requestHandler
-      // this is equivalent to
-      // connection handleWith { Flow[HttpRequest] map requestHandler }
-    }).run()
-  }
+object S3Proxy {
+  private val configProxy = ConfigFactory.load().getConfig("proxy.server")
+  val proxyInterface: String = configProxy.getString("interface")
+  val proxyPort: Int = configProxy.getInt("port")
 }

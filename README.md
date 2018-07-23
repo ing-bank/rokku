@@ -33,5 +33,75 @@ The `docker-compose.yml` defines this, run it using:
     docker-compose up
 
 ### Apache Ranger 
+
 Pickup the files from https://github.com/coheigea/testcases/tree/master/apache/docker/ranger and follow instructions to
 build the needed docker-containers for Ranger.
+
+## Setting Up AWS CLI
+
+It is possible to set up the AWS command-line tools for working with Ceph RadosGW and Gargoyle. The following instructions assume that you have `virtualenv_wrapper` installed.
+
+1. Create an environment for this work:
+
+       % mkvirtualenv -p python3 gargoyle
+
+2. Install the AWS command-line tools and the endpoint plugin:
+
+       % pip install awscli awscli-plugin-endpoint
+
+3. Configure profiles and credentials for working with Gargoyle or the RadosGW directly:
+
+       % mkdir -p ~/.aws
+       % cat >> ~/.aws/credentials << EOF
+       [radosgw]
+       aws_access_key_id = accesskey
+       aws_secret_access_key = secretkey
+
+       [gargoyle]
+       aws_access_key_id = accesskey
+       aws_secret_access_key = secretkey
+       EOF
+       % cat >> ~/.aws/config << EOF
+       [plugins]
+       endpoint = awscli_plugin_endpoint
+
+       [profile gargoyle]
+       output = json
+       region = localhost
+       s3 =
+           endpoint_url = http://localhost:8080/
+       s3api =
+           endpoint_url = http://localhost:8080/
+       sts =
+           endpoint_url = http://localhost:7080/
+
+       [profile radosgw]
+       output = json
+       region = localhost
+       s3 =
+           endpoint_url = http://localhost:8010/
+       s3api =
+           endpoint_url = http://localhost:8010/
+       EOF
+
+4. Configure the default profile and reactivate the virtual environment:
+
+       % cat >> ${WORKON_HOME:-$HOME/.virtualenvs}/gargoyle/bin/postactivate << EOF
+       AWS_DEFAULT_PROFILE=gargoyle
+       export AWS_DEFAULT_PROFILE
+       EOF
+       % cat >> ${WORKON_HOME:-$HOME/.virtualenvs}/gargoyle/bin/predeactivate << EOF
+       unset AWS_DEFAULT_PROFILE
+       EOF
+       % deactivate
+       % workon gargoyle
+
+By default S3 and STS commands will now be issued against the proxy service. For example:
+
+    % aws s3 ls
+
+Commands can also be issued against the underlying RadosGW service:
+
+    % aws --profile radosgw s3 ls
+
+The default profile can also be switched by modifying the `AWS_DEFAULT_PROFILE` environment variable.
