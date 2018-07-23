@@ -140,9 +140,6 @@ object CephProvider {
   def akkaS3Request(request: HttpRequest)(implicit system: ActorSystem) = {
     implicit val ex = system.dispatcher
 
-    Http().singleRequest(request).map {
-      case resp => resp.entity.dataBytes
-      case _    => throw new Exception("Failed to execute request")
-    }
+    Http().singleRequest(request).map(_.entity.dataBytes)
   }
 }
