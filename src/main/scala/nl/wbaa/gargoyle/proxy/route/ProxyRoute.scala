@@ -11,14 +11,22 @@ import nl.wbaa.gargoyle.proxy.providers.{ AuthenticationProvider, AuthorizationP
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class ProxyRoute()(implicit system: ActorSystem) extends LazyLogging
+class ProxyRoute(implicit system: ActorSystem) extends LazyLogging
   with AuthenticationProvider
   with AuthorizationProvider
   with RequestHandler {
 
   // no validation of request currently
   // once we get comfortable with get/put/del we can add permCheck
-  def route() =
+  import akka.http.scaladsl.server.Directives._
+  def route: Route =
+    path("/ping") {
+      get {
+        complete("pong")
+      }
+    }
+
+  {
     Route { ctx =>
 
       val requestProcessor: HttpRequest => Future[HttpResponse] = htr =>
@@ -40,5 +48,5 @@ case class ProxyRoute()(implicit system: ActorSystem) extends LazyLogging
 
       requestProcessor(ctx.request).flatMap(r => ctx.complete(r))
     }
-
+  }
 }
