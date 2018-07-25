@@ -34,7 +34,7 @@ Custom mechanism should be considered to be implemented to handle situations lik
 
 Http toolkit that allows transparent passing of incoming and outgoing requests.   
 
-###Proxy modes
+### Proxy modes
 * transparent (as much as possible) - **preferred** or  
 * with request resignature (using NPA credentials)
 
