@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.Uri.{ Authority, Host, Path }
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, Uri }
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import nl.wbaa.gargoyle.proxy.config.GargoyleSettings
+import nl.wbaa.gargoyle.proxy.config.GargoyleHttpSettings
 import org.scalatest.{ Assertion, AsyncFlatSpec, DiagrammedAssertions }
 
 import scala.concurrent.Future
@@ -19,7 +19,7 @@ class GargoyleS3ProxySpec extends AsyncFlatSpec with DiagrammedAssertions {
   // Settings for tests:
   //  - Force a random port to listen on.
   //  - Explicitly bind to loopback, irrespective of any default value.
-  private[this] val gargoyleTestSettings = new GargoyleSettings(system.settings.config) {
+  private[this] val gargoyleTestSettings = new GargoyleHttpSettings(system.settings.config) {
     override val httpPort: Int = 0
     override val httpBind: String = "127.0.0.1"
   }
@@ -41,7 +41,7 @@ class GargoyleS3ProxySpec extends AsyncFlatSpec with DiagrammedAssertions {
     val request = HttpRequest(uri = Uri(scheme = "http", authority = testProxy.authority, path = Path("/ping")))
     Http().singleRequest(request).flatMap { response =>
       assert(response.status == StatusCodes.OK)
-      response.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map (_.utf8String)
+      response.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)
         .map { body =>
           assert(body == "pong")
         }

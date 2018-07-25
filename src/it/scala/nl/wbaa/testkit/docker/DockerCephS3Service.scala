@@ -12,7 +12,7 @@ trait DockerCephS3Service extends DockerKit {
   override val StartContainersTimeout: FiniteDuration = waitAtMostDuration
   override val StopContainersTimeout: FiniteDuration = waitAtMostDuration
 
-  private val port = 8010
+  val cephInternalPort = 8010
 
   lazy val cephContainer: DockerContainer = DockerContainer("ceph/daemon:latest", None)
     .withEnv(
@@ -21,11 +21,11 @@ trait DockerCephS3Service extends DockerKit {
       "CEPH_DEMO_SECRET_KEY=secretkey",
       "CEPH_DEMO_BUCKET=demobucket",
       "RGW_NAME=localhost",
-      s"RGW_CIVETWEB_PORT=$port",
+      s"RGW_CIVETWEB_PORT=$cephInternalPort",
       "NETWORK_AUTO_DETECT=4",
       "RESTAPI_LOG_LEVEL=debug"
     )
-    .withPorts(port -> None)
+    .withPorts(cephInternalPort -> None)
     .withReadyChecker(
         DockerReadyChecker.LogLineContains("Running on http://0.0.0.0:5000/").looped(30, FiniteDuration(10, TimeUnit.SECONDS))
     )

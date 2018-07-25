@@ -1,10 +1,11 @@
-package nl.wbaa.gargoyle.proxy
-package api
+package nl.wbaa.gargoyle.proxy.api
+
+import akka.http.scaladsl.server.Route
 
 trait HealthService {
   import akka.http.scaladsl.server.Directives._
 
-  final val route =
+  final val route: Route =
     path("ping") {
       get {
         complete("pong")

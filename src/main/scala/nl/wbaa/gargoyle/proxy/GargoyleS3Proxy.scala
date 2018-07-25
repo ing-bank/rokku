@@ -4,18 +4,19 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
+import akka.http.scaladsl.server.Directives._
 import com.typesafe.scalalogging.LazyLogging
-import nl.wbaa.gargoyle.proxy.api.HealthService
-import nl.wbaa.gargoyle.proxy.config.GargoyleSettings
+import nl.wbaa.gargoyle.proxy.api.{ HealthService, ProxyService }
+import nl.wbaa.gargoyle.proxy.config.{ GargoyleHttpSettings, GargoyleStorageS3Settings }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-class GargoyleS3Proxy private[GargoyleS3Proxy](settings: GargoyleSettings)(implicit system: ActorSystem) extends LazyLogging {
+class GargoyleS3Proxy private[GargoyleS3Proxy] (settings: GargoyleHttpSettings, storageS3Settings: GargoyleStorageS3Settings)(implicit system: ActorSystem) extends LazyLogging {
   private[this] implicit val executionContext: ExecutionContext = system.dispatcher
 
   // The routes we serve.
-  final val allRoutes = HealthService.route
+  final val allRoutes = HealthService.route ~ new ProxyService(storageS3Settings).route
 
   // Details about the server binding.
   final val bind: Future[Http.ServerBinding] = {
@@ -38,10 +39,20 @@ class GargoyleS3Proxy private[GargoyleS3Proxy](settings: GargoyleSettings)(impli
 }
 
 object GargoyleS3Proxy {
-  def apply()(implicit system: ActorSystem): GargoyleS3Proxy = apply(settings = None)
-  def apply(settings: GargoyleSettings)(implicit system: ActorSystem): GargoyleS3Proxy = apply(settings = Some(settings))
-  private[this] def apply(settings: Option[GargoyleSettings])(implicit system: ActorSystem): GargoyleS3Proxy = {
-    val gargoyleSettings = settings.getOrElse(GargoyleSettings(system))
-    new GargoyleS3Proxy(gargoyleSettings)
+  def apply()(implicit system: ActorSystem): GargoyleS3Proxy = apply(None, None)
+
+  def apply(httpSettings: GargoyleHttpSettings, storageS3Settings: GargoyleStorageS3Settings)(implicit system: ActorSystem): GargoyleS3Proxy =
+    apply(httpSettings = Some(httpSettings), storageS3Settings = Some(storageS3Settings))
+
+  def apply(httpSettings: GargoyleHttpSettings)(implicit system: ActorSystem): GargoyleS3Proxy =
+    apply(httpSettings = Some(httpSettings), storageS3Settings = None)
+
+  def apply(storageS3Settings: GargoyleStorageS3Settings)(implicit system: ActorSystem): GargoyleS3Proxy =
+    apply(httpSettings = None, storageS3Settings = Some(storageS3Settings))
+
+  private[this] def apply(httpSettings: Option[GargoyleHttpSettings], storageS3Settings: Option[GargoyleStorageS3Settings])(implicit system: ActorSystem): GargoyleS3Proxy = {
+    val gargoyleHttpSettings = httpSettings.getOrElse(GargoyleHttpSettings(system))
+    val gargoyleStorageS3Settings = storageS3Settings.getOrElse(GargoyleStorageS3Settings(system))
+    new GargoyleS3Proxy(gargoyleHttpSettings, gargoyleStorageS3Settings)
   }
 }

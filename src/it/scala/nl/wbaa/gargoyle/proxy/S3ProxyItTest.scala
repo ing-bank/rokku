@@ -1,97 +1,112 @@
 package nl.wbaa.gargoyle.proxy
 
 import java.io.{File, RandomAccessFile}
-import java.util.concurrent.TimeUnit
 
-import com.amazonaws.services.s3.transfer.TransferManagerBuilder
+import akka.actor.ActorSystem
+import akka.http.scaladsl.model.Uri.{Authority, Host}
+import com.amazonaws.services.s3.AmazonS3
 import com.whisk.docker.impl.spotify.DockerKitSpotify
 import com.whisk.docker.scalatest.DockerTestKit
+import nl.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings}
 import nl.wbaa.testkit.docker.DockerCephS3Service
-import nl.wbaa.testkit.s3sdk.SdkSetup
+import nl.wbaa.testkit.s3sdk.S3SdkHelpers
 import org.scalatest._
-import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.Future
 
-class S3ProxyItTest extends WordSpec with DiagrammedAssertions
+class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   with DockerTestKit
   with DockerKitSpotify
   with DockerCephS3Service
-  with BeforeAndAfterAll
-  with SdkSetup {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  with S3SdkHelpers {
+  private[this] final implicit val system: ActorSystem = ActorSystem.create("test-system")
 
-  val filesWithSizes: Map[String, Long] = Map(
-    "file1mb.test" -> 1024 * 1024,
-    "file100mb.test" -> 100 * 1024 * 1024,
-    "file1gb.test" -> 1024 * 1024 * 1024
+  // Settings for tests:
+  //  - Force a random port to listen on.
+  //  - Explicitly bind to loopback, irrespective of any default value.
+  private[this] val gargoyleHttpSettings = new GargoyleHttpSettings(system.settings.config) {
+    override val httpPort: Int = 0
+    override val httpBind: String = "127.0.0.1"
+  }
+
+  // Settings to connect to S3 storage, we have to wait for the docker container to retrieve the exposed port
+  private[this] lazy val gargoyleStorageS3SettingsFuture: Future[GargoyleStorageS3Settings] =
+    cephContainer.getPorts()(docker = dockerExecutor, ec = dockerExecutionContext)
+      .map { portMapping =>
+        println(portMapping)
+        new GargoyleStorageS3Settings(system.settings.config) {
+          override val storageS3Host: String = "127.0.0.1"
+          override val storageS3Port: Int = portMapping(cephInternalPort)
+        }
+      }(executionContext)
+
+  /**
+    * Fixture for starting and stopping a test proxy that tests can interact with.
+    *
+    * @param awsSignerType Signer type for aws sdk to use
+    * @param testCode      Code that accepts the created sdk
+    * @return Assertion
+    */
+  def withSdkToTestProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
+    gargoyleStorageS3SettingsFuture
+      .map(gargoyleStorageS3Settings => GargoyleS3Proxy(gargoyleHttpSettings, gargoyleStorageS3Settings))(executionContext)
+      .map(proxy => (proxy, proxy.bind))(executionContext)
+      .flatMap { proxyBind =>
+        proxyBind._2.map { binding =>
+          val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
+          val result = testCode(getAmazonS3(awsSignerType, authority))
+          proxyBind._1.shutdown()
+          result
+        }(executionContext)
+      }(executionContext)
+  }
+
+  /**
+    * Fixture to create a test file with a certain size for your testcase
+    *
+    * @param size     Size in Bytes of the file you want to test
+    * @param testCode Code that accepts the name of the created file
+    * @return Assertion
+    */
+  def withFile(size: Long)(testCode: String => Assertion): Assertion = {
+    val filename = "testfile.tst"
+    val file = new RandomAccessFile(filename, "rw")
+    file.setLength(size)
+    file.close()
+
+    val result = testCode(filename)
+    new File(filename).delete()
+    result
+  }
+
+  // TODO: Expand with different signer types
+  val awsSignerTypes = List(
+    "S3SignerType" //,
+    //      SignerFactory.NO_OP_SIGNER,
+    //      SignerFactory.QUERY_STRING_SIGNER,
+    //      SignerFactory.VERSION_FOUR_SIGNER,
+    //      SignerFactory.VERSION_FOUR_UNSIGNED_PAYLOAD_SIGNER,
+    //      SignerFactory.VERSION_THREE_SIGNER
   )
 
-  var proxyServerPort: Int = _
+  awsSignerTypes.foreach { awsSignerType =>
 
-  override def beforeAll(): Unit = {
-    logger.info(s"Starting Ceph docker images and S3 Proxy")
-
-    // Create files for testing
-    filesWithSizes.foreach { f =>
-      val file = new RandomAccessFile(f._1, "rw")
-      file.setLength(f._2)
-      file.close()
-    }
-
-    // Start docker containers mixed in with traits
-    super.beforeAll()
-
-    val cephPort = Await.result(cephContainer.getPorts(), Duration(30, TimeUnit.SECONDS))(8010)
-
-    // Start our proxy
-    val bindFuture = new S3Proxy("127.0.0.1", cephPort).start("127.0.0.1", 0)
-
-    // Get the port of the server before starting
-    proxyServerPort = Await.result(bindFuture, Duration(30, TimeUnit.SECONDS)).localAddress.getPort
-  }
-
-  override def afterAll(): Unit = {
-    // Remove files created for testing
-    filesWithSizes.keys.foreach(new File(_).delete())
-  }
-
-  "S3 Proxy" should {
-    // TODO: Expand with different signer types
-    val awsSignerTypes = List(
-      "S3SignerType" //,
-//      SignerFactory.NO_OP_SIGNER,
-//      SignerFactory.QUERY_STRING_SIGNER,
-//      SignerFactory.VERSION_FOUR_SIGNER,
-//      SignerFactory.VERSION_FOUR_UNSIGNED_PAYLOAD_SIGNER,
-//      SignerFactory.VERSION_THREE_SIGNER
-    )
-
-    awsSignerTypes.foreach { awsSignerType =>
+    "S3 Proxy" should {
       s"proxy with $awsSignerType" that {
-        lazy val sdk = getAmazonS3(awsSignerType, proxyServerPort)
 
-        def getKeysInBucket(bucket: String = "demobucket"): List[String] =
-          sdk
-            .listObjectsV2(bucket)
-            .getObjectSummaries
-            .asScala.toList
-            .map(_.getKey)
-
-        "list the current buckets" in {
+        "list the current buckets" in withSdkToTestProxy(awsSignerType) { sdk =>
           assert(sdk.listBuckets().asScala.toList.map(_.getName) == List("demobucket"))
         }
 
-        "create and remove a bucket" in {
+        "create and remove a bucket" in withSdkToTestProxy(awsSignerType) { sdk =>
           sdk.createBucket("createbuckettest")
           assert(sdk.listBuckets().asScala.toList.map(_.getName).contains("createbuckettest"))
           sdk.deleteBucket("createbuckettest")
           assert(!sdk.listBuckets().asScala.toList.map(_.getName).contains("createbuckettest"))
         }
 
-        "list files in a bucket" in {
+        "list files in a bucket" in withSdkToTestProxy(awsSignerType) { sdk =>
           sdk.putObject("demobucket", "keyListFiles", "content")
           val resultV2 = sdk.listObjectsV2("demobucket").getObjectSummaries.asScala.toList.map(_.getKey)
           val result = sdk.listObjects("demobucket").getObjectSummaries.asScala.toList.map(_.getKey)
@@ -100,76 +115,69 @@ class S3ProxyItTest extends WordSpec with DiagrammedAssertions
           assert(result.contains("keyListFiles"))
         }
 
-        "check if bucket exists" in {
+        "check if bucket exists" in withSdkToTestProxy(awsSignerType) { sdk =>
           assert(sdk.doesBucketExistV2("demobucket"))
         }
 
-        "put, get and delete an object from a bucket" in {
-          // PUT
-          sdk.putObject("demobucket", "keyPutFileByContent", "content")
-          sdk.putObject("demobucket", "keyPutFileByFile", new File("file1mb.test"))
+        "put, get and delete an object from a bucket" in withSdkToTestProxy(awsSignerType) { sdk =>
+          withFile(1024 * 1024) { filename =>
+            // PUT
+            sdk.putObject("demobucket", "keyPutFileByContent", "content")
+            sdk.putObject("demobucket", "keyPutFileByFile", new File(filename))
 
-          // GET
-          val checkContent = sdk.getObjectAsString("demobucket", "keyPutFileByContent")
-          assert(checkContent == "content")
-          val keys1 = getKeysInBucket()
-          List("keyPutFileByContent", "keyPutFileByFile").map(k => assert(keys1.contains(k)))
+            // GET
+            val checkContent = sdk.getObjectAsString("demobucket", "keyPutFileByContent")
+            assert(checkContent == "content")
+            val keys1 = getKeysInBucket(sdk)
+            List("keyPutFileByContent", "keyPutFileByFile").map(k => assert(keys1.contains(k)))
 
-          // DELETE
-          sdk.deleteObject("demobucket", "keyPutFileByContent")
-          val keys2 = getKeysInBucket()
-          assert(!keys2.contains("keyPutFileByContent"))
+            // DELETE
+            sdk.deleteObject("demobucket", "keyPutFileByContent")
+            val keys2 = getKeysInBucket(sdk)
+            assert(!keys2.contains("keyPutFileByContent"))
+          }
         }
 
         // TODO: Fix proxy for copyObject function
-//        "check if object can be copied" in {
-//          sdk.putObject("demobucket", "keyCopyOrg", new File("file1mb.test"))
-//          sdk.copyObject("demobucket", "keyCopyOrg", "newbucket", "keyCopyDest")
-//
-//          val keys1 = getKeysInBucket("demobucket")
-//          assert(!keys1.contains("keyCopyOrg"))
-//          val keys2 = getKeysInBucket("newbucket")
-//          assert(keys2.contains("keyCopyDest"))
-//        }
+        //        "check if object can be copied" in {
+        //          sdk.putObject("demobucket", "keyCopyOrg", new File("file1mb.test"))
+        //          sdk.copyObject("demobucket", "keyCopyOrg", "newbucket", "keyCopyDest")
+        //
+        //          val keys1 = getKeysInBucket("demobucket")
+        //          assert(!keys1.contains("keyCopyOrg"))
+        //          val keys2 = getKeysInBucket("newbucket")
+        //          assert(keys2.contains("keyCopyDest"))
+        //        }
 
         // TODO: Fix proxy for doesObjectExists function
-//        "check if object exists in bucket" in {
-//          sdk.putObject("demobucket", "keyCheckObjectExists", "content")
-//          assert(sdk.doesObjectExist("demobucket", "key"))
-//        }
+        //        "check if object exists in bucket" in {
+        //          sdk.putObject("demobucket", "keyCheckObjectExists", "content")
+        //          assert(sdk.doesObjectExist("demobucket", "key"))
+        //        }
 
-        def doMultiPartUpload(file: String, key: String) = {
-          val upload = TransferManagerBuilder
-            .standard()
-            .withS3Client(sdk)
-            .build()
-            .upload("demobucket", key, new File(file))
-
-          upload.waitForUploadResult()
-        }
-
-        "put a 1MB file in a bucket (multi part upload)" in {
-          doMultiPartUpload("file1mb.test", "keyMultiPart1MB")
-
-          val objectKeys = getKeysInBucket()
-          assert(objectKeys.contains("keyMultiPart1MB"))
+        "put a 1MB file in a bucket (multi part upload)" in withSdkToTestProxy(awsSignerType) { sdk =>
+          withFile(1024 * 1024) { filename =>
+            doMultiPartUpload(sdk, filename, "keyMultiPart1MB")
+            val objectKeys = getKeysInBucket(sdk)
+            assert(objectKeys.contains("keyMultiPart1MB"))
+          }
         }
 
         // TODO: reenable, sometimes fails still with `upload canceled` error
-//        "put a 100MB file in a bucket (multi part upload)" in {
-//          doMultiPartUpload("file100mb.test", "keyMultiPart100MB")
-//
-//          val objectKeys = getKeysInBucket()
-//          assert(objectKeys.contains("keyMultiPart100MB"))
-//        }
+        //        "put a 100MB file in a bucket (multi part upload)" in {
+        //          doMultiPartUpload("file100mb.test", "keyMultiPart100MB")
+        //
+        //          val objectKeys = getKeysInBucket()
+        //          assert(objectKeys.contains("keyMultiPart100MB"))
+        //        }
 
         // TODO: Fix 1GB multi part upload
-//        "put a 1GB file in a bucket (multi part upload)" in {
-//          doMultiPartUpload("file1gb.test", "keyMultiPart1GB")
-//
-//          val objectKeys = getKeysInBucket()
-//          assert(objectKeys.contains("keyMultiPart1GB"))
-//        }
+        //        "put a 1GB file in a bucket (multi part upload)" in {
+        //          doMultiPartUpload("file1gb.test", "keyMultiPart1GB")
+        //
+        //          val objectKeys = getKeysInBucket()
+        //          assert(objectKeys.contains("keyMultiPart1GB"))
+        //        }
       }
     }
   }
