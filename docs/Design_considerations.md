@@ -34,10 +34,6 @@ Custom mechanism should be considered to be implemented to handle situations lik
 
 Http toolkit that allows transparent passing of incoming and outgoing requests.   
 
-### Proxy modes
-* transparent (as much as possible) - **preferred** or  
-* with request resignature (using NPA credentials)
-
 ### Supported clients
 * aws s3api cli (not s3cmd)
 * aws SDK  
@@ -46,6 +42,10 @@ Http toolkit that allows transparent passing of incoming and outgoing requests.
 All operations that can be invoked by supported clients.
 v2 and v3? requests should be discarded, as we support only v4, or proxy should translate older requests
 to v4?
+
+## Proxy modes
+* transparent (as much as possible) - **preferred** or  
+* with request resignature (using NPA credentials)
 
 ### NPA proxy 
 * resignature of incoming request
