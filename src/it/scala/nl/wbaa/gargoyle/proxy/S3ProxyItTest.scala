@@ -55,9 +55,11 @@ class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       .flatMap { proxyBind =>
         proxyBind._2.map { binding =>
           val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
-          val result = testCode(getAmazonS3(awsSignerType, authority))
-          proxyBind._1.shutdown()
-          result
+          try {
+            testCode(getAmazonS3(awsSignerType, authority))
+          } finally {
+            proxyBind._1.shutdown()
+          }
         }(executionContext)
       }(executionContext)
   }
@@ -75,9 +77,11 @@ class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     file.setLength(size)
     file.close()
 
-    val result = testCode(filename)
-    new File(filename).delete()
-    result
+    try {
+      testCode(filename)
+    } finally {
+      new File(filename).delete()
+    }
   }
 
   // TODO: Expand with different signer types

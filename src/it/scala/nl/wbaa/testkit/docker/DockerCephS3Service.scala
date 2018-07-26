@@ -14,7 +14,7 @@ trait DockerCephS3Service extends DockerKit {
 
   val cephInternalPort = 8010
 
-  lazy val cephContainer: DockerContainer = DockerContainer("ceph/daemon:latest", None)
+  lazy val cephContainer: DockerContainer = DockerContainer("ceph/daemon:latest-mimic", None)
     .withEnv(
       "CEPH_DEMO_UID=ceph-admin",
       "CEPH_DEMO_ACCESS_KEY=accesskey",
