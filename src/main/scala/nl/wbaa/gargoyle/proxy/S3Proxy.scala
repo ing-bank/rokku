@@ -5,17 +5,16 @@ import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.LazyLogging
-import nl.wbaa.gargoyle.proxy.providers.StorageProvider
 import nl.wbaa.gargoyle.proxy.route._
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.DebuggingDirectives
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class S3Proxy(port: Int, provider: StorageProvider)(implicit system: ActorSystem = ActorSystem.create("gargoyle-s3proxy")) extends LazyLogging {
+class S3Proxy()(implicit system: ActorSystem = ActorSystem.create("gargoyle-s3proxy")) extends LazyLogging {
+  import S3Proxy._
 
-  implicit val p = provider
   implicit val ec = system.dispatcher
   private var bind: Http.ServerBinding = _
 
@@ -25,10 +24,8 @@ class S3Proxy(port: Int, provider: StorageProvider)(implicit system: ActorSystem
 
     val allRoutes =
       // concat new routes here
-      GetRoute().route() ~
-        PostRoute().route() ~
-        DeleteRoute().route() ~
-        PutRoute().route()
+      ProxyRoute().route()
+    //GetRoute.route()
 
     // interface 0.0.0.0 needed in case of docker
 
@@ -36,8 +33,14 @@ class S3Proxy(port: Int, provider: StorageProvider)(implicit system: ActorSystem
     //bind = Await.result(http.bindAndHandle(allRoutes, "0.0.0.0", port), Duration.Inf)
 
     //debug all requests
-    bind = Await.result(http.bindAndHandle(DebuggingDirectives.logRequest(("debug", Logging.InfoLevel))(allRoutes), "0.0.0.0", port), Duration.Inf)
+    bind = Await.result(http.bindAndHandle(DebuggingDirectives.logRequest(("debug", Logging.InfoLevel))(allRoutes), proxyInterface, proxyPort), Duration.Inf)
+    logger.info("Server started")
     bind
   }
+}
 
+object S3Proxy {
+  private val configProxy = ConfigFactory.load().getConfig("proxy.server")
+  val proxyInterface: String = configProxy.getString("interface")
+  val proxyPort: Int = configProxy.getInt("port")
 }
