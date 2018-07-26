@@ -1,0 +1,50 @@
+package nl.wbaa.gargoyle.proxy
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.Uri.{ Authority, Host, Path }
+import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, Uri }
+import akka.stream.ActorMaterializer
+import akka.util.ByteString
+import nl.wbaa.gargoyle.proxy.config.GargoyleHttpSettings
+import org.scalatest.{ Assertion, AsyncFlatSpec, DiagrammedAssertions }
+
+import scala.concurrent.Future
+
+class GargoyleS3ProxySpec extends AsyncFlatSpec with DiagrammedAssertions {
+
+  private[this] final implicit val system: ActorSystem = ActorSystem.create("test-system")
+  private[this] final implicit val materializer: ActorMaterializer = ActorMaterializer()
+
+  // Settings for tests:
+  //  - Force a random port to listen on.
+  //  - Explicitly bind to loopback, irrespective of any default value.
+  private[this] val gargoyleTestSettings = new GargoyleHttpSettings(system.settings.config) {
+    override val httpPort: Int = 0
+    override val httpBind: String = "127.0.0.1"
+  }
+
+  case class TestGargoyleS3Proxy(authority: Authority)
+
+  // Fixture for starting and stopping a test proxy that tests can interact with.
+  def withTestProxy(testCode: TestGargoyleS3Proxy => Future[Assertion]): Future[Assertion] = {
+    val testProxy = GargoyleS3Proxy(gargoyleTestSettings)
+    testProxy.bind
+      .flatMap { binding =>
+        val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
+        testCode(TestGargoyleS3Proxy(authority))
+      }
+      .andThen { case _ => testProxy.shutdown() }
+  }
+
+  "A Gargoyle S3 proxy" should "respond to /ping with 'pong'" in withTestProxy { testProxy =>
+    val request = HttpRequest(uri = Uri(scheme = "http", authority = testProxy.authority, path = Path("/ping")))
+    Http().singleRequest(request).flatMap { response =>
+      assert(response.status == StatusCodes.OK)
+      response.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)
+        .map { body =>
+          assert(body == "pong")
+        }
+    }
+  }
+}

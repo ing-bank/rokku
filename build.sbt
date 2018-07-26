@@ -13,12 +13,13 @@ scalacOptions ++= Seq("-encoding", "utf-8")
 scalacOptions += "-target:jvm-1.8"
 scalacOptions += "-feature"
 scalacOptions += "-Xlint"
+scalacOptions += "-Xfatal-warnings"
 
 // Experimental: improved update resolution.
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
 val akkaVersion       = "10.1.3"
-val akkaStreamVersion = "2.5.13"
+val akkaStreamVersion = "2.5.14"
 
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
@@ -27,13 +28,18 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-stream"            % akkaStreamVersion,
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaVersion,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion,
-    "com.github.swagger-akka-http" %% "swagger-akka-http"      % "0.14.1",
-    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.362",
+    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.372",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
     "org.apache.ranger"            % "ranger-plugins-common"   % "1.1.0",
-    "org.scalatest"                %% "scalatest"              % "3.0.5"           % Test,
-    "org.scalamock"                %% "scalamock"              % "4.1.0"           % Test
+    "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
+    "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7"     % IntegrationTest,
+    "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"     % IntegrationTest
 )
+
+configs(IntegrationTest)
+Defaults.itSettings
+
+parallelExecution in IntegrationTest := false
 
 enablePlugins(JavaAppPackaging)
 
@@ -46,10 +52,21 @@ javaOptions += "-Djava.awt.headless=true"
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
-dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("arempter"), "gargoyle-s3proxy", Some(Option(System.getenv("TRAVIS_BRANCH")).getOrElse("latest")))
+dockerAlias        := docker.DockerAlias(Some("docker.io"),
+                                         Some("arempter"),
+                                         "gargoyle-s3proxy",
+                                         Some(Option(System.getenv("TRAVIS_BRANCH")).getOrElse("latest")))
 
 scalariformPreferences := scalariformPreferences.value
     .setPreference(AlignSingleLineCaseStatements, true)
-    .setPreference(DoubleIndentConstructorArguments, true)
     .setPreference(DanglingCloseParenthesis, Preserve)
+    .setPreference(DoubleIndentConstructorArguments, true)
+    .setPreference(DoubleIndentMethodDeclaration, true)
+    .setPreference(NewlineAtEndOfFile, true)
+    .setPreference(SingleCasePatternOnNewline, false)
 
+//Coverage settings
+coverageMinimum := 70
+coverageFailOnMinimum := false
+coverageHighlighting := true
+coverageEnabled := true
