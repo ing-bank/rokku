@@ -16,11 +16,11 @@ services:
       - 5000:5000
     command: demo
   postgres-server:
-    image: nielsdenissen/ranger-postgres
+    image: nielsdenissen/ranger-postgres:add-policy
     ports:
       - "5432:5432"
   ranger-admin:
-    image: nielsdenissen/ranger-admin
+    image: nielsdenissen/ranger-admin:add-policy
     stdin_open: true
     tty: true
     depends_on:
