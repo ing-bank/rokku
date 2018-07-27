@@ -36,13 +36,13 @@ The `docker-compose.yml` defines this, run it using:
 
 In order to enable debug logging on Ceph RadosGW:
 
-1. Edit  /etc/ceph/ceph.conf and add following lines
+1. Edit  /etc/ceph/ceph.conf and add following lines, under [global] section
 ```
 debug rgw = 20
 debug civetweb = 20
 ```
 
-2. Restart rgw process 
+2. Restart rgw process (either docker stop <ceph/daemon rgw> or whole ceph/demo)
 
 ## Setting Up AWS CLI
 
