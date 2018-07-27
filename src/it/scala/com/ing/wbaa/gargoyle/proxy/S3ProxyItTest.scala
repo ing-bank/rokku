@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.AmazonS3
 import com.whisk.docker.impl.spotify.DockerKitSpotify
 import com.whisk.docker.scalatest.DockerTestKit
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings}
+import com.ing.wbaa.gargoyle.proxy.data.S3Request
 import com.ing.wbaa.testkit.docker.DockerCephS3Service
 import com.ing.wbaa.testkit.s3sdk.S3SdkHelpers
 import org.scalatest._
@@ -20,12 +21,12 @@ class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   with DockerKitSpotify
   with DockerCephS3Service
   with S3SdkHelpers {
-  private[this] final implicit val system: ActorSystem = ActorSystem.create("test-system")
+  private[this] final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
   // Settings for tests:
   //  - Force a random port to listen on.
   //  - Explicitly bind to loopback, irrespective of any default value.
-  private[this] val gargoyleHttpSettings = new GargoyleHttpSettings(system.settings.config) {
+  private[this] val gargoyleHttpSettings = new GargoyleHttpSettings(testSystem.settings.config) {
     override val httpPort: Int = 0
     override val httpBind: String = "127.0.0.1"
   }
@@ -35,7 +36,7 @@ class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     cephContainer.getPorts()(docker = dockerExecutor, ec = dockerExecutionContext)
       .map { portMapping =>
         println(portMapping)
-        new GargoyleStorageS3Settings(system.settings.config) {
+        new GargoyleStorageS3Settings(testSystem.settings.config) {
           override val storageS3Host: String = "127.0.0.1"
           override val storageS3Port: Int = portMapping(cephInternalPort)
         }
@@ -50,7 +51,13 @@ class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     */
   def withSdkToTestProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
     gargoyleStorageS3SettingsFuture
-      .map(gargoyleStorageS3Settings => GargoyleS3Proxy(gargoyleHttpSettings, gargoyleStorageS3Settings))(executionContext)
+      .map(gargoyleStorageS3Settings =>
+        new GargoyleS3Proxy {
+          override implicit lazy val system: ActorSystem = testSystem
+          override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
+          override def isAuthorized(request: S3Request): Boolean = true
+          override val storageS3Settings: GargoyleStorageS3Settings = gargoyleStorageS3Settings
+        })(executionContext)
       .map(proxy => (proxy, proxy.bind))(executionContext)
       .flatMap { proxyBind =>
         proxyBind._2.map { binding =>

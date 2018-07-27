@@ -1,7 +1,16 @@
 package com.ing.wbaa.gargoyle.proxy
 
 import akka.actor.ActorSystem
+import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleRangerSettings, GargoyleStorageS3Settings}
+import com.ing.wbaa.gargoyle.proxy.providers.AuthorizationProviderRanger
 
 object Server extends App {
-  val proxy: GargoyleS3Proxy = GargoyleS3Proxy()(ActorSystem.create("gargoyle-s3proxy"))
+
+  new GargoyleS3Proxy with AuthorizationProviderRanger {
+    override implicit lazy val system: ActorSystem = ActorSystem.create("gargoyle-s3proxy")
+    override val httpSettings = GargoyleHttpSettings(system)
+    override val rangerSettings = GargoyleRangerSettings(system)
+    override val storageS3Settings = GargoyleStorageS3Settings(system)
+  }.bind
+
 }

@@ -30,8 +30,7 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion,
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.372",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
-    "org.apache.ranger"            % "ranger-plugins-common"   % "1.1.0",
-    "org.scalamock"                %% "scalamock"              % "4.1.0"           % "it,test",
+    "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
     "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7"     % IntegrationTest,
     "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"     % IntegrationTest
