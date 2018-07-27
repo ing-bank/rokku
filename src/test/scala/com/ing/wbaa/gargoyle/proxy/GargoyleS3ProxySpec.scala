@@ -8,6 +8,7 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings}
 import com.ing.wbaa.gargoyle.proxy.data.S3Request
+import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
 import org.scalatest.{Assertion, AsyncFlatSpec, DiagrammedAssertions}
 
 import scala.concurrent.Future
@@ -27,7 +28,7 @@ class GargoyleS3ProxySpec extends AsyncFlatSpec with DiagrammedAssertions {
 
   // Fixture for starting and stopping a test proxy that tests can interact with.
   def withTestProxy(testCode: Authority => Future[Assertion]): Future[Assertion] = {
-    val testProxy = new GargoyleS3Proxy {
+    val testProxy = new GargoyleS3Proxy with RequestHandlerS3 {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: GargoyleHttpSettings = gargoyleTestSettings
       override def isAuthorized(request: S3Request): Boolean = true

@@ -17,7 +17,7 @@ trait GargoyleS3Proxy extends LazyLogging with ProxyService {
 
   val httpSettings: GargoyleHttpSettings
 
-  private[this] implicit val executionContext: ExecutionContext = system.dispatcher
+  implicit val executionContext: ExecutionContext = system.dispatcher
 
   // The routes we serve.
   final val allRoutes = HealthService.route ~ proxyServiceRoute

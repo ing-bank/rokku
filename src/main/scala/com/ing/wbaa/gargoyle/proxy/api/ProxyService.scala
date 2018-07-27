@@ -1,13 +1,12 @@
 package com.ing.wbaa.gargoyle.proxy.api
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Route
-import com.typesafe.scalalogging.LazyLogging
 import com.ing.wbaa.gargoyle.proxy.data.{AccessType, S3Request, Secret}
-import com.ing.wbaa.gargoyle.proxy.handler.RequestHandler
+import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerBase
 import com.ing.wbaa.gargoyle.proxy.providers.{AuthenticationProvider, AuthorizationProviderBase}
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -15,7 +14,7 @@ import scala.concurrent.Future
 trait ProxyService extends LazyLogging
   with AuthenticationProvider
   with AuthorizationProviderBase
-  with RequestHandler {
+  with RequestHandlerBase {
 
   implicit val system: ActorSystem
 
@@ -42,14 +41,6 @@ trait ProxyService extends LazyLogging
             if(isAuthorized(S3Request("demobucket", AccessType.read, getUser("accesskey"), Set("testgroup")))) Left(Unit)
             else Right(HttpResponse(StatusCodes.Unauthorized))
 
-          def handleRequest(htr: HttpRequest): Future[HttpResponse] = {
-            val newHtr = translateRequest(htr, remoteAddress)
-            logger.debug(s"Newly generated request: $newHtr")
-            val response = Http().singleRequest(newHtr)
-            response.foreach(r => logger.debug(s"Recieved response: $r"))
-            response
-          }
-
           val requestProcessor: HttpRequest => Future[HttpResponse] = htr =>
             handleAuthentication(htr)
             .map {
@@ -61,7 +52,7 @@ trait ProxyService extends LazyLogging
               case Right(r) => Right(r)
             }
             .flatMap {
-              case Left(_) => handleRequest(htr)
+              case Left(_) => executeRequest(htr, remoteAddress)
               case Right(r) => Future(r)
             }
 

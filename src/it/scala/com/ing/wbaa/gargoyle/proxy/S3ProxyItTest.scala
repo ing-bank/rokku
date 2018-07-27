@@ -9,6 +9,7 @@ import com.whisk.docker.impl.spotify.DockerKitSpotify
 import com.whisk.docker.scalatest.DockerTestKit
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings}
 import com.ing.wbaa.gargoyle.proxy.data.S3Request
+import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
 import com.ing.wbaa.testkit.docker.DockerCephS3Service
 import com.ing.wbaa.testkit.s3sdk.S3SdkHelpers
 import org.scalatest._
@@ -52,7 +53,7 @@ class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   def withSdkToTestProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
     gargoyleStorageS3SettingsFuture
       .map(gargoyleStorageS3Settings =>
-        new GargoyleS3Proxy {
+        new GargoyleS3Proxy with RequestHandlerS3 {
           override implicit lazy val system: ActorSystem = testSystem
           override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
           override def isAuthorized(request: S3Request): Boolean = true
