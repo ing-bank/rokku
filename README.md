@@ -32,6 +32,18 @@ The `docker-compose.yml` defines this, run it using:
 
     docker-compose up
 
+## Docker Ceph settings
+
+In order to enable debug logging on Ceph RadosGW:
+
+1. Edit  /etc/ceph/ceph.conf and add following lines
+```
+debug rgw = 20
+debug civetweb = 20
+```
+
+2. Restart rgw process 
+
 ## Setting Up AWS CLI
 
 It is possible to set up the AWS command-line tools for working with Ceph RadosGW and Gargoyle. The following instructions assume that you have `virtualenv_wrapper` installed.
@@ -100,3 +112,4 @@ Commands can also be issued against the underlying RadosGW service:
     % aws --profile radosgw s3 ls
 
 The default profile can also be switched by modifying the `AWS_DEFAULT_PROFILE` environment variable.
+
