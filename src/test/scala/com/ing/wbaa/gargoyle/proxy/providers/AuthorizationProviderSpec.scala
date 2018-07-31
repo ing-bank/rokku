@@ -2,10 +2,9 @@ package com.ing.wbaa.gargoyle.proxy.providers
 
 import akka.actor.ActorSystem
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleRangerSettings
-import com.ing.wbaa.gargoyle.proxy.data.{AccessType, S3Request, User}
+import com.ing.wbaa.gargoyle.proxy.data.{ AccessType, S3Request, User }
 import com.ing.wbaa.gargoyle.proxy.providers.AuthorizationProviderRanger.RangerException
-import org.scalatest.{DiagrammedAssertions, WordSpec}
-
+import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
 class AuthorizationProviderSpec extends WordSpec with DiagrammedAssertions {
 
@@ -20,7 +19,7 @@ class AuthorizationProviderSpec extends WordSpec with DiagrammedAssertions {
         Set("okgroup")
       )
 
-      assertThrows[RangerException]{
+      assertThrows[RangerException] {
         new AuthorizationProviderRanger {
           override val rangerSettings = new GargoyleRangerSettings(testSystem.settings.config) {
             override val appId: String = "nonexistent"

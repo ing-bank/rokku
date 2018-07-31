@@ -1,6 +1,6 @@
 package com.ing.wbaa.gargoyle.proxy.handler
 
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, RemoteAddress}
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, RemoteAddress }
 import com.ing.wbaa.gargoyle.proxy.data.Secret
 
 import scala.concurrent.Future

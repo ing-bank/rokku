@@ -4,9 +4,9 @@ import java.net.InetAddress
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
+import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
-import org.scalatest.{DiagrammedAssertions, PrivateMethodTester, WordSpec}
+import org.scalatest.{ DiagrammedAssertions, PrivateMethodTester, WordSpec }
 
 import scala.concurrent.ExecutionContext
 

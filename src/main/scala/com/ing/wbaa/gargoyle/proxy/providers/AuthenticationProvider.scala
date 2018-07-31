@@ -1,6 +1,6 @@
 package com.ing.wbaa.gargoyle.proxy.providers
 
-import com.ing.wbaa.gargoyle.proxy.data.{Secret, User}
+import com.ing.wbaa.gargoyle.proxy.data.{ Secret, User }
 
 import scala.concurrent.Future
 

@@ -3,12 +3,12 @@ package com.ing.wbaa.gargoyle.proxy.handler
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse, RemoteAddress}
+import akka.http.scaladsl.model.{ HttpHeader, HttpRequest, HttpResponse, RemoteAddress }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
 import com.ing.wbaa.gargoyle.proxy.data.Secret
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait RequestHandlerS3 extends RequestHandlerBase with LazyLogging {
 
@@ -29,14 +29,14 @@ trait RequestHandlerS3 extends RequestHandlerBase with LazyLogging {
   }
 
   /**
-    * Translates a request from ingestion of the client towards what s3 expects.
-    *   - Add forward header
-    *   - Change authority to s3 host:port
-    *
-    * @param request incoming request on this server
-    * @param clientAddress originating client address
-    * @return translated request for s3
-    */
+   * Translates a request from ingestion of the client towards what s3 expects.
+   *   - Add forward header
+   *   - Change authority to s3 host:port
+   *
+   * @param request incoming request on this server
+   * @param clientAddress originating client address
+   * @return translated request for s3
+   */
   def translateRequest(request: HttpRequest, clientAddress: RemoteAddress): HttpRequest = {
     val headersIn: Seq[HttpHeader] =
       request.headers ++ List(

@@ -2,14 +2,14 @@ package com.ing.wbaa.gargoyle.proxy
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.Uri.{Authority, Host, Path}
-import akka.http.scaladsl.model.{HttpRequest, StatusCodes, Uri}
+import akka.http.scaladsl.model.Uri.{ Authority, Host, Path }
+import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, Uri }
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings}
+import com.ing.wbaa.gargoyle.proxy.config.{ GargoyleHttpSettings, GargoyleStorageS3Settings }
 import com.ing.wbaa.gargoyle.proxy.data.S3Request
 import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
-import org.scalatest.{Assertion, AsyncFlatSpec, DiagrammedAssertions}
+import org.scalatest.{ Assertion, AsyncFlatSpec, DiagrammedAssertions }
 
 import scala.concurrent.Future
 

@@ -2,13 +2,13 @@ package com.ing.wbaa.gargoyle.proxy.providers
 
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleRangerSettings
 import com.ing.wbaa.gargoyle.proxy.data.S3Request
-import org.apache.ranger.plugin.policyengine.{RangerAccessRequestImpl, RangerAccessResourceImpl}
+import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
 import org.apache.ranger.plugin.service.RangerBasePlugin
 import scala.collection.JavaConverters._
 
 /**
-  * Interface for security provider implementations.
-  */
+ * Interface for security provider implementations.
+ */
 trait AuthorizationProviderRanger extends AuthorizationProviderBase {
 
   import AuthorizationProviderRanger.RangerException

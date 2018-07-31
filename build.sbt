@@ -21,6 +21,7 @@ updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true
 val akkaVersion       = "10.1.3"
 val akkaStreamVersion = "2.5.14"
 
+// Excludes (javax.ws.rs and com.sun.jersey) to fix conflicts for the method: javax.ws.rs.core.MultivaluedMap.addAll
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
     "ch.qos.logback"               %  "logback-classic"        % "1.2.3"           % Runtime,
@@ -30,7 +31,7 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion,
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.372",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
-    "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0",
+    "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("javax.ws.rs", "jsr311-api") exclude("com.sun.jersey", "jersey-core") exclude("com.sun.jersey", "jersey-json") exclude("com.sun.jersey", "jersey-server") exclude("com.sun.jersey", "jersey-bundle"),
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
     "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7"     % IntegrationTest,
     "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"     % IntegrationTest

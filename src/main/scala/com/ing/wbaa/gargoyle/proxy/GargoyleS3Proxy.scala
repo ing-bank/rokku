@@ -5,12 +5,12 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
-import com.ing.wbaa.gargoyle.proxy.api.{HealthService, ProxyService}
+import com.ing.wbaa.gargoyle.proxy.api.{ HealthService, ProxyService }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleHttpSettings
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success }
 
 trait GargoyleS3Proxy extends LazyLogging with ProxyService {
   implicit val system: ActorSystem
