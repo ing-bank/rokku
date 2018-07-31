@@ -29,6 +29,18 @@ The `docker-compose.yml` defines this, run it using:
 
 The Apache Ranger docker images are created from this repo: https://github.com/nielsdenissen/ranger-for-gargoyle.git
 
+## Docker Ceph settings
+
+In order to enable debug logging on Ceph RadosGW:
+
+1. Edit  /etc/ceph/ceph.conf and add following lines, under [global] section
+```
+debug rgw = 20
+debug civetweb = 20
+```
+
+2. Restart rgw process (either docker stop <ceph/daemon rgw> or whole ceph/demo)
+
 ## Setting Up AWS CLI
 
 It is possible to set up the AWS command-line tools for working with Ceph RadosGW and Gargoyle. The following instructions assume that you have `virtualenv_wrapper` installed.

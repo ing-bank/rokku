@@ -1,7 +1,7 @@
 version: "2"
 services:
   ceph:
-    image: ceph/daemon:latest-mimic
+    image: ceph/daemon:v3.0.5-stable-3.0-luminous-centos-7
     environment:
       - CEPH_DEMO_UID=ceph-admin
       - CEPH_DEMO_ACCESS_KEY=accesskey

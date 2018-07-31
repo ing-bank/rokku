@@ -14,7 +14,7 @@ trait DockerCephS3Service extends DockerKit {
 
   val cephInternalPort = 8010
 
-  lazy val cephContainer: DockerContainer = DockerContainer("ceph/daemon:latest-mimic", None)
+  lazy val cephContainer: DockerContainer = DockerContainer("ceph/daemon:v3.0.5-stable-3.0-luminous-centos-7", None)
     .withEnv(
       "CEPH_DEMO_UID=ceph-admin",
       "CEPH_DEMO_ACCESS_KEY=accesskey",
@@ -27,7 +27,7 @@ trait DockerCephS3Service extends DockerKit {
     )
     .withPorts(cephInternalPort -> None)
     .withReadyChecker(
-        DockerReadyChecker.LogLineContains("Running on http://0.0.0.0:5000/").looped(30, FiniteDuration(10, TimeUnit.SECONDS))
+        DockerReadyChecker.LogLineContains("* Running on http://[::]:5000/").looped(30, FiniteDuration(10, TimeUnit.SECONDS))
     )
     .withCommand("demo")
 
