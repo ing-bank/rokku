@@ -34,7 +34,6 @@ class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   private[this] lazy val gargoyleStorageS3SettingsFuture: Future[GargoyleStorageS3Settings] =
     cephContainer.getPorts()(docker = dockerExecutor, ec = dockerExecutionContext)
       .map { portMapping =>
-        println(portMapping)
         new GargoyleStorageS3Settings(system.settings.config) {
           override val storageS3Host: String = "127.0.0.1"
           override val storageS3Port: Int = portMapping(cephInternalPort)
@@ -52,13 +51,13 @@ class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     gargoyleStorageS3SettingsFuture
       .map(gargoyleStorageS3Settings => GargoyleS3Proxy(gargoyleHttpSettings, gargoyleStorageS3Settings))(executionContext)
       .map(proxy => (proxy, proxy.bind))(executionContext)
-      .flatMap { proxyBind =>
-        proxyBind._2.map { binding =>
+      .flatMap { case (proxy, proxyBind) =>
+        proxyBind.map { binding =>
           val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
           try {
             testCode(getAmazonS3(awsSignerType, authority))
           } finally {
-            proxyBind._1.shutdown()
+            proxy.shutdown()
           }
         }(executionContext)
       }(executionContext)
@@ -98,56 +97,64 @@ class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
 
     "S3 Proxy" should {
       s"proxy with $awsSignerType" that {
+        val bucketInCeph = "demobucket"
 
         "list the current buckets" in withSdkToTestProxy(awsSignerType) { sdk =>
-          assert(sdk.listBuckets().asScala.toList.map(_.getName) == List("demobucket"))
+          assert(sdk.listBuckets().asScala.toList.map(_.getName) == List(bucketInCeph))
         }
 
         "create and remove a bucket" in withSdkToTestProxy(awsSignerType) { sdk =>
-          sdk.createBucket("createbuckettest")
-          assert(sdk.listBuckets().asScala.toList.map(_.getName).contains("createbuckettest"))
-          sdk.deleteBucket("createbuckettest")
-          assert(!sdk.listBuckets().asScala.toList.map(_.getName).contains("createbuckettest"))
+          val testBucket = "createbuckettest"
+          sdk.createBucket(testBucket)
+          assert(sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
+          sdk.deleteBucket(testBucket)
+          assert(!sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
         }
 
         "list files in a bucket" in withSdkToTestProxy(awsSignerType) { sdk =>
-          sdk.putObject("demobucket", "keyListFiles", "content")
-          val resultV2 = sdk.listObjectsV2("demobucket").getObjectSummaries.asScala.toList.map(_.getKey)
-          val result = sdk.listObjects("demobucket").getObjectSummaries.asScala.toList.map(_.getKey)
+          val testKey = "keyListFiles"
 
-          assert(resultV2.contains("keyListFiles"))
-          assert(result.contains("keyListFiles"))
+          sdk.putObject(bucketInCeph, testKey, "content")
+          val resultV2 = sdk.listObjectsV2(bucketInCeph).getObjectSummaries.asScala.toList.map(_.getKey)
+          val result = sdk.listObjects(bucketInCeph).getObjectSummaries.asScala.toList.map(_.getKey)
+
+          assert(resultV2.contains(testKey))
+          assert(result.contains(testKey))
         }
 
         "check if bucket exists" in withSdkToTestProxy(awsSignerType) { sdk =>
-          assert(sdk.doesBucketExistV2("demobucket"))
+          assert(sdk.doesBucketExistV2(bucketInCeph))
         }
 
         "put, get and delete an object from a bucket" in withSdkToTestProxy(awsSignerType) { sdk =>
           withFile(1024 * 1024) { filename =>
+            val testKeyContent = "keyPutFileByContent"
+            val testKeyFile = "keyPutFileByFile"
+            val testContent = "content"
+
             // PUT
-            sdk.putObject("demobucket", "keyPutFileByContent", "content")
-            sdk.putObject("demobucket", "keyPutFileByFile", new File(filename))
+            sdk.putObject(bucketInCeph, testKeyContent, testContent)
+            sdk.putObject(bucketInCeph, testKeyFile, new File(filename))
 
             // GET
-            val checkContent = sdk.getObjectAsString("demobucket", "keyPutFileByContent")
-            assert(checkContent == "content")
+            val checkContent = sdk.getObjectAsString(bucketInCeph, testKeyContent)
+            assert(checkContent == testContent)
             val keys1 = getKeysInBucket(sdk)
-            List("keyPutFileByContent", "keyPutFileByFile").map(k => assert(keys1.contains(k)))
+            List(testKeyContent, testKeyFile).map(k => assert(keys1.contains(k)))
 
             // DELETE
-            sdk.deleteObject("demobucket", "keyPutFileByContent")
+            sdk.deleteObject(bucketInCeph, testKeyContent)
             val keys2 = getKeysInBucket(sdk)
-            assert(!keys2.contains("keyPutFileByContent"))
+            assert(!keys2.contains(testKeyContent))
           }
         }
 
         // TODO: Fix proxy for copyObject function
         //        "check if object can be copied" in {
-        //          sdk.putObject("demobucket", "keyCopyOrg", new File("file1mb.test"))
-        //          sdk.copyObject("demobucket", "keyCopyOrg", "newbucket", "keyCopyDest")
+        //          sdk.putObject(bucketInCeph, "keyCopyOrg", new File("file1mb.test"))
+        //          sdk.copyObject(bucketInCeph, "keyCopyOrg", "newbucket", "keyCopyDest")
         //
-        //          val keys1 = getKeysInBucket("demobucket")
+        //          val keys1 = getKeysInBucket(bucketInCeph)
         //          assert(!keys1.contains("keyCopyOrg"))
         //          val keys2 = getKeysInBucket("newbucket")
         //          assert(keys2.contains("keyCopyDest"))
@@ -155,15 +162,17 @@ class S3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
 
         // TODO: Fix proxy for doesObjectExists function
         //        "check if object exists in bucket" in {
-        //          sdk.putObject("demobucket", "keyCheckObjectExists", "content")
-        //          assert(sdk.doesObjectExist("demobucket", "key"))
+        //          sdk.putObject(bucketInCeph, "keyCheckObjectExists", "content")
+        //          assert(sdk.doesObjectExist(bucketInCeph, "key"))
         //        }
 
         "put a 1MB file in a bucket (multi part upload)" in withSdkToTestProxy(awsSignerType) { sdk =>
+          val testKey = "keyMultiPart1MB"
+
           withFile(1024 * 1024) { filename =>
-            doMultiPartUpload(sdk, filename, "keyMultiPart1MB")
+            doMultiPartUpload(sdk, filename, testKey)
             val objectKeys = getKeysInBucket(sdk)
-            assert(objectKeys.contains("keyMultiPart1MB"))
+            assert(objectKeys.contains(testKey))
           }
         }
 
