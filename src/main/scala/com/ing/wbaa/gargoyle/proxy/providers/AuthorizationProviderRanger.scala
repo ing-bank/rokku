@@ -1,9 +1,10 @@
 package com.ing.wbaa.gargoyle.proxy.providers
 
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleRangerSettings
-import com.ing.wbaa.gargoyle.proxy.data.S3Request
+import com.ing.wbaa.gargoyle.proxy.data.{ S3Request, User }
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
 import org.apache.ranger.plugin.service.RangerBasePlugin
+
 import scala.collection.JavaConverters._
 
 /**
@@ -28,17 +29,17 @@ trait AuthorizationProviderRanger extends AuthorizationProviderBase {
     }
   }
 
-  override def isAuthorized(request: S3Request): Boolean = {
+  override def isAuthorized(request: S3Request, user: User): Boolean = {
     val resource = new RangerAccessResourceImpl(
-      Map[String, AnyRef]("path" -> request.path).asJava
+      Map[String, AnyRef]("path" -> request.bucket).asJava
     )
 
     // TODO: use .setContext for metadata like arn
     val rangerRequest = new RangerAccessRequestImpl(
       resource,
       request.accessType.toString,
-      request.user.username,
-      request.userGroups.asJava
+      user.userId,
+      user.groups.asJava
     )
 
     Option(rangerPlugin.isAccessAllowed(rangerRequest)).exists(_.getIsAllowed)

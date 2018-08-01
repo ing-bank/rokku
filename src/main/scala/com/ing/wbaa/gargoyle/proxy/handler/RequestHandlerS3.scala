@@ -5,7 +5,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{ HttpHeader, HttpRequest, HttpResponse, RemoteAddress }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
-import com.ing.wbaa.gargoyle.proxy.data.Secret
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -17,14 +16,14 @@ trait RequestHandlerS3 extends RequestHandlerBase with LazyLogging {
 
   val storageS3Settings: GargoyleStorageS3Settings
 
-  override def validateUserRequest(request: HttpRequest, secret: Secret): Boolean = true
+  override def validateUserRequest(request: HttpRequest, secretKey: String): Boolean = true
 
   override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse] = {
     val newRequest = translateRequest(request, clientAddress)
 
     logger.debug(s"Newly generated request: $newRequest")
     val response = Http().singleRequest(newRequest)
-    response.foreach(r => logger.debug(s"Recieved response: $r"))
+    response.foreach(r => logger.debug(s"Recieved response from Ceph: $r"))
     response
   }
 

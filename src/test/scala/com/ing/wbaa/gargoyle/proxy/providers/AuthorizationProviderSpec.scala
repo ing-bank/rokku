@@ -13,10 +13,17 @@ class AuthorizationProviderSpec extends WordSpec with DiagrammedAssertions {
   "Authorization Provider" should {
     "throw a Ranger exception for unknown appId or serviceType" in {
       val request = S3Request(
+        "accesskey",
+        "sessionToken",
         "demobucket",
-        AccessType.read,
-        User("okuser"),
-        Set("okgroup")
+        AccessType.read
+      )
+
+      val user = User(
+        "userId",
+        "secretKey",
+        Set("group"),
+        "arn"
       )
 
       assertThrows[RangerException] {
@@ -25,7 +32,7 @@ class AuthorizationProviderSpec extends WordSpec with DiagrammedAssertions {
             override val appId: String = "nonexistent"
             override val serviceType: String = "nonexistent"
           }
-        }.isAuthorized(request)
+        }.isAuthorized(request, user)
       }
     }
   }
