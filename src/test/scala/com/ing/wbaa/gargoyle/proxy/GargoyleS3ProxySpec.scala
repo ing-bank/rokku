@@ -36,7 +36,7 @@ class GargoyleS3ProxySpec extends AsyncFlatSpec with DiagrammedAssertions {
 
       override def getUser(accessKey: String): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))
 
-      override def isAuthenticated(accessKey: String, token: String): Future[Boolean] = Future.successful(true)
+      override def isAuthenticated(accessKey: String, token: Option[String]): Future[Boolean] = Future.successful(true)
     }
     testProxy.bind
       .flatMap { binding =>

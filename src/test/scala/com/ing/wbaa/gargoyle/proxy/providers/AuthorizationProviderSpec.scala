@@ -14,8 +14,8 @@ class AuthorizationProviderSpec extends WordSpec with DiagrammedAssertions {
     "throw a Ranger exception for unknown appId or serviceType" in {
       val request = S3Request(
         "accesskey",
-        "sessionToken",
-        "demobucket",
+        Some("sessionToken"),
+        Some("demobucket"),
         AccessType.read
       )
 

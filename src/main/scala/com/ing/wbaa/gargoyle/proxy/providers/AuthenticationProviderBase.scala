@@ -6,5 +6,5 @@ import scala.concurrent.Future
 
 trait AuthenticationProviderBase {
   def getUser(accessKey: String): Future[Option[User]]
-  def isAuthenticated(accessKey: String, token: String): Future[Boolean]
+  def isAuthenticated(accessKey: String, token: Option[String]): Future[Boolean]
 }

@@ -59,7 +59,7 @@ class GargoyleS3ProxyCephItTest extends AsyncWordSpec with DiagrammedAssertions
           override def isAuthorized(request: S3Request, user: User): Boolean = true
           override val storageS3Settings: GargoyleStorageS3Settings = gargoyleStorageS3Settings
           override def getUser(accessKey: String): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))(executionContext)
-          override def isAuthenticated(accessKey: String, token: String): Future[Boolean] = Future.successful(true)
+          override def isAuthenticated(accessKey: String, token: Option[String]): Future[Boolean] = Future.successful(true)
         })(executionContext)
       .map(proxy => (proxy, proxy.bind))(executionContext)
       .flatMap { proxyBind =>

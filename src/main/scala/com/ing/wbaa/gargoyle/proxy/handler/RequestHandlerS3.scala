@@ -16,6 +16,7 @@ trait RequestHandlerS3 extends RequestHandlerBase with LazyLogging {
 
   val storageS3Settings: GargoyleStorageS3Settings
 
+  // TODO: implement request validation
   override def validateUserRequest(request: HttpRequest, secretKey: String): Boolean = true
 
   override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse] = {
