@@ -37,11 +37,11 @@ trait ProxyService extends LazyLogging
                 // Find the user corresponding to the received request
                 onComplete(getUser(s3Request.accessKey)) {
                   case Success(Some(user: User)) =>
-
                     logger.debug(s"User retrieved: $user")
 
                     if (validateUserRequest(httpRequest, user.secretKey)) {
                       if(isAuthorized(s3Request, user)) {
+                        logger.debug(s"User ($user) successfully authorized for request: $s3Request")
                         complete(executeRequest(httpRequest, remoteAddress))
                       } else {
                         logger.debug(s"User ($user) not authorized for request: $s3Request")
@@ -57,7 +57,9 @@ trait ProxyService extends LazyLogging
                     logger.debug(s"User not found for accesskey: ${s3Request.accessKey}")
                     complete(HttpResponse(StatusCodes.Unauthorized))
 
-                  case Failure(exception) => complete(
+                  case Failure(exception) =>
+                    logger.error("Exception occurred: ", exception)
+                    complete(
                     (StatusCodes.InternalServerError,
                       s"An error occurred retrieving the User from STS service: ${exception.getMessage}")
                   )
@@ -67,7 +69,9 @@ trait ProxyService extends LazyLogging
                 logger.debug(s"Request not authenticated: $s3Request")
                 complete(HttpResponse(StatusCodes.Forbidden))
 
-              case Failure(exception) => complete(
+              case Failure(exception) =>
+                logger.error("Exception occurred: ", exception)
+                complete(
                 (StatusCodes.InternalServerError,
                   s"An error occurred checking authentication with STS service: ${exception.getMessage}")
               )

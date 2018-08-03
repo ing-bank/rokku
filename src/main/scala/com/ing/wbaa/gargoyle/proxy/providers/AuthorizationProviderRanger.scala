@@ -1,8 +1,9 @@
 package com.ing.wbaa.gargoyle.proxy.providers
 
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleRangerSettings
-import com.ing.wbaa.gargoyle.proxy.data.{ S3Request, User }
-import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
+import com.ing.wbaa.gargoyle.proxy.data.{S3Request, User}
+import com.typesafe.scalalogging.LazyLogging
+import org.apache.ranger.plugin.policyengine.{RangerAccessRequestImpl, RangerAccessResourceImpl}
 import org.apache.ranger.plugin.service.RangerBasePlugin
 
 import scala.collection.JavaConverters._
@@ -10,7 +11,7 @@ import scala.collection.JavaConverters._
 /**
  * Interface for security provider implementations.
  */
-trait AuthorizationProviderRanger extends AuthorizationProviderBase {
+trait AuthorizationProviderRanger extends AuthorizationProviderBase with LazyLogging {
 
   import AuthorizationProviderRanger.RangerException
 
@@ -43,6 +44,7 @@ trait AuthorizationProviderRanger extends AuthorizationProviderBase {
       user.groups.asJava
     )
 
+    logger.debug(s"Checking ranger with request: $rangerRequest")
     Option(rangerPlugin.isAccessAllowed(rangerRequest)).exists(_.getIsAllowed)
   }
 }

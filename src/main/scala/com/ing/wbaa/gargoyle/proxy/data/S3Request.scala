@@ -1,7 +1,6 @@
 package com.ing.wbaa.gargoyle.proxy.data
 
 import com.ing.wbaa.gargoyle.proxy.data.AccessType.AccessType
-import com.typesafe.scalalogging.LazyLogging
 
 /**
   * @param bucket A None for bucket means this is an operation not targeted to a specific bucket (e.g. list buckets)
@@ -13,11 +12,3 @@ case class S3Request(
     bucket: Option[String],
     accessType: AccessType,
 )
-
-object S3Request extends LazyLogging {
-
-  // TODO: extract actual info here!!
-//  def apply(httpRequest: HttpRequest, credentials: Option[HttpCredentials]): S3Request = {
-//
-//  }
-}
