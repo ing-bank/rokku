@@ -18,12 +18,12 @@ services:
     command: demo
 
   postgres-server:
-    image: nielsdenissen/ranger-postgres:add-policy
+    image: nielsdenissen/ranger-postgres:0.0.1
     ports:
       - "5432:5432"
 
   ranger-admin:
-    image: nielsdenissen/ranger-admin:add-policy
+    image: nielsdenissen/ranger-admin:0.0.1
     stdin_open: true
     tty: true
     depends_on:
@@ -32,7 +32,7 @@ services:
       - "6080:6080"
 
   gargoyle-sts:
-    image: kr7ysztof/gargoyle-sts:internal-endpoint-json
+    image: kr7ysztof/gargoyle-sts:s3proxy-integration
     environment:
       - STS_HOST=0.0.0.0
       - STS_PORT=12345

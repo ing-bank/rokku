@@ -23,7 +23,8 @@ trait AuthorizationProviderRanger extends AuthorizationProviderBase {
       p
     } catch {
       case ex: java.lang.NullPointerException =>
-        throw RangerException(s"Ranger serviceType or appId not found (serviceType=${rangerSettings.serviceType}, appId=${rangerSettings.appId})", ex)
+        throw RangerException(s"Ranger serviceType or appId not found (serviceType=${rangerSettings.serviceType}, " +
+          s"appId=${rangerSettings.appId})", ex)
       case ex: Throwable =>
         throw RangerException("Unknown exception from Ranger plugin caught", ex)
     }

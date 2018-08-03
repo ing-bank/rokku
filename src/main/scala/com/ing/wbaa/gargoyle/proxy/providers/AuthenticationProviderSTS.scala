@@ -52,11 +52,11 @@ trait AuthenticationProviderSTS extends AuthenticationProviderBase with JsonProt
             response =>
               response.status match {
                 case StatusCodes.OK => true
-                case StatusCodes.NotFound =>
-                  logger.error(s"User not authenticated with accessKey ($accessKey) and sessionToken ($token)")
+                case StatusCodes.Forbidden =>
+                  logger.error(s"User not authenticated with accessKey ($accessKey) and sessionToken ($t)")
                   false
                 case c =>
-                  logger.error(s"Received unexpected StatusCode ($c) for accessKey ($accessKey) and sessionToken ($token)")
+                  logger.error(s"Received unexpected StatusCode ($c) for accessKey ($accessKey) and sessionToken ($t)")
                   false
               }
           }
