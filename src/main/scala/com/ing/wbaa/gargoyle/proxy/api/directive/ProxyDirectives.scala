@@ -16,21 +16,31 @@ object ProxyDirectives extends LazyLogging {
     */
   private val extractAuthorizationS3: HttpHeader => Option[AuthorizationHeaderS3] = {
     case h if h.is("authorization") =>
-      // TODO: I added a new capture group below, this needs to be extracted as the signer type
-      val credential =
-        """(\S+) Credential=(\S+), """.r
-          .findFirstMatchIn(h.value())
-          .map(_ group 1)
+      val signerType = h.value().split(" ").headOption
+      logger.debug(s"Signertype used: $signerType")
 
-      // TODO: add different extraction method of accesskey for various signer types
-      // First we support now is: AWS4-HMAC-SHA256
-      // Well need to support: authorization: AWS accesskey:RFQyL2CuCfZKCfPpXXA1R129GXo=
-      logger.debug(h.toString())
-      logger.debug("Extracted: ", credential.map(_.split("/")))
-      val ret = credential.flatMap(_.split("/").headOption).map(AuthorizationHeaderS3)
-      if (ret.isEmpty) logger.warn(s"The necessary information couldn't be extracted from the authorization header, " +
-        s"this could be caused by a signer type that we don't support yet...: $h")
-      ret
+      signerType match {
+        case Some("AWS4-HMAC-SHA256") =>
+          val credential =
+            """\S+ Credential=(\S+), """.r
+              .findFirstMatchIn(h.value())
+              .map(_ group 1)
+
+          credential.flatMap(_.split("/").headOption).map(AuthorizationHeaderS3)
+
+        case Some("AWS") =>
+          val accessKey =
+            """AWS (\S+):\S+""".r
+              .findFirstMatchIn(h.value())
+              .map(_ group 1)
+
+          accessKey.map(AuthorizationHeaderS3)
+
+        case _ => logger.warn(s"The necessary information couldn't be extracted from the authorization header, " +
+          s"this could be caused by a signer type that we don't support yet...: $h")
+          None
+      }
+
     case _ => None
   }
 

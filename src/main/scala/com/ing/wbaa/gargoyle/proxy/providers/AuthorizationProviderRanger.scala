@@ -31,21 +31,28 @@ trait AuthorizationProviderRanger extends AuthorizationProviderBase with LazyLog
     }
   }
 
+  /**
+    * Check authorization with Ranger. Currently we deny any requests not to a specific bucket (e.g. listBuckets)
+    */
   override def isAuthorized(request: S3Request, user: User): Boolean = {
-    val resource = new RangerAccessResourceImpl(
-      Map[String, AnyRef]("path" -> request.bucket).asJava
-    )
+    request.bucket match {
+      case Some(bucket) =>
+        val resource = new RangerAccessResourceImpl(
+          Map[String, AnyRef]("path" -> bucket).asJava
+        )
 
-    // TODO: use .setContext for metadata like arn
-    val rangerRequest = new RangerAccessRequestImpl(
-      resource,
-      request.accessType.toString,
-      user.userId,
-      user.groups.asJava
-    )
+        // TODO: use .setContext for metadata like arn
+        val rangerRequest = new RangerAccessRequestImpl(
+          resource,
+          request.accessType.toString,
+          user.userId,
+          user.groups.asJava
+        )
 
-    logger.debug(s"Checking ranger with request: $rangerRequest")
-    Option(rangerPlugin.isAccessAllowed(rangerRequest)).exists(_.getIsAllowed)
+        logger.debug(s"Checking ranger with request: $rangerRequest")
+        Option(rangerPlugin.isAccessAllowed(rangerRequest)).exists(_.getIsAllowed)
+      case None => false
+    }
   }
 }
 
