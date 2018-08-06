@@ -68,11 +68,8 @@ trait ProxyService extends LazyLogging {
                     complete((StatusCodes.Unauthorized, msg))
 
                   case Failure(exception) =>
-                    logger.error("Exception occurred: ", exception)
-                    complete(
-                      (StatusCodes.InternalServerError,
-                        s"An error occurred retrieving the User from STS service: ${exception.getMessage}")
-                    )
+                    logger.error("An error occurred retrieving the User from STS service", exception)
+                    complete(StatusCodes.InternalServerError)
                 }
 
               case Success(false) =>
@@ -81,11 +78,8 @@ trait ProxyService extends LazyLogging {
                 complete((StatusCodes.Forbidden, msg))
 
               case Failure(exception) =>
-                logger.error("Exception occurred: ", exception)
-                complete(
-                  (StatusCodes.InternalServerError,
-                    s"An error occurred checking authentication with STS service: ${exception.getMessage}")
-                )
+                logger.error(s"An error occurred checking authentication with STS service", exception)
+                complete(StatusCodes.InternalServerError)
             }
           }
         }

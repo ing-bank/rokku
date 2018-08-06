@@ -20,7 +20,6 @@ object S3Request extends LazyLogging {
       .split("/")
       .toList
       .lift(1)
-      .flatMap(b => if (b.isEmpty) None else Some(b))
 
     val accessType = if (httpMethod == HttpMethods.GET) Read else Write
 
