@@ -48,21 +48,24 @@ trait ProxyService extends LazyLogging {
 
                     if (validateUserRequest(httpRequest, user.secretKey)) {
                       if (isAuthorized(s3Request, user)) {
-                        logger.debug(s"User (${user.userId}) successfully authorized for request: $s3Request")
+                        logger.info(s"User (${user.userId}) successfully authorized for request: $s3Request")
                         complete(executeRequest(httpRequest, remoteAddress))
                       } else {
-                        logger.info(s"User (${user.userId}) not authorized for request: $s3Request")
-                        complete(HttpResponse(StatusCodes.Unauthorized))
+                        val msg = s"User (${user.userId}) not authorized for request: $s3Request"
+                        logger.warn(msg)
+                        complete((StatusCodes.Unauthorized, msg))
                       }
 
                     } else {
-                      logger.info(s"Request could not be validated: $httpRequest")
-                      complete(HttpResponse(StatusCodes.BadRequest))
+                      val msg = s"Request could not be validated: $httpRequest"
+                      logger.warn(msg)
+                      complete((StatusCodes.BadRequest, msg))
                     }
 
                   case Success(None) =>
-                    logger.info(s"User not found for accesskey: ${s3Request.credential.accessKey}")
-                    complete(HttpResponse(StatusCodes.Unauthorized))
+                    val msg = s"User not found for accesskey: ${s3Request.credential.accessKey.value}"
+                    logger.warn(msg)
+                    complete((StatusCodes.Unauthorized, msg))
 
                   case Failure(exception) =>
                     logger.error("Exception occurred: ", exception)
@@ -73,8 +76,9 @@ trait ProxyService extends LazyLogging {
                 }
 
               case Success(false) =>
-                logger.info(s"Request not authenticated: $s3Request")
-                complete(HttpResponse(StatusCodes.Forbidden))
+                val msg = s"Request not authenticated: $s3Request"
+                logger.warn(msg)
+                complete((StatusCodes.Forbidden, msg))
 
               case Failure(exception) =>
                 logger.error("Exception occurred: ", exception)
