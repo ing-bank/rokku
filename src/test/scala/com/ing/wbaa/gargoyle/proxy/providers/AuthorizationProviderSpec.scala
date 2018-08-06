@@ -2,7 +2,7 @@ package com.ing.wbaa.gargoyle.proxy.providers
 
 import akka.actor.ActorSystem
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleRangerSettings
-import com.ing.wbaa.gargoyle.proxy.data.{ AccessType, S3Request, User }
+import com.ing.wbaa.gargoyle.proxy.data._
 import com.ing.wbaa.gargoyle.proxy.providers.AuthorizationProviderRanger.RangerException
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
@@ -13,10 +13,9 @@ class AuthorizationProviderSpec extends WordSpec with DiagrammedAssertions {
   "Authorization Provider" should {
     "throw a Ranger exception for unknown appId or serviceType" in {
       val request = S3Request(
-        "accesskey",
-        Some("sessionToken"),
+        AwsRequestCredential(AwsAccessKey("accesskey"), Some(AwsSessionToken("sessionToken"))),
         Some("demobucket"),
-        AccessType.read
+        Read
       )
 
       val user = User(

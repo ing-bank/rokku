@@ -1,17 +1,15 @@
 package com.ing.wbaa.gargoyle.proxy.providers
 
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleRangerSettings
-import com.ing.wbaa.gargoyle.proxy.data.{S3Request, User}
+import com.ing.wbaa.gargoyle.proxy.data.{ S3Request, User }
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.ranger.plugin.policyengine.{RangerAccessRequestImpl, RangerAccessResourceImpl}
+import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
 import org.apache.ranger.plugin.service.RangerBasePlugin
-
-import scala.collection.JavaConverters._
 
 /**
  * Interface for security provider implementations.
  */
-trait AuthorizationProviderRanger extends AuthorizationProviderBase with LazyLogging {
+trait AuthorizationProviderRanger extends LazyLogging {
 
   import AuthorizationProviderRanger.RangerException
 
@@ -32,11 +30,19 @@ trait AuthorizationProviderRanger extends AuthorizationProviderBase with LazyLog
   }
 
   /**
-    * Check authorization with Ranger. Currently we deny any requests not to a specific bucket (e.g. listBuckets)
-    */
-  override def isAuthorized(request: S3Request, user: User): Boolean = {
+   * Force initialization of the Ranger plugin.
+   * This ensures we get connection errors on startup instead of when the first call is made.
+   */
+  def rangerPluginForceInit = rangerPlugin
+
+  /**
+   * Check authorization with Ranger. Currently we deny any requests not to a specific bucket (e.g. listBuckets)
+   */
+  def isAuthorized(request: S3Request, user: User): Boolean = {
     request.bucket match {
       case Some(bucket) =>
+        import scala.collection.JavaConverters._
+
         val resource = new RangerAccessResourceImpl(
           Map[String, AnyRef]("path" -> bucket).asJava
         )
@@ -44,14 +50,16 @@ trait AuthorizationProviderRanger extends AuthorizationProviderBase with LazyLog
         // TODO: use .setContext for metadata like arn
         val rangerRequest = new RangerAccessRequestImpl(
           resource,
-          request.accessType.toString,
+          request.accessType.rangerName,
           user.userId,
           user.groups.asJava
         )
 
         logger.debug(s"Checking ranger with request: $rangerRequest")
         Option(rangerPlugin.isAccessAllowed(rangerRequest)).exists(_.getIsAllowed)
-      case None => false
+      case None =>
+        logger.info("Authorization failed since no bucket is specified. Currently these commands are blocked.")
+        false
     }
   }
 }

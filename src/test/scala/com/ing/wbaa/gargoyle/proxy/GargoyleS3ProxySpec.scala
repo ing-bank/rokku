@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, Uri }
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import com.ing.wbaa.gargoyle.proxy.config.{ GargoyleHttpSettings, GargoyleStorageS3Settings }
-import com.ing.wbaa.gargoyle.proxy.data.{ S3Request, User }
+import com.ing.wbaa.gargoyle.proxy.data.{ AwsAccessKey, AwsRequestCredential, S3Request, User }
 import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
 import org.scalatest.{ Assertion, AsyncFlatSpec, DiagrammedAssertions }
 
@@ -34,11 +34,11 @@ class GargoyleS3ProxySpec extends AsyncFlatSpec with DiagrammedAssertions {
       override def isAuthorized(request: S3Request, user: User): Boolean = true
       override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(system)
 
-      override def getUser(accessKey: String): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))
+      override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))
 
-      override def isAuthenticated(accessKey: String, token: Option[String]): Future[Boolean] = Future.successful(true)
+      override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future.successful(true)
     }
-    testProxy.bind
+    testProxy.startup
       .flatMap { binding =>
         val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
         testCode(authority)

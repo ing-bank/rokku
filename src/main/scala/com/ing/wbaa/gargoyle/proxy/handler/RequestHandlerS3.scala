@@ -9,17 +9,17 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-trait RequestHandlerS3 extends RequestHandlerBase with LazyLogging {
+trait RequestHandlerS3 extends LazyLogging {
 
-  implicit val system: ActorSystem
-  implicit val executionContext: ExecutionContext
+  implicit def system: ActorSystem
+  implicit def executionContext: ExecutionContext
 
-  val storageS3Settings: GargoyleStorageS3Settings
+  def storageS3Settings: GargoyleStorageS3Settings
 
   // TODO: implement request validation
-  override def validateUserRequest(request: HttpRequest, secretKey: String): Boolean = true
+  def validateUserRequest(request: HttpRequest, secretKey: String): Boolean = true
 
-  override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse] = {
+  def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse] = {
     val newRequest = translateRequest(request, clientAddress)
 
     logger.debug(s"Newly generated request: $newRequest")
@@ -45,7 +45,7 @@ trait RequestHandlerS3 extends RequestHandlerBase with LazyLogging {
       )
 
     request.copy(
-      uri = request.uri.withAuthority(storageS3Settings.storageS3Host, storageS3Settings.storageS3Port),
+      uri = request.uri.withAuthority(storageS3Settings.storageS3Authority),
       headers = headersIn.toList
     )
   }

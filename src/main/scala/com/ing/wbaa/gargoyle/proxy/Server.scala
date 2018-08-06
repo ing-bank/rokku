@@ -13,6 +13,9 @@ object Server extends App {
     override val rangerSettings = GargoyleRangerSettings(system)
     override val storageS3Settings = GargoyleStorageS3Settings(system)
     override val stsSettings: GargoyleStsSettings = GargoyleStsSettings(system)
-  }.bind
+
+    // Force Ranger plugin to initialise on startup
+    rangerPluginForceInit
+  }.startup
 
 }

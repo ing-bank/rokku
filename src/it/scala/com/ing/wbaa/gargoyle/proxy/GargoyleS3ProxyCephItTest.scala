@@ -3,12 +3,13 @@ package com.ing.wbaa.gargoyle.proxy
 import java.io.{File, RandomAccessFile}
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.{Authority, Host}
 import com.amazonaws.services.s3.AmazonS3
 import com.whisk.docker.impl.spotify.DockerKitSpotify
 import com.whisk.docker.scalatest.DockerTestKit
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings}
-import com.ing.wbaa.gargoyle.proxy.data.{S3Request, User}
+import com.ing.wbaa.gargoyle.proxy.data.{AwsAccessKey, AwsRequestCredential, S3Request, User}
 import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
 import com.ing.wbaa.testkit.docker.DockerCephS3Service
 import com.ing.wbaa.testkit.s3sdk.S3SdkHelpers
@@ -38,8 +39,8 @@ class GargoyleS3ProxyCephItTest extends AsyncWordSpec with DiagrammedAssertions
       .map { portMapping =>
         println(portMapping)
         new GargoyleStorageS3Settings(testSystem.settings.config) {
-          override val storageS3Host: String = "127.0.0.1"
-          override val storageS3Port: Int = portMapping(cephInternalPort)
+          override val storageS3Authority: Uri.Authority =
+            Uri.Authority(Uri.Host("127.0.0.1"), portMapping(cephInternalPort))
         }
       }(executionContext)
 
@@ -58,10 +59,10 @@ class GargoyleS3ProxyCephItTest extends AsyncWordSpec with DiagrammedAssertions
           override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
           override def isAuthorized(request: S3Request, user: User): Boolean = true
           override val storageS3Settings: GargoyleStorageS3Settings = gargoyleStorageS3Settings
-          override def getUser(accessKey: String): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))(executionContext)
-          override def isAuthenticated(accessKey: String, token: Option[String]): Future[Boolean] = Future.successful(true)
+          override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))(executionContext)
+          override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future.successful(true)
         })(executionContext)
-      .map(proxy => (proxy, proxy.bind))(executionContext)
+      .map(proxy => (proxy, proxy.startup))(executionContext)
       .flatMap { proxyBind =>
         proxyBind._2.map { binding =>
           val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)

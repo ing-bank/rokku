@@ -4,7 +4,7 @@ import java.net.InetAddress
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
+import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress, Uri }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
 import org.scalatest.{ DiagrammedAssertions, PrivateMethodTester, WordSpec }
 
@@ -25,8 +25,7 @@ class RequestHandlerS3Test extends WordSpec with DiagrammedAssertions with Priva
           override implicit val system: ActorSystem = actorSystem
           override implicit val executionContext: ExecutionContext = ec
           override val storageS3Settings: GargoyleStorageS3Settings = new GargoyleStorageS3Settings(system.settings.config) {
-            override val storageS3Host: String = "1.2.3.4"
-            override val storageS3Port: Int = 1234
+            override val storageS3Authority: Uri.Authority = Uri.Authority(Uri.Host("1.2.3.4"), 1234)
           }
         }.translateRequest(request, remoteAddress)
         val expected = request

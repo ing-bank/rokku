@@ -2,31 +2,33 @@ package com.ing.wbaa.gargoyle.proxy.providers
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
+import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, Uri }
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.Materializer
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStsSettings
-import com.ing.wbaa.gargoyle.proxy.data.{JsonProtocols, User}
+import com.ing.wbaa.gargoyle.proxy.data.{ AwsAccessKey, AwsRequestCredential, JsonProtocols, User }
 import com.typesafe.scalalogging.LazyLogging
 import spray.json._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-trait AuthenticationProviderSTS extends AuthenticationProviderBase with JsonProtocols with LazyLogging {
+trait AuthenticationProviderSTS extends JsonProtocols with LazyLogging {
 
-  val stsSettings: GargoyleStsSettings
+  implicit def system: ActorSystem
+  implicit def executionContext: ExecutionContext
+  implicit def materializer: Materializer
 
-  implicit val system: ActorSystem
+  def stsSettings: GargoyleStsSettings
 
-  implicit val executionContext: ExecutionContext
+  def getUser(accessKey: AwsAccessKey): Future[Option[User]] = {
+    val uri = stsSettings.stsBaseUri
+      .withPath(Uri.Path("/userInfo"))
+      .withQuery(Uri.Query(Map(
+        "accessKey" -> accessKey.value
+      )))
 
-  implicit val materializer: Materializer = ActorMaterializer()
-
-  private[this] lazy val baseUrl = s"http://${stsSettings.stsHost}:${stsSettings.stsPort}"
-
-  override def getUser(accessKey: String): Future[Option[User]] =
     Http()
-      .singleRequest(HttpRequest(uri = s"$baseUrl/userInfo?accessKey=$accessKey"))
+      .singleRequest(HttpRequest(uri = uri))
       .flatMap { response =>
         response.status match {
           case StatusCodes.OK =>
@@ -34,29 +36,41 @@ trait AuthenticationProviderSTS extends AuthenticationProviderBase with JsonProt
               Some(jsonString.parseJson.convertTo[User])
             }
           case StatusCodes.NotFound =>
-            logger.error(s"No user could be found for accessKey ($accessKey)")
+            logger.error(s"No user could be found for accessKey (${accessKey.value})")
             Future.successful(None)
           case c =>
-            logger.error(s"Received unexpected StatusCode ($c) for accessKey ($accessKey)")
+            logger.error(s"Received unexpected StatusCode ($c) for accessKey (${accessKey.value})")
             Future.successful(None)
         }
       }
+  }
 
-  override def isAuthenticated(accessKey: String, token: Option[String]): Future[Boolean] =
-    token match {
+  def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] =
+    awsRequestCredential.sessionToken match {
       case None => Future(false)
-      case Some(t) =>
+      case Some(sessionToken) =>
+        val uri = stsSettings.stsBaseUri
+          .withPath(Uri.Path("/isCredentialActive"))
+          .withQuery(Uri.Query(Map(
+            "accessKey" -> awsRequestCredential.accessKey.value,
+            "sessionToken" -> sessionToken.value
+          )))
+
         Http()
-          .singleRequest(HttpRequest(uri = s"$baseUrl/isCredentialActive?accessKey=$accessKey&sessionToken=$t"))
+          .singleRequest(HttpRequest(uri = uri))
           .map {
             response =>
               response.status match {
                 case StatusCodes.OK => true
                 case StatusCodes.Forbidden =>
-                  logger.error(s"User not authenticated with accessKey ($accessKey) and sessionToken ($t)")
+                  logger.error(s"User not authenticated " +
+                    s"with accessKey (${awsRequestCredential.accessKey.value}) " +
+                    s"and sessionToken (${sessionToken.value})")
                   false
                 case c =>
-                  logger.error(s"Received unexpected StatusCode ($c) for accessKey ($accessKey) and sessionToken ($t)")
+                  logger.error(s"Received unexpected StatusCode ($c) for " +
+                    s"accessKey (${awsRequestCredential.accessKey.value}) " +
+                    s"and sessionToken (${sessionToken.value})")
                   false
               }
           }
