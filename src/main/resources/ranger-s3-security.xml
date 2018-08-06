@@ -57,13 +57,13 @@
     </description>
   </property>
 
-  <property>
-    <name>ranger.plugin.s3.policy.cache.dir</name>
-    <value>/var/cache/gargoyle/s3proxy/</value>
-    <description>
-      Directory where Ranger policies are cached after successful retrieval from the source
-    </description>
-  </property>
+  <!--<property>-->
+    <!--<name>ranger.plugin.s3.policy.cache.dir</name>-->
+    <!--<value>/var/cache/gargoyle/s3proxy/</value>-->
+    <!--<description>-->
+      <!--Directory where Ranger policies are cached after successful retrieval from the source-->
+    <!--</description>-->
+  <!--</property>-->
 
   <property>
     <name>ranger.plugin.s3.policy.rest.client.connection.timeoutMs</name>
