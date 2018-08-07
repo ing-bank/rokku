@@ -6,11 +6,11 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress, Uri }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
-import org.scalatest.{ DiagrammedAssertions, PrivateMethodTester, WordSpec }
+import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
 import scala.concurrent.ExecutionContext
 
-class RequestHandlerS3Test extends WordSpec with DiagrammedAssertions with PrivateMethodTester {
+class RequestHandlerS3Spec extends WordSpec with DiagrammedAssertions {
 
   private[this] final implicit val actorSystem: ActorSystem = ActorSystem.create("test-system")
   private[this] final implicit val ec: ExecutionContext = actorSystem.dispatcher

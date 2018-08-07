@@ -1,4 +1,4 @@
-package com.ing.wbaa.gargoyle.proxy.providers
+package com.ing.wbaa.gargoyle.proxy.provider
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -14,6 +14,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 trait AuthenticationProviderSTS extends JsonProtocols with LazyLogging {
 
   import spray.json._
+  import AuthenticationProviderSTS.STSException
 
   implicit def system: ActorSystem
   implicit def executionContext: ExecutionContext
@@ -40,8 +41,9 @@ trait AuthenticationProviderSTS extends JsonProtocols with LazyLogging {
             logger.error(s"No user could be found for accessKey (${accessKey.value})")
             Future.successful(None)
           case c =>
-            logger.error(s"Received unexpected StatusCode ($c) for accessKey (${accessKey.value})")
-            Future.successful(None)
+            val msg = s"Received unexpected StatusCode ($c) for accessKey (${accessKey.value})"
+            logger.error(msg)
+            Future.failed(STSException(msg))
         }
       }
   }
@@ -76,4 +78,9 @@ trait AuthenticationProviderSTS extends JsonProtocols with LazyLogging {
               }
           }
     }
+}
+
+object AuthenticationProviderSTS {
+  final case class STSException(private val message: String, private val cause: Throwable = None.orNull)
+    extends Exception(message, cause)
 }

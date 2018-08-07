@@ -2,19 +2,25 @@ package com.ing.wbaa.testkit.docker
 
 import java.util.concurrent.TimeUnit
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.model.Uri
+import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
 import com.whisk.docker.{DockerContainer, DockerKit, DockerReadyChecker}
 
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 trait DockerCephS3Service extends DockerKit {
   import WaitForDocker.waitAtMostDuration
 
+  implicit def testSystem: ActorSystem
+
   override val StartContainersTimeout: FiniteDuration = waitAtMostDuration
   override val StopContainersTimeout: FiniteDuration = waitAtMostDuration
 
-  val cephInternalPort = 8010
+  private val cephInternalPort = 8010
 
-  lazy val cephContainer: DockerContainer = DockerContainer("ceph/daemon:v3.0.5-stable-3.0-luminous-centos-7", None)
+  private val cephContainer: DockerContainer = DockerContainer("ceph/daemon:v3.0.5-stable-3.0-luminous-centos-7", None)
     .withEnv(
       "CEPH_DEMO_UID=ceph-admin",
       "CEPH_DEMO_ACCESS_KEY=accesskey",
@@ -31,6 +37,20 @@ trait DockerCephS3Service extends DockerKit {
     )
     .withCommand("demo")
 
+  // Settings to connect to S3 storage, we have to wait for the docker container to retrieve the exposed port
+  lazy val gargoyleStorageS3SettingsFuture: Future[GargoyleStorageS3Settings] =
+    cephContainer.getPorts()(docker = dockerExecutor, ec = dockerExecutionContext)
+      .map { portMapping =>
+        new GargoyleStorageS3Settings(testSystem.settings.config) {
+          override val storageS3Authority: Uri.Authority =
+            Uri.Authority(Uri.Host("127.0.0.1"), portMapping(cephInternalPort))
+        }
+      }
+
   abstract override def dockerContainers: List[DockerContainer] =
     cephContainer :: super.dockerContainers
+}
+
+object DockerCephS3Service {
+
 }

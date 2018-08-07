@@ -3,7 +3,7 @@ package com.ing.wbaa.gargoyle.proxy
 import akka.actor.ActorSystem
 import com.ing.wbaa.gargoyle.proxy.config.{ GargoyleHttpSettings, GargoyleRangerSettings, GargoyleStorageS3Settings, GargoyleStsSettings }
 import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
-import com.ing.wbaa.gargoyle.proxy.providers.{ AuthenticationProviderSTS, AuthorizationProviderRanger }
+import com.ing.wbaa.gargoyle.proxy.provider.{ AuthenticationProviderSTS, AuthorizationProviderRanger }
 
 object Server extends App {
 

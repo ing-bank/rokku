@@ -1,4 +1,4 @@
-package com.ing.wbaa.gargoyle.proxy.providers
+package com.ing.wbaa.gargoyle.proxy.provider
 
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleRangerSettings
 import com.ing.wbaa.gargoyle.proxy.data.{ S3Request, User }

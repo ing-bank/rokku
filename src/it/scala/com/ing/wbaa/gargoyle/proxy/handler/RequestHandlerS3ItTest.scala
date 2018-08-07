@@ -1,48 +1,30 @@
-package com.ing.wbaa.gargoyle.proxy
+package com.ing.wbaa.gargoyle.proxy.handler
 
 import java.io.{File, RandomAccessFile}
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.{Authority, Host}
 import com.amazonaws.services.s3.AmazonS3
-import com.whisk.docker.impl.spotify.DockerKitSpotify
-import com.whisk.docker.scalatest.DockerTestKit
+import com.ing.wbaa.gargoyle.proxy.GargoyleS3Proxy
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings}
 import com.ing.wbaa.gargoyle.proxy.data.{AwsAccessKey, AwsRequestCredential, S3Request, User}
-import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
+import com.ing.wbaa.testkit.ItTestSettings
 import com.ing.wbaa.testkit.docker.DockerCephS3Service
 import com.ing.wbaa.testkit.s3sdk.S3SdkHelpers
+import com.whisk.docker.impl.spotify.DockerKitSpotify
+import com.whisk.docker.scalatest.DockerTestKit
 import org.scalatest._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
-class GargoyleS3ProxyCephItTest extends AsyncWordSpec with DiagrammedAssertions
+class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions
   with DockerTestKit
   with DockerKitSpotify
   with DockerCephS3Service
-  with S3SdkHelpers {
-  private[this] final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
-
-  // Settings for tests:
-  //  - Force a random port to listen on.
-  //  - Explicitly bind to loopback, irrespective of any default value.
-  private[this] val gargoyleHttpSettings = new GargoyleHttpSettings(testSystem.settings.config) {
-    override val httpPort: Int = 0
-    override val httpBind: String = "127.0.0.1"
-  }
-
-  // Settings to connect to S3 storage, we have to wait for the docker container to retrieve the exposed port
-  private[this] lazy val gargoyleStorageS3SettingsFuture: Future[GargoyleStorageS3Settings] =
-    cephContainer.getPorts()(docker = dockerExecutor, ec = dockerExecutionContext)
-      .map { portMapping =>
-        println(portMapping)
-        new GargoyleStorageS3Settings(testSystem.settings.config) {
-          override val storageS3Authority: Uri.Authority =
-            Uri.Authority(Uri.Host("127.0.0.1"), portMapping(cephInternalPort))
-        }
-      }(executionContext)
+  with S3SdkHelpers
+  with ItTestSettings {
+  final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
   /**
     * Fixture for starting and stopping a test proxy that tests can interact with.
@@ -51,7 +33,7 @@ class GargoyleS3ProxyCephItTest extends AsyncWordSpec with DiagrammedAssertions
     * @param testCode      Code that accepts the created sdk
     * @return Assertion
     */
-  def withSdkToTestProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
+  def withSdkToMockProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
     gargoyleStorageS3SettingsFuture
       .map(gargoyleStorageS3Settings =>
         new GargoyleS3Proxy with RequestHandlerS3 {
@@ -110,18 +92,18 @@ class GargoyleS3ProxyCephItTest extends AsyncWordSpec with DiagrammedAssertions
     "S3 Proxy" should {
       s"proxy with $awsSignerType" that {
 
-        "list the current buckets" in withSdkToTestProxy(awsSignerType) { sdk =>
+        "list the current buckets" in withSdkToMockProxy(awsSignerType) { sdk =>
           assert(sdk.listBuckets().asScala.toList.map(_.getName) == List("demobucket"))
         }
 
-        "create and remove a bucket" in withSdkToTestProxy(awsSignerType) { sdk =>
+        "create and remove a bucket" in withSdkToMockProxy(awsSignerType) { sdk =>
           sdk.createBucket("createbuckettest")
           assert(sdk.listBuckets().asScala.toList.map(_.getName).contains("createbuckettest"))
           sdk.deleteBucket("createbuckettest")
           assert(!sdk.listBuckets().asScala.toList.map(_.getName).contains("createbuckettest"))
         }
 
-        "list files in a bucket" in withSdkToTestProxy(awsSignerType) { sdk =>
+        "list files in a bucket" in withSdkToMockProxy(awsSignerType) { sdk =>
           sdk.putObject("demobucket", "keyListFiles", "content")
           val resultV2 = sdk.listObjectsV2("demobucket").getObjectSummaries.asScala.toList.map(_.getKey)
           val result = sdk.listObjects("demobucket").getObjectSummaries.asScala.toList.map(_.getKey)
@@ -130,11 +112,11 @@ class GargoyleS3ProxyCephItTest extends AsyncWordSpec with DiagrammedAssertions
           assert(result.contains("keyListFiles"))
         }
 
-        "check if bucket exists" in withSdkToTestProxy(awsSignerType) { sdk =>
+        "check if bucket exists" in withSdkToMockProxy(awsSignerType) { sdk =>
           assert(sdk.doesBucketExistV2("demobucket"))
         }
 
-        "put, get and delete an object from a bucket" in withSdkToTestProxy(awsSignerType) { sdk =>
+        "put, get and delete an object from a bucket" in withSdkToMockProxy(awsSignerType) { sdk =>
           withFile(1024 * 1024) { filename =>
             // PUT
             sdk.putObject("demobucket", "keyPutFileByContent", "content")
@@ -170,7 +152,7 @@ class GargoyleS3ProxyCephItTest extends AsyncWordSpec with DiagrammedAssertions
         //          assert(sdk.doesObjectExist("demobucket", "key"))
         //        }
 
-        "put a 1MB file in a bucket (multi part upload)" in withSdkToTestProxy(awsSignerType) { sdk =>
+        "put a 1MB file in a bucket (multi part upload)" in withSdkToMockProxy(awsSignerType) { sdk =>
           withFile(1024 * 1024) { filename =>
             doMultiPartUpload(sdk, filename, "keyMultiPart1MB")
             val objectKeys = getKeysInBucket(sdk)

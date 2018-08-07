@@ -24,7 +24,6 @@ trait DockerStsService extends DockerKit {
     .withReadyChecker(
         DockerReadyChecker.LogLineContains(s"INFO com.ing.wbaa.gargoyle.sts.StsService - Sts service started listening: /$stsHost:$stsInternalPort").looped(30, FiniteDuration(10, TimeUnit.SECONDS))
     )
-    .withCommand("demo")
 
   abstract override def dockerContainers: List[DockerContainer] =
     stsContainer :: super.dockerContainers
