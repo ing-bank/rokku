@@ -50,7 +50,3 @@ trait DockerCephS3Service extends DockerKit {
   abstract override def dockerContainers: List[DockerContainer] =
     cephContainer :: super.dockerContainers
 }
-
-object DockerCephS3Service {
-
-}

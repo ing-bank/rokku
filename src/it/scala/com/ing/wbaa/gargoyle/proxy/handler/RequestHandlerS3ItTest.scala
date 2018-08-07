@@ -8,7 +8,6 @@ import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.gargoyle.proxy.GargoyleS3Proxy
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings}
 import com.ing.wbaa.gargoyle.proxy.data.{AwsAccessKey, AwsRequestCredential, S3Request, User}
-import com.ing.wbaa.testkit.ItTestSettings
 import com.ing.wbaa.testkit.docker.DockerCephS3Service
 import com.ing.wbaa.testkit.s3sdk.S3SdkHelpers
 import com.whisk.docker.impl.spotify.DockerKitSpotify
@@ -22,9 +21,16 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions
   with DockerTestKit
   with DockerKitSpotify
   with DockerCephS3Service
-  with S3SdkHelpers
-  with ItTestSettings {
+  with S3SdkHelpers {
   final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
+
+  // Settings for tests:
+  //  - Force a random port to listen on.
+  //  - Explicitly bind to loopback, irrespective of any default value.
+  val gargoyleHttpSettings: GargoyleHttpSettings = new GargoyleHttpSettings(testSystem.settings.config) {
+    override val httpPort: Int = 0
+    override val httpBind: String = "127.0.0.1"
+  }
 
   /**
     * Fixture for starting and stopping a test proxy that tests can interact with.
