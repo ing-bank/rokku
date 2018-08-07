@@ -8,11 +8,12 @@ import akka.stream.Materializer
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStsSettings
 import com.ing.wbaa.gargoyle.proxy.data.{ AwsAccessKey, AwsRequestCredential, JsonProtocols, User }
 import com.typesafe.scalalogging.LazyLogging
-import spray.json._
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 trait AuthenticationProviderSTS extends JsonProtocols with LazyLogging {
+
+  import spray.json._
 
   implicit def system: ActorSystem
   implicit def executionContext: ExecutionContext
