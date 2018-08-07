@@ -87,6 +87,26 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     }
   }
 
+  it should "return a rejection when an exception occurs in getting the user" in {
+    testRequest() ~> new ProxyServiceTest {
+      override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(throw new Exception("BOOM"))
+    }.proxyServiceRoute ~> check {
+      assert(status == StatusCodes.InternalServerError)
+      val response = responseAs[String]
+      assert(response == "There was an internal server error.")
+    }
+  }
+
+  it should "return a rejection when an exception occurs in authentication" in {
+    testRequest() ~> new ProxyServiceTest {
+      override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(throw new Exception("BOOM"))
+    }.proxyServiceRoute ~> check {
+      assert(status == StatusCodes.InternalServerError)
+      val response = responseAs[String]
+      assert(response == "There was an internal server error.")
+    }
+  }
+
   it should "return a rejection when the request could not be validated" in {
     testRequest() ~> new ProxyServiceTest {
       override def validateUserRequest(request: HttpRequest, secretKey: String): Boolean = false
