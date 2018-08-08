@@ -22,6 +22,7 @@ val akkaVersion       = "10.1.3"
 val akkaStreamVersion = "2.5.14"
 
 // Excludes (javax.ws.rs and com.sun.jersey) to fix conflicts for the method: javax.ws.rs.core.MultivaluedMap.addAll
+// These conflicts only occur in Integration testing as the ranger plugin conflicts with whisk docker dependencies.
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
     "ch.qos.logback"               %  "logback-classic"        % "1.2.3"           % Runtime,
