@@ -33,7 +33,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
    * Force initialization of the Ranger plugin.
    * This ensures we get connection errors on startup instead of when the first call is made.
    */
-  def rangerPluginForceInit = rangerPlugin
+  def rangerPluginForceInit: RangerBasePlugin = rangerPlugin
 
   /**
    * Check authorization with Ranger. Currently we deny any requests not to a specific bucket (e.g. listBuckets)

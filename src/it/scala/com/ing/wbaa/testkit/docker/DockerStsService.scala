@@ -21,7 +21,7 @@ trait DockerStsService extends DockerKit {
   private val stsHost = "0.0.0.0"
   private val stsInternalPort = 12345
 
-  private val stsContainer: DockerContainer = DockerContainer("kr7ysztof/gargoyle-sts:s3proxy-integration", None)
+  private val stsContainer: DockerContainer = DockerContainer("kr7ysztof/gargoyle-sts:aws-cli-alignment", None)
     .withEnv(
       s"STS_HOST=$stsHost",
       s"STS_PORT=$stsInternalPort"

@@ -6,7 +6,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.ing.wbaa.gargoyle.proxy.data._
 import org.scalatest.{ DiagrammedAssertions, FlatSpec }
@@ -18,32 +17,17 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
   private trait ProxyServiceMock extends ProxyService {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
 
-    override def validateUserRequest(request: HttpRequest, secretKey: String): Boolean =
-      secretKey == "okSecretKey"
-
+    override def validateUserRequest(request: HttpRequest, secretKey: String): Boolean = true
     override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse] =
       Future(HttpResponse(entity =
         s"sendToS3: ${clientAddress.toOption.map(_.getHostName).getOrElse("unknown")}:${clientAddress.getPort()}"
       ))
-
-    override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(accessKey match {
-      case AwsAccessKey("okAccessKey") => Some(User("okUser", "okSecretKey", Set("okGroup"), "arn"))
-      case _                           => None
-    })
-
-    override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(
-      awsRequestCredential.accessKey == AwsAccessKey("okAccessKey") &&
-        awsRequestCredential.sessionToken.contains(AwsSessionToken("okSessionToken"))
+    override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(
+      Some(User("okUser", "okSecretKey", Set("okGroup"), "arn"))
     )
-
-    override def isAuthorized(request: S3Request, user: User): Boolean =
-      request.accessType == Read &&
-        request.bucket.contains("okBucket") &&
-        user.userId == "okUser" &&
-        user.groups.contains("okGroup")
+    override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(true)
+    override def isAuthorized(request: S3Request, user: User): Boolean = true
   }
-
-  private val testRoute: Route = new ProxyServiceMock {}.proxyServiceRoute
 
   private def testRequest(accessKey: String = "okAccessKey") = HttpRequest(
     headers = List(
@@ -58,7 +42,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
   )
 
   "A proxy service" should "Successfully execute a request" in {
-    testRequest() ~> testRoute ~> check {
+    testRequest() ~> new ProxyServiceMock {}.proxyServiceRoute ~> check {
       assert(status == StatusCodes.OK)
       val response = responseAs[String]
       assert(response == "sendToS3: 6.7.8.9:1234")
@@ -66,7 +50,9 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
   }
 
   it should "return a rejection when the user credentials cannot be authenticated" in {
-    testRequest("notOkAccessKey") ~> testRoute ~> check {
+    testRequest("notOkAccessKey") ~> new ProxyServiceMock {
+      override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(false)
+    }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
       val response = responseAs[String]
       assert(response == "Request not authenticated: " +

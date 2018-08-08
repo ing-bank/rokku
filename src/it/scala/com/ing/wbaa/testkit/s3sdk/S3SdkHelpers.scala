@@ -4,7 +4,7 @@ import java.io.File
 
 import akka.http.scaladsl.model.Uri.Authority
 import com.amazonaws.ClientConfiguration
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.auth.{AWSCredentials, AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.amazonaws.services.s3.transfer.model.UploadResult
@@ -14,7 +14,10 @@ import scala.collection.JavaConverters._
 
 
 trait S3SdkHelpers {
-  def getAmazonS3(awsSignerType: String, authority: Authority): AmazonS3 = {
+  def getAmazonS3(awsSignerType: String,
+                  authority: Authority,
+                  credentials: AWSCredentials = new BasicAWSCredentials("accesskey", "secretkey")
+                 ): AmazonS3 = {
     val cliConf = new ClientConfiguration()
     cliConf.setMaxErrorRetry(1)
     cliConf.setSignerOverride(awsSignerType)
@@ -22,7 +25,7 @@ trait S3SdkHelpers {
     AmazonS3ClientBuilder
       .standard()
       .withClientConfiguration(cliConf)
-      .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("accesskey", "secretkey")))
+      .withCredentials(new AWSStaticCredentialsProvider(credentials))
       .withEndpointConfiguration(new EndpointConfiguration(s"http://${authority.host.address}:${authority.port}", "us-west-2"))
       .build()
   }

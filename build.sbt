@@ -35,6 +35,7 @@ libraryDependencies ++= Seq(
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0"           % IntegrationTest exclude("com.sun.jersey", "jersey-server") exclude("javax.ws.rs", "jsr311-api")  exclude("com.sun.jersey", "jersey-core") exclude("com.sun.jersey", "jersey-json") exclude("com.sun.jersey", "jersey-bundle"),
+    "com.amazonaws"                % "aws-java-sdk-sts"              % "1.11.372"  % IntegrationTest,
     "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7"     % IntegrationTest,
     "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"     % IntegrationTest
 )
@@ -49,7 +50,8 @@ excludeDependencies += "log4j" % "log4j"
 configs(IntegrationTest)
 Defaults.itSettings
 
-parallelExecution in IntegrationTest := false
+parallelExecution in Test:= true
+parallelExecution in IntegrationTest := true
 
 enablePlugins(JavaAppPackaging)
 
