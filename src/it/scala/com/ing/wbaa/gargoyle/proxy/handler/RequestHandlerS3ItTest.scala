@@ -39,29 +39,24 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions
     * @param testCode      Code that accepts the created sdk
     * @return Assertion
     */
-  def withSdkToMockProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
+  def withSdkToMockProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] =
     gargoyleStorageS3SettingsFuture
-      .map(gargoyleStorageS3Settings =>
-        new GargoyleS3Proxy with RequestHandlerS3 {
+      .flatMap { gargoyleStorageS3Settings =>
+        val proxy = new GargoyleS3Proxy with RequestHandlerS3 {
           override implicit lazy val system: ActorSystem = testSystem
           override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
           override def isAuthorized(request: S3Request, user: User): Boolean = true
           override val storageS3Settings: GargoyleStorageS3Settings = gargoyleStorageS3Settings
           override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))(executionContext)
           override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future.successful(true)
-        })(executionContext)
-      .map(proxy => (proxy, proxy.startup))(executionContext)
-      .flatMap { case (proxy, proxyBind) =>
-        proxyBind.map { binding =>
+        }
+        proxy.startup.flatMap { binding =>
           val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
-          try {
-            testCode(getAmazonS3(awsSignerType, authority))
-          } finally {
-            proxy.shutdown()
-          }
+          try testCode(getAmazonS3(awsSignerType, authority))
+          finally proxy.shutdown()
         }(executionContext)
       }(executionContext)
-  }
+
 
   /**
     * Fixture to create a test file with a certain size for your testcase

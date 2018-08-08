@@ -52,11 +52,9 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
             override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
             override val storageS3Settings: GargoyleStorageS3Settings = gargoyleStorageS3Settings
             override val stsSettings: GargoyleStsSettings = gargoyleStsSettings
-
             override def isAuthorized(request: S3Request, user: User): Boolean = true
           }
-          proxy.startup.flatMap {
-            binding =>
+          proxy.startup.flatMap { binding =>
               val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
               try testCode(getAmazonSTSSdk(gargoyleStsSettings.stsBaseUri), authority)
               finally proxy.shutdown()
