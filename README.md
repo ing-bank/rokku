@@ -9,9 +9,11 @@ Template for s3 proxy based on Akka Http.
 
 gargoyle-s3proxy acts as a security layer between s3 user (eg. application using aws sdk) and s3 backend (eg. ceph RadosGW).
 It interacts with
-* [Session API](https://github.com/kr7ysztof/auth-api) to get users (or KeyCloak)
-* [Ranger](https://ranger.apache.org/) to get bucket policies. On ranger, custom [ranger plugin](https://github.com/bolkedebruin/rangers3plugin) is used to define policies. 
-* actual S3 Backend
+* [STS Service](https://github.com/kr7ysztof/gargoyle-sts) to:
+    - Validate short-term tokens issued by STS service
+    - Retrieve user information needed to check access policies
+* [Ranger](https://ranger.apache.org/) to get bucket policies. On ranger, custom [ranger plugin](https://github.com/bolkedebruin/rangers3plugin) is used to define policies.
+* S3 Backend (Current setup contains Ceph image with RadosGW)
 
 ## Usage
 To run it:

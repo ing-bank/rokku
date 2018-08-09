@@ -21,14 +21,16 @@ trait DockerStsService extends DockerKit {
   private val stsHost = "0.0.0.0"
   private val stsInternalPort = 12345
 
-  private val stsContainer: DockerContainer = DockerContainer("kr7ysztof/gargoyle-sts:aws-cli-alignment", None)
+  private val stsContainer: DockerContainer = DockerContainer("kr7ysztof/gargoyle-sts:0.0.2", None)
     .withEnv(
       s"STS_HOST=$stsHost",
       s"STS_PORT=$stsInternalPort"
     )
     .withPorts(stsInternalPort -> None)
     .withReadyChecker(
-        DockerReadyChecker.LogLineContains(s"INFO com.ing.wbaa.gargoyle.sts.StsService - Sts service started listening: /$stsHost:$stsInternalPort").looped(30, FiniteDuration(10, TimeUnit.SECONDS))
+        DockerReadyChecker.LogLineContains(
+          s"INFO com.ing.wbaa.gargoyle.sts.Server$$$$anon$$1 - Sts service started listening: /$stsHost:$stsInternalPort"
+        ).looped(30, FiniteDuration(10, TimeUnit.SECONDS))
     )
 
   // Settings to connect to S3 storage, we have to wait for the docker container to retrieve the exposed port
