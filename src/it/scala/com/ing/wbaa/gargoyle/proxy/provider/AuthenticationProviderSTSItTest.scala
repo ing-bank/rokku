@@ -38,13 +38,13 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAsser
   "Authentication Provider STS" should {
     "get a user" that {
       "successfully retrieves a user" in withAuthenticationProviderSts{ aps =>
-        aps.getUser(AwsAccessKey("accesskey")).map { userResult =>
+        aps.getUserForAccessKey(AwsAccessKey("accesskey")).map { userResult =>
           assert(userResult.contains(User("testuser", "secretkey", Set("testgroup", "groupTwo"), "arn")))
         }(executionContext)
       }
 
       "return None when a user could not be found with STS" in withAuthenticationProviderSts { aps =>
-        aps.getUser(AwsAccessKey("nonexistent")).map { userResult =>
+        aps.getUserForAccessKey(AwsAccessKey("nonexistent")).map { userResult =>
           assert(userResult.isEmpty)
         }(executionContext)
       }
@@ -52,19 +52,19 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAsser
 
     "check authentication" that {
       "succeeds for valid credentials" in withAuthenticationProviderSts { aps =>
-        aps.isAuthenticated(AwsRequestCredential(AwsAccessKey("accesskey"), Some(AwsSessionToken("okSessionToken")))).map { userResult =>
+        aps.areCredentialsAuthentic(AwsRequestCredential(AwsAccessKey("accesskey"), Some(AwsSessionToken("okSessionToken")))).map { userResult =>
           assert(userResult)
         }(executionContext)
       }
 
       "fail when no token is provided" in withAuthenticationProviderSts { aps =>
-        aps.isAuthenticated(AwsRequestCredential(AwsAccessKey("accesskey"), None)).map { userResult =>
+        aps.areCredentialsAuthentic(AwsRequestCredential(AwsAccessKey("accesskey"), None)).map { userResult =>
           assert(!userResult)
         }(executionContext)
       }
 
       "fail when user is not authenticated" in withAuthenticationProviderSts { aps =>
-        aps.isAuthenticated(AwsRequestCredential(AwsAccessKey("notauthenticated"), Some(AwsSessionToken("okSessionToken")))).map { userResult =>
+        aps.areCredentialsAuthentic(AwsRequestCredential(AwsAccessKey("notauthenticated"), Some(AwsSessionToken("okSessionToken")))).map { userResult =>
           assert(!userResult)
         }(executionContext)
       }

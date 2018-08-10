@@ -38,7 +38,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
   /**
    * Check authorization with Ranger. Currently we deny any requests not to a specific bucket (e.g. listBuckets)
    */
-  def isAuthorized(request: S3Request, user: User): Boolean = {
+  def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = {
     request.bucket match {
       case Some(bucket) =>
         import scala.collection.JavaConverters._
