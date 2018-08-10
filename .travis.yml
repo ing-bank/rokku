@@ -14,11 +14,10 @@ env:
   - secure: BzBQNpvHGnwfLOZ1eHMZBih9R/6fPA5B8C7qsUrCOjtF7eH0nebepBMM32iFwnpj+X10QihRZky1kxzwW4JovB5ApQ1QEd2Nf3IzTKCvLCEO2jDIXMEMdbwgb2pYUlotFIYWZnnMsIjH+KO2/jbhAPHs8CXtO7BoleT/j1d3Hgh5VZoUkNd2Aj9Jyu0wsCtD7qakMo1jrlgNUKglHGPg9FcxMkF6iFjdPjYK4gZdKwUlmxlb+W0Olc/nJs74/xd/woKuWbI5ORDAmo/yfIPTo5uSvn07ZblSFkBHsFHzdyPoxucuV2P+AuZdrviJOW2uDjSaEIr0Z9mPOefPmzzPO9HxUBoK2FUen5BsG/fL7plOqaerp4QdZyOToTSi+0hRlWNe37zzLoi2mcn8vRjnI1EtqoxO+eBLFGWJhnA6Fe845oHxySMajLj3ogb+7WUAquPyNaOfQ24rok3VnqYKWxCj6+QDnOkfaZ99o2MkVSscWaIaMk+ZZ1Dr7aq82jCAjoJGt4+JQAoB8Gbo+Q3gtJd2zjYo4YQUJSLOEqUyROiMMyGLfgKDqt1ocHxyZJDO71PKW4lwRfB4EQpj1cw5x26iIAa82/6zVY6VEzYFfcIKfEhMa7yfeH1BdHqhGtycDeHw5ajZUKclUWG6JIjLhnEjYSdqHtC1UHa3uB5itLU=
 
 before_script:
+- echo "Starting dependent containers for testing"
 - docker-compose up -d
-- git clone https://github.com/nielsdenissen/wait-for.git
-- ./wait-for/wait-for 127.0.0.1:12345 -t 30
-- ./wait-for/wait-for 127.0.0.1:8010 -t 300
-- ./wait-for/wait-for 127.0.0.1:6080 -t 900
+- echo "Wait for containers to be up and running"
+- sh waitForContainerSetup.sh
 
 script:
 - sbt ++$TRAVIS_SCALA_VERSION clean coverage test it:test coverageReport
