@@ -30,4 +30,4 @@ after_success:
   sbt docker:publish;
 
 after_script:
-- docker-compose kill
+- docker-compose down
