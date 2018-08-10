@@ -19,8 +19,6 @@ services:
 
   postgres-server:
     image: nielsdenissen/ranger-postgres:0.0.1
-    ports:
-      - "5432:5432"
 
   ranger-admin:
     image: nielsdenissen/ranger-admin:0.0.1
