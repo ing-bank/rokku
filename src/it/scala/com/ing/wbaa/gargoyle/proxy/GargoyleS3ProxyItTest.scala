@@ -9,21 +9,16 @@ import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorage
 import com.ing.wbaa.gargoyle.proxy.data.{S3Request, User}
 import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
 import com.ing.wbaa.gargoyle.proxy.provider.AuthenticationProviderSTS
-import com.ing.wbaa.testkit.docker.{DockerCephS3Service, DockerStsService}
-import com.ing.wbaa.testkit.s3sdk.{S3SdkHelpers, StsSdkHelpers}
-import com.whisk.docker.impl.spotify.DockerKitSpotify
-import com.whisk.docker.scalatest.DockerTestKit
+import com.ing.wbaa.testkit.GargoyleFixtures
+import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
 import scala.concurrent.Future
 
 class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
-  with DockerTestKit
-  with DockerKitSpotify
-  with DockerStsService
-  with DockerCephS3Service
   with S3SdkHelpers
-  with StsSdkHelpers {
+  with StsSdkHelpers
+  with GargoyleFixtures {
 
   import scala.collection.JavaConverters._
 
@@ -40,27 +35,24 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   /**
     * Fixture for starting and stopping a test proxy that tests can interact with.
     *
-    * @param testCode      Code that accepts the created sdk
+    * @param testCode      Code that accepts the created STS sdk and an authority for an S3 sdk
     * @return Assertion
     */
-  def withSdkToMockProxy(testCode: (AWSSecurityTokenService, Authority) => Assertion): Future[Assertion] =
-    gargoyleStorageS3SettingsFuture
-      .flatMap { gargoyleStorageS3Settings =>
-        gargoyleStsSettingsFuture.flatMap { gargoyleStsSettings =>
-          val proxy = new GargoyleS3Proxy with RequestHandlerS3 with AuthenticationProviderSTS {
-            override implicit lazy val system: ActorSystem = testSystem
-            override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
-            override val storageS3Settings: GargoyleStorageS3Settings = gargoyleStorageS3Settings
-            override val stsSettings: GargoyleStsSettings = gargoyleStsSettings
-            override def isAuthorized(request: S3Request, user: User): Boolean = true
-          }
-          proxy.startup.flatMap { binding =>
-              val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
-              try testCode(getAmazonSTSSdk(gargoyleStsSettings.stsBaseUri), authority)
-              finally proxy.shutdown()
-          }(executionContext)
-        }(executionContext)
-      }(executionContext)
+  def withSdkToMockProxy(testCode: (AWSSecurityTokenService, Authority) => Assertion): Future[Assertion] = {
+    val proxy = new GargoyleS3Proxy with RequestHandlerS3 with AuthenticationProviderSTS {
+      override implicit lazy val system: ActorSystem = testSystem
+      override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
+      override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(testSystem)
+      override val stsSettings: GargoyleStsSettings = GargoyleStsSettings(testSystem)
+
+      override def isAuthorized(request: S3Request, user: User): Boolean = true
+    }
+    proxy.startup.flatMap { binding =>
+      val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
+      try testCode(getAmazonSTSSdk(GargoyleStsSettings(testSystem).stsBaseUri), authority)
+      finally proxy.shutdown()
+    }
+  }
 
   "Gargoyle S3 Proxy" should {
     "connect to ceph with credentials from STS (GetSessionToken)" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
@@ -75,7 +67,10 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       )
 
       val s3Sdk = getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)
-      assert(s3Sdk.listBuckets().asScala.toList.map(_.getName) == List("demobucket"))
+
+      withBucket(s3Sdk) { testBucket =>
+        assert(s3Sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
+      }
     }
 
     "connect to ceph with credentials from STS (AssumeRole)" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
@@ -93,7 +88,9 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       )
 
       val s3Sdk = getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)
-      assert(s3Sdk.listBuckets().asScala.toList.map(_.getName) == List("demobucket"))
+      withBucket(s3Sdk) { testBucket =>
+        assert(s3Sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
+      }
     }
   }
 }

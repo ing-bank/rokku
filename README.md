@@ -22,8 +22,7 @@ To run it:
 
 ## Local Testing
 
-To test the proxy locally, we need a running S3 API. For this we use a CEPH docker container with Rados Gateway.
-The `docker-compose.yml` defines this, run it using:
+To test the proxy locally (both live and integration tests), we need all dependencies to be running. For this we use a `docker-compose.yml` which defines all dependencies, run it using:
 
     docker-compose up
 

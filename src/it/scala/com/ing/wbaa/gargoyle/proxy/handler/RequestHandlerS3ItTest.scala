@@ -1,6 +1,6 @@
 package com.ing.wbaa.gargoyle.proxy.handler
 
-import java.io.{File, RandomAccessFile}
+import java.io.File
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.{Authority, Host}
@@ -8,20 +8,13 @@ import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.gargoyle.proxy.GargoyleS3Proxy
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings}
 import com.ing.wbaa.gargoyle.proxy.data.{AwsAccessKey, AwsRequestCredential, S3Request, User}
-import com.ing.wbaa.testkit.docker.DockerCephS3Service
-import com.ing.wbaa.testkit.s3sdk.S3SdkHelpers
-import com.whisk.docker.impl.spotify.DockerKitSpotify
-import com.whisk.docker.scalatest.DockerTestKit
+import com.ing.wbaa.testkit.GargoyleFixtures
 import org.scalatest._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
-class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions
-  with DockerTestKit
-  with DockerKitSpotify
-  with DockerCephS3Service
-  with S3SdkHelpers {
+class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions with GargoyleFixtures {
   final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
   // Settings for tests:
@@ -39,42 +32,21 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions
     * @param testCode      Code that accepts the created sdk
     * @return Assertion
     */
-  def withSdkToMockProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] =
-    gargoyleStorageS3SettingsFuture
-      .flatMap { gargoyleStorageS3Settings =>
-        val proxy = new GargoyleS3Proxy with RequestHandlerS3 {
-          override implicit lazy val system: ActorSystem = testSystem
-          override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
-          override def isAuthorized(request: S3Request, user: User): Boolean = true
-          override val storageS3Settings: GargoyleStorageS3Settings = gargoyleStorageS3Settings
-          override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))(executionContext)
-          override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future.successful(true)
-        }
-        proxy.startup.flatMap { binding =>
-          val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
-          try testCode(getAmazonS3(awsSignerType, authority))
-          finally proxy.shutdown()
-        }(executionContext)
-      }(executionContext)
-
-
-  /**
-    * Fixture to create a test file with a certain size for your testcase
-    *
-    * @param size     Size in Bytes of the file you want to test
-    * @param testCode Code that accepts the name of the created file
-    * @return Assertion
-    */
-  def withFile(size: Long)(testCode: String => Assertion): Assertion = {
-    val filename = "testfile.tst"
-    val file = new RandomAccessFile(filename, "rw")
-    file.setLength(size)
-    file.close()
-
-    try {
-      testCode(filename)
-    } finally {
-      new File(filename).delete()
+  def withS3SdkToMockProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
+    val proxy = new GargoyleS3Proxy with RequestHandlerS3 {
+      override implicit lazy val system: ActorSystem = testSystem
+      override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
+      override def isAuthorized(request: S3Request, user: User): Boolean = true
+      override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(testSystem)
+      override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))
+      override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future.successful(true)
+    }
+    proxy.startup.map { binding =>
+      try testCode(getAmazonS3(
+        awsSignerType = awsSignerType,
+        authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
+      ))
+      finally proxy.shutdown()
     }
   }
 
@@ -92,13 +64,14 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions
 
     "S3 Proxy" should {
       s"proxy with $awsSignerType" that {
-        val bucketInCeph = "demobucket"
 
-        "list the current buckets" in withSdkToMockProxy(awsSignerType) { sdk =>
-          assert(sdk.listBuckets().asScala.toList.map(_.getName) == List(bucketInCeph))
+        "list the current buckets" in withS3SdkToMockProxy(awsSignerType) { sdk =>
+          withBucket(sdk) { testBucket =>
+            assert(sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
+          }
         }
 
-        "create and remove a bucket" in withSdkToMockProxy(awsSignerType) { sdk =>
+        "create and remove a bucket" in withS3SdkToMockProxy(awsSignerType) { sdk =>
           val testBucket = "createbuckettest"
           sdk.createBucket(testBucket)
           assert(sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
@@ -106,41 +79,47 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions
           assert(!sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
         }
 
-        "list files in a bucket" in withSdkToMockProxy(awsSignerType) { sdk =>
-          val testKey = "keyListFiles"
+        "list files in a bucket" in withS3SdkToMockProxy(awsSignerType) { sdk =>
+          withBucket(sdk) { testBucket =>
+            val testKey = "keyListFiles"
 
-          sdk.putObject(bucketInCeph, testKey, "content")
-          val resultV2 = sdk.listObjectsV2(bucketInCeph).getObjectSummaries.asScala.toList.map(_.getKey)
-          val result = sdk.listObjects(bucketInCeph).getObjectSummaries.asScala.toList.map(_.getKey)
+            sdk.putObject(testBucket, testKey, "content")
+            val resultV2 = sdk.listObjectsV2(testBucket).getObjectSummaries.asScala.toList.map(_.getKey)
+            val result = sdk.listObjects(testBucket).getObjectSummaries.asScala.toList.map(_.getKey)
 
-          assert(resultV2.contains(testKey))
-          assert(result.contains(testKey))
+            assert(resultV2.contains(testKey))
+            assert(result.contains(testKey))
+          }
         }
 
-        "check if bucket exists" in withSdkToMockProxy(awsSignerType) { sdk =>
-          assert(sdk.doesBucketExistV2(bucketInCeph))
+        "check if bucket exists" in withS3SdkToMockProxy(awsSignerType) { sdk =>
+          withBucket(sdk) { testBucket =>
+            assert(sdk.doesBucketExistV2(testBucket))
+          }
         }
 
-        "put, get and delete an object from a bucket" in withSdkToMockProxy(awsSignerType) { sdk =>
-          withFile(1024 * 1024) { filename =>
-            val testKeyContent = "keyPutFileByContent"
-            val testKeyFile = "keyPutFileByFile"
-            val testContent = "content"
+        "put, get and delete an object from a bucket" in withS3SdkToMockProxy(awsSignerType) { sdk =>
+          withBucket(sdk) { testBucket =>
+            withFile(1024 * 1024) { filename =>
+              val testKeyContent = "keyPutFileByContent"
+              val testKeyFile = "keyPutFileByFile"
+              val testContent = "content"
 
-            // PUT
-            sdk.putObject(bucketInCeph, testKeyContent, testContent)
-            sdk.putObject(bucketInCeph, testKeyFile, new File(filename))
+              // PUT
+              sdk.putObject(testBucket, testKeyContent, testContent)
+              sdk.putObject(testBucket, testKeyFile, new File(filename))
 
-            // GET
-            val checkContent = sdk.getObjectAsString(bucketInCeph, testKeyContent)
-            assert(checkContent == testContent)
-            val keys1 = getKeysInBucket(sdk)
-            List(testKeyContent, testKeyFile).map(k => assert(keys1.contains(k)))
+              // GET
+              val checkContent = sdk.getObjectAsString(testBucket, testKeyContent)
+              assert(checkContent == testContent)
+              val keys1 = getKeysInBucket(sdk, testBucket)
+              List(testKeyContent, testKeyFile).map(k => assert(keys1.contains(k)))
 
-            // DELETE
-            sdk.deleteObject(bucketInCeph, testKeyContent)
-            val keys2 = getKeysInBucket(sdk)
-            assert(!keys2.contains(testKeyContent))
+              // DELETE
+              sdk.deleteObject(testBucket, testKeyContent)
+              val keys2 = getKeysInBucket(sdk, testBucket)
+              assert(!keys2.contains(testKeyContent))
+            }
           }
         }
 
@@ -161,13 +140,14 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions
         //          assert(sdk.doesObjectExist(bucketInCeph, "key"))
         //        }
 
-        "put a 1MB file in a bucket (multi part upload)" in withSdkToMockProxy(awsSignerType) { sdk =>
-          val testKey = "keyMultiPart1MB"
-
-          withFile(1024 * 1024) { filename =>
-            doMultiPartUpload(sdk, filename, testKey)
-            val objectKeys = getKeysInBucket(sdk)
-            assert(objectKeys.contains(testKey))
+        "put a 1MB file in a bucket (multi part upload)" in withS3SdkToMockProxy(awsSignerType) { sdk =>
+          withBucket(sdk) { testBucket =>
+            withFile(1024 * 1024) { filename =>
+              val testKey = "keyMultiPart1MB"
+              doMultiPartUpload(sdk, testBucket, filename, testKey)
+              val objectKeys = getKeysInBucket(sdk, testBucket)
+              assert(objectKeys.contains(testKey))
+            }
           }
         }
 
