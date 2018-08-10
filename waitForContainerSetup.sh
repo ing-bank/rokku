@@ -6,8 +6,7 @@ set -e
 # Max query attempts before consider setup failed
 MAX_TRIES=90
 
-# Return true-like values if and only if logs
-# contain the expected "ready" line
+# Return true-like values if and only if logs contain the expected "ready" line
 function cephIsReady() {
   docker-compose logs ceph | grep "* Running on http://\[::\]:5000/"
 }

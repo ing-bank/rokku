@@ -16,6 +16,8 @@ env:
 before_script:
 - echo "Starting dependent containers for testing"
 - docker-compose up -d
+- echo "Compile the project while containers are starting up"
+- sbt ++$TRAVIS_SCALA_VERSION clean compile
 - echo "Wait for containers to be up and running"
 - bash waitForContainerSetup.sh
 
