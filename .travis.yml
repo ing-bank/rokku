@@ -17,7 +17,7 @@ before_script:
 - echo "Starting dependent containers for testing"
 - docker-compose up -d
 - echo "Wait for containers to be up and running"
-- sh waitForContainerSetup.sh
+- bash waitForContainerSetup.sh
 
 script:
 - sbt ++$TRAVIS_SCALA_VERSION clean coverage test it:test coverageReport

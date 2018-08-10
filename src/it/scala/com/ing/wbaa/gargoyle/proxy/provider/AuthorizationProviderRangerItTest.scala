@@ -38,27 +38,27 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
   "Authorization Provider Ranger" should {
     "authorize a request" that {
       "successfully authorizes" in withAuthorizationProviderRanger { apr =>
-        assert(apr.isAuthorized(s3Request, user))
+        assert(apr.isUserAuthorizedForRequest(s3Request, user))
       }
 
       "doesn't authorize for requests without bucket" in withAuthorizationProviderRanger { apr =>
-        assert(!apr.isAuthorized(s3Request.copy(bucket = None), user))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None), user))
       }
 
       "doesn't authorize for requests that are not supposed to be (Write)" in withAuthorizationProviderRanger { apr =>
-        assert(!apr.isAuthorized(s3Request.copy(accessType = Write), user))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(accessType = Write), user))
       }
 
       "doesn't authorize for unauthorized user and group" in withAuthorizationProviderRanger { apr =>
-        assert(!apr.isAuthorized(s3Request, user.copy(userId = "unauthorized", groups = Set("unauthorized"))))
+        assert(!apr.isUserAuthorizedForRequest(s3Request, user.copy(userId = "unauthorized", groups = Set("unauthorized"))))
       }
 
       "does authorize for unauthorized user but authorized group" in withAuthorizationProviderRanger { apr =>
-        assert(apr.isAuthorized(s3Request, user.copy(userId = "unauthorized")))
+        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userId = "unauthorized")))
       }
 
       "does authorize for authorized user but unauthorized group" in withAuthorizationProviderRanger { apr =>
-        assert(apr.isAuthorized(s3Request, user.copy(groups = Set("unauthorized"))))
+        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(groups = Set("unauthorized"))))
       }
     }
   }
