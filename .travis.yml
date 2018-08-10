@@ -16,7 +16,7 @@ env:
 before_script:
 - docker-compose up -d
 - git clone https://github.com/nielsdenissen/wait-for.git
-- ./wait-for/wait-for http://localhost:12345 -t 30
+- ./wait-for/wait-for http://localhost:12345 -t 120
 - ./wait-for/wait-for http://localhost:8010 -t 300
 - ./wait-for/wait-for http://localhost:6080 -t 900
 
