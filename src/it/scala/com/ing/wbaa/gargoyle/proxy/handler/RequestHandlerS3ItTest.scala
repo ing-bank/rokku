@@ -36,10 +36,10 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
     val proxy = new GargoyleS3Proxy with RequestHandlerS3 {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
-      override def isAuthorized(request: S3Request, user: User): Boolean = true
+      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
       override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(testSystem)
-      override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))
-      override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future.successful(true)
+      override def getUserForAccessKey(accessKey: AwsAccessKey): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))
+      override def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future.successful(true)
     }
     proxy.startup.map { binding =>
       try testCode(getAmazonS3(

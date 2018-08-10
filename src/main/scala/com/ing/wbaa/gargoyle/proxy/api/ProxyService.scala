@@ -20,15 +20,15 @@ trait ProxyService extends LazyLogging {
   implicit def system: ActorSystem
 
   // Request Handler methods
-  def validateUserRequest(request: HttpRequest, secretKey: String): Boolean
+  def validateRequest(request: HttpRequest, secretKey: String): Boolean
   def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse]
 
   // Authentication methods
-  def getUser(accessKey: AwsAccessKey): Future[Option[User]]
-  def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean]
+  def getUserForAccessKey(accessKey: AwsAccessKey): Future[Option[User]]
+  def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean]
 
   // Authorization methods
-  def isAuthorized(request: S3Request, user: User): Boolean
+  def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
@@ -36,18 +36,16 @@ trait ProxyService extends LazyLogging {
         extractRequest { httpRequest =>
           extracts3Request { s3Request =>
 
-            // Check whether the request is authenticated
-            onComplete(isAuthenticated(s3Request.credential)) {
+            onComplete(areCredentialsAuthentic(s3Request.credential)) {
               case Success(true) =>
                 logger.debug(s"Request authenticated: $s3Request")
 
-                // Find the user corresponding to the received request
-                onComplete(getUser(s3Request.credential.accessKey)) {
+                onComplete(getUserForAccessKey(s3Request.credential.accessKey)) {
                   case Success(Some(user: User)) =>
                     logger.debug(s"User retrieved: $user")
 
-                    if (validateUserRequest(httpRequest, user.secretKey)) {
-                      if (isAuthorized(s3Request, user)) {
+                    if (validateRequest(httpRequest, user.secretKey)) {
+                      if (isUserAuthorizedForRequest(s3Request, user)) {
                         logger.info(s"User (${user.userId}) successfully authorized for request: $s3Request")
                         complete(executeRequest(httpRequest, remoteAddress))
                       } else {

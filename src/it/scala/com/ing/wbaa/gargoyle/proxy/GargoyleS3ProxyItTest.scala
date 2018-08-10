@@ -45,7 +45,7 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(testSystem)
       override val stsSettings: GargoyleStsSettings = GargoyleStsSettings(testSystem)
 
-      override def isAuthorized(request: S3Request, user: User): Boolean = true
+      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
     }
     proxy.startup.flatMap { binding =>
       val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
@@ -67,7 +67,6 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       )
 
       val s3Sdk = getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)
-
       withBucket(s3Sdk) { testBucket =>
         assert(s3Sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
       }

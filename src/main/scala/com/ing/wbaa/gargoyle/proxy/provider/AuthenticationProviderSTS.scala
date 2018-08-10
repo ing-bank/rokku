@@ -22,7 +22,7 @@ trait AuthenticationProviderSTS extends JsonProtocols with LazyLogging {
 
   def stsSettings: GargoyleStsSettings
 
-  def getUser(accessKey: AwsAccessKey): Future[Option[User]] = {
+  def getUserForAccessKey(accessKey: AwsAccessKey): Future[Option[User]] = {
     val uri = stsSettings.stsBaseUri
       .withPath(Uri.Path("/userInfo"))
       .withQuery(Uri.Query(Map(
@@ -48,7 +48,7 @@ trait AuthenticationProviderSTS extends JsonProtocols with LazyLogging {
       }
   }
 
-  def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] =
+  def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean] =
     awsRequestCredential.sessionToken match {
       case None => Future(false)
       case Some(sessionToken) =>

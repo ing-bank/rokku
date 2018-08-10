@@ -17,16 +17,16 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
   private trait ProxyServiceMock extends ProxyService {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
 
-    override def validateUserRequest(request: HttpRequest, secretKey: String): Boolean = true
+    override def validateRequest(request: HttpRequest, secretKey: String): Boolean = true
     override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse] =
       Future(HttpResponse(entity =
         s"sendToS3: ${clientAddress.toOption.map(_.getHostName).getOrElse("unknown")}:${clientAddress.getPort()}"
       ))
-    override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(
+    override def getUserForAccessKey(accessKey: AwsAccessKey): Future[Option[User]] = Future(
       Some(User("okUser", "okSecretKey", Set("okGroup"), "arn"))
     )
-    override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(true)
-    override def isAuthorized(request: S3Request, user: User): Boolean = true
+    override def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(true)
+    override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
   }
 
   private def testRequest(accessKey: String = "okAccessKey") = HttpRequest(
@@ -51,7 +51,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
   it should "return a rejection when the user credentials cannot be authenticated" in {
     testRequest("notOkAccessKey") ~> new ProxyServiceMock {
-      override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(false)
+      override def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(false)
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
       val response = responseAs[String]
@@ -65,7 +65,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
   it should "return a rejection when user couldn't be found" in {
     testRequest() ~> new ProxyServiceMock {
-      override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(None)
+      override def getUserForAccessKey(accessKey: AwsAccessKey): Future[Option[User]] = Future(None)
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Unauthorized)
       val response = responseAs[String]
@@ -75,7 +75,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
   it should "return a rejection when an exception occurs in getting the user" in {
     testRequest() ~> new ProxyServiceMock {
-      override def getUser(accessKey: AwsAccessKey): Future[Option[User]] = Future(throw new Exception("BOOM"))
+      override def getUserForAccessKey(accessKey: AwsAccessKey): Future[Option[User]] = Future(throw new Exception("BOOM"))
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.InternalServerError)
       val response = responseAs[String]
@@ -85,7 +85,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
   it should "return a rejection when an exception occurs in authentication" in {
     testRequest() ~> new ProxyServiceMock {
-      override def isAuthenticated(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(throw new Exception("BOOM"))
+      override def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(throw new Exception("BOOM"))
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.InternalServerError)
       val response = responseAs[String]
@@ -95,7 +95,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
   it should "return a rejection when the request could not be validated" in {
     testRequest() ~> new ProxyServiceMock {
-      override def validateUserRequest(request: HttpRequest, secretKey: String): Boolean = false
+      override def validateRequest(request: HttpRequest, secretKey: String): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.BadRequest)
       val response = responseAs[String]
@@ -106,7 +106,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
   it should "return a rejection when user is not authorized" in {
     testRequest() ~> new ProxyServiceMock {
-      override def isAuthorized(request: S3Request, user: User): Boolean = false
+      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Unauthorized)
       val response = responseAs[String]
