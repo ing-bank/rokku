@@ -1,4 +1,4 @@
-package com.ing.wbaa.testkit.s3sdk
+package com.ing.wbaa.testkit.awssdk
 
 import java.io.File
 
@@ -30,19 +30,19 @@ trait S3SdkHelpers {
       .build()
   }
 
-  def getKeysInBucket(sdk: AmazonS3, bucket: String = "demobucket"): List[String] =
+  def getKeysInBucket(sdk: AmazonS3, bucket: String): List[String] =
     sdk
       .listObjectsV2(bucket)
       .getObjectSummaries
       .asScala.toList
       .map(_.getKey)
 
-  def doMultiPartUpload(sdk: AmazonS3, file: String, key: String): UploadResult = {
+  def doMultiPartUpload(sdk: AmazonS3, bucket: String, file: String, key: String): UploadResult = {
     val upload = TransferManagerBuilder
       .standard()
       .withS3Client(sdk)
       .build()
-      .upload("demobucket", key, new File(file))
+      .upload(bucket, key, new File(file))
 
     upload.waitForUploadResult()
   }

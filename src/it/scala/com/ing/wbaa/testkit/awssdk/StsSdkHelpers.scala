@@ -1,4 +1,4 @@
-package com.ing.wbaa.testkit.s3sdk
+package com.ing.wbaa.testkit.awssdk
 
 import akka.http.scaladsl.model.Uri
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}

@@ -18,12 +18,10 @@ services:
     command: demo
 
   postgres-server:
-    image: nielsdenissen/ranger-postgres:0.0.1
-    ports:
-      - "5432:5432"
+    image: nielsdenissen/ranger-postgres:0.0.2
 
   ranger-admin:
-    image: nielsdenissen/ranger-admin:0.0.1
+    image: nielsdenissen/ranger-admin:0.0.2
     stdin_open: true
     tty: true
     depends_on:
