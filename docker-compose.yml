@@ -1,5 +1,6 @@
 version: "2"
 services:
+
   ceph:
     image: ceph/daemon:v3.0.5-stable-3.0-luminous-centos-7
     environment:
@@ -15,3 +16,23 @@ services:
       - 8010:8010
       - 5000:5000
     command: demo
+
+  postgres-server:
+    image: nielsdenissen/ranger-postgres:0.0.2
+
+  ranger-admin:
+    image: nielsdenissen/ranger-admin:0.0.2
+    stdin_open: true
+    tty: true
+    depends_on:
+      - "postgres-server"
+    ports:
+      - "6080:6080"
+
+  gargoyle-sts:
+    image: kr7ysztof/gargoyle-sts:0.0.2
+    environment:
+      - STS_HOST=0.0.0.0
+      - STS_PORT=12345
+    ports:
+      - 12345:12345

@@ -30,15 +30,23 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion,
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.372",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
+    "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
-    "com.whisk"                    %% "docker-testkit-scalatest"     % "0.9.7"     % IntegrationTest,
-    "com.whisk"                    %% "docker-testkit-impl-spotify"  % "0.9.7"     % IntegrationTest
+    "com.amazonaws"                % "aws-java-sdk-sts"        % "1.11.372"        % IntegrationTest
 )
+
+// Fix logging dependencies:
+//  - Our logging implementation is Logback, via the Slf4j API.
+//  - Therefore we suppress the Log4j implentation and re-route its API calls over Slf4j.
+libraryDependencies += "org.slf4j" % "log4j-over-slf4j" % "1.7.25" % Runtime
+excludeDependencies += "org.slf4j" % "slf4j-log4j12"
+excludeDependencies += "log4j" % "log4j"
 
 configs(IntegrationTest)
 Defaults.itSettings
 
-parallelExecution in IntegrationTest := false
+parallelExecution in Test:= true
+parallelExecution in IntegrationTest := true
 
 enablePlugins(JavaAppPackaging)
 
