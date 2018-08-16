@@ -42,6 +42,14 @@
   </property>
 
   <property>
+    <name>ranger.plugin.s3.policy.rest.user</name>
+    <value>admin</value>
+    <description>
+      URL to Ranger Admin
+    </description>
+  </property>
+
+  <property>
     <name>ranger.plugin.s3.policy.rest.ssl.config.file</name>
     <value>/etc/hadoop/conf/ranger-policymgr-ssl.xml</value>
     <description>
