@@ -45,7 +45,7 @@
     <name>ranger.plugin.s3.policy.rest.user</name>
     <value>admin</value>
     <description>
-      URL to Ranger Admin
+      Username of Ranger Admin
     </description>
   </property>
 
