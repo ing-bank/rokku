@@ -16,6 +16,9 @@ function rangerAdminIsReady() {
 function gargoyleStsIsReady() {
   docker-compose logs gargoyle-sts | grep "INFO com.ing.wbaa.gargoyle.sts.Server\$\$anon\$1 - Sts service started listening:"
 }
+function gargoyleKeycloakIsReady() {
+  docker-compose logs keycloak | grep "Admin console listening"
+}
 
 function waitUntilServiceIsReady() {
   attempt=1
@@ -37,3 +40,4 @@ function waitUntilServiceIsReady() {
 waitUntilServiceIsReady gargoyleStsIsReady "Gargoyle STS"
 waitUntilServiceIsReady cephIsReady "Ceph"
 waitUntilServiceIsReady rangerAdminIsReady "Ranger Admin"
+waitUntilServiceIsReady gargoyleKeycloakIsReady "Keycloack ready"
