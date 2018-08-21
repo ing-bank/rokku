@@ -40,4 +40,4 @@ function waitUntilServiceIsReady() {
 waitUntilServiceIsReady gargoyleStsIsReady "Gargoyle STS"
 waitUntilServiceIsReady cephIsReady "Ceph"
 waitUntilServiceIsReady rangerAdminIsReady "Ranger Admin"
-waitUntilServiceIsReady gargoyleKeycloakIsReady "Keycloack ready"
+waitUntilServiceIsReady gargoyleKeycloakIsReady "Keycloack"
