@@ -26,6 +26,15 @@ To test the proxy locally (both live and integration tests), we need all depende
 
     docker-compose up
 
+> for windows docker runs on different it so you need to:
+> set environmental variables:
+> * GARGOYLE_STS_HOST
+> * GARGOYLE_STORAGE_S3_HOST
+> * GARGOYLE_KEYKLOAK_TOKEN_URL
+> * change GARGOYLE_KEYKLOAK_URL in the docker-compose.yml
+> * change the ranger.plugin.s3.policy.rest.url in ranger-s3-security.xml
+
+
 ### Apache Ranger 
 
 The Apache Ranger docker images are created from this repo: https://github.com/nielsdenissen/ranger-for-gargoyle.git
