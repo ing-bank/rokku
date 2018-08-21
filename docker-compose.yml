@@ -18,10 +18,10 @@ services:
     command: demo
 
   postgres-server:
-    image: nielsdenissen/ranger-postgres:0.0.2
+    image: nielsdenissen/ranger-postgres:0.0.3
 
   ranger-admin:
-    image: nielsdenissen/ranger-admin:0.0.2
+    image: nielsdenissen/ranger-admin:0.0.3
     stdin_open: true
     tty: true
     depends_on:
