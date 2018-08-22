@@ -20,7 +20,6 @@ trait ProxyService extends LazyLogging {
   implicit def system: ActorSystem
 
   // Request Handler methods
-  def validateRequest(request: HttpRequest, secretKey: String): Boolean
   def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse]
 
   // Authentication methods
@@ -44,20 +43,13 @@ trait ProxyService extends LazyLogging {
                   case Success(Some(user: User)) =>
                     logger.debug(s"User retrieved: $user")
 
-                    if (validateRequest(httpRequest, user.secretKey)) {
-                      if (isUserAuthorizedForRequest(s3Request, user)) {
-                        logger.info(s"User (${user.userId}) successfully authorized for request: $s3Request")
-                        complete(executeRequest(httpRequest, remoteAddress))
-                      } else {
-                        val msg = s"User (${user.userId}) not authorized for request: $s3Request"
-                        logger.warn(msg)
-                        complete((StatusCodes.Unauthorized, msg))
-                      }
-
+                    if (isUserAuthorizedForRequest(s3Request, user)) {
+                      logger.info(s"User (${user.userName}) successfully authorized for request: $s3Request")
+                      complete(executeRequest(httpRequest, remoteAddress))
                     } else {
-                      val msg = s"Request could not be validated: $httpRequest"
+                      val msg = s"User (${user.userName}) not authorized for request: $s3Request"
                       logger.warn(msg)
-                      complete((StatusCodes.BadRequest, msg))
+                      complete((StatusCodes.Unauthorized, msg))
                     }
 
                   case Success(None) =>
