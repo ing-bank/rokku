@@ -5,26 +5,16 @@
 
 # Gargoyle S3Proxy
 
-Template for s3 proxy based on Akka Http.
-
 gargoyle-s3proxy acts as a security layer between s3 user (eg. application using aws sdk) and s3 backend (eg. ceph RadosGW).
-It interacts with
-* [STS Service](https://github.com/kr7ysztof/gargoyle-sts) to:
-    - Validate short-term tokens issued by STS service
-    - Retrieve user information needed to check access policies
-* [Ranger](https://ranger.apache.org/) to get bucket policies. On ranger, custom [ranger plugin](https://github.com/bolkedebruin/rangers3plugin) is used to define policies.
-* S3 Backend (Current setup contains Ceph image with RadosGW)
 
-## Usage
-To run it:
-
-* sbt run
-
-## Local Testing
-
-To test the proxy locally (both live and integration tests), we need all dependencies to be running. For this we use a `docker-compose.yml` which defines all dependencies, run it using:
+## How to run
+To test the proxy (both live and integration tests), we need all dependencies to be running. For this we use a `docker-compose.yml` which defines all dependencies, run it using:
 
     docker-compose up
+
+When all is runnning we can start the proxy:
+
+    sbt run
 
 > for windows docker runs on different it so you need to:
 > set environmental variables:
@@ -34,10 +24,18 @@ To test the proxy locally (both live and integration tests), we need all depende
 > * change GARGOYLE_KEYCLOAK_URL in the docker-compose.yml
 > * change the ranger.plugin.s3.policy.rest.url in ranger-s3-security.xml
 
+## Architecture
+![alt text](./docs/img/architecture.png)
 
-### Apache Ranger 
-
+Dependencies:
+* [Keycloak](https://www.keycloak.org/) for MFA authentication of users.
+* [STS Service](https://github.com/kr7ysztof/gargoyle-sts) to provide authentication and short term access to resources on S3.
+* [Ranger](https://ranger.apache.org/) to manage authorisation to resources on S3.
 The Apache Ranger docker images are created from this repo: https://github.com/nielsdenissen/ranger-for-gargoyle.git
+* S3 Backend (Current setup contains Ceph image with RadosGW)
+
+A more in-depth discussion of the architecture and interaction of various components can be found here: [What is Gargoyle?](./docs/What_is_gargoyle.md)
+
 
 ## Docker Ceph settings
 
