@@ -31,7 +31,7 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAsser
     "get a user" that {
       "successfully retrieves a user" in withAuthenticationProviderSts { aps =>
         aps.getUserForAccessKey(AwsAccessKey("accesskey")).map { userResult =>
-          assert(userResult.contains(User("testuser", "secretkey", Set("testgroup", "groupTwo"), "arn")))
+          assert(userResult.contains(User("testuser", Set("testgroup", "groupTwo"))))
         }(executionContext)
       }
 

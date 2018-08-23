@@ -34,7 +34,7 @@ class GargoyleS3ProxySpec extends AsyncFlatSpec with DiagrammedAssertions {
       override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
       override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(system)
 
-      override def getUserForAccessKey(accessKey: AwsAccessKey): Future[Option[User]] = Future(Some(User("userId", "secretKey", Set("group"), "arn")))
+      override def getUserForAccessKey(accessKey: AwsAccessKey): Future[Option[User]] = Future(Some(User("userId", Set("group"))))
 
       override def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future.successful(true)
     }

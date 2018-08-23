@@ -17,13 +17,12 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
   private trait ProxyServiceMock extends ProxyService {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
 
-    override def validateRequest(request: HttpRequest, secretKey: String): Boolean = true
     override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse] =
       Future(HttpResponse(entity =
         s"sendToS3: ${clientAddress.toOption.map(_.getHostName).getOrElse("unknown")}:${clientAddress.getPort()}"
       ))
     override def getUserForAccessKey(accessKey: AwsAccessKey): Future[Option[User]] = Future(
-      Some(User("okUser", "okSecretKey", Set("okGroup"), "arn"))
+      Some(User("okUser", Set("okGroup")))
     )
     override def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(true)
     override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
@@ -90,17 +89,6 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
       assert(status == StatusCodes.InternalServerError)
       val response = responseAs[String]
       assert(response == "There was an internal server error.")
-    }
-  }
-
-  it should "return a rejection when the request could not be validated" in {
-    testRequest() ~> new ProxyServiceMock {
-      override def validateRequest(request: HttpRequest, secretKey: String): Boolean = false
-    }.proxyServiceRoute ~> check {
-      assert(status == StatusCodes.BadRequest)
-      val response = responseAs[String]
-      val expectedResponse = s"Request could not be validated: ${testRequest()}"
-      assert(response == expectedResponse)
     }
   }
 
