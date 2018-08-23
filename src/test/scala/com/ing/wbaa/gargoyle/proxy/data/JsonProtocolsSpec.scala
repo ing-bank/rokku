@@ -9,13 +9,11 @@ class JsonProtocolsSpec extends FlatSpec with DiagrammedAssertions with JsonProt
   "Json protocols" should "parse a User" in {
     val jsonString =
       """{
-        | "userId": "user",
-        | "secretKey": "secret",
-        | "groups": ["group1", "group2"],
-        | "arn": "arn"
+        | "userName": "user",
+        | "userGroups": ["group1", "group2"]
         |}""".stripMargin
     val result = jsonString.parseJson.convertTo[User]
-    assert(result == User("user", "secret", Set("group1", "group2"), "arn"))
+    assert(result == User("user", Set("group1", "group2")))
   }
 
 }
