@@ -13,6 +13,7 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
   val s3Request = S3Request(
     AwsRequestCredential(AwsAccessKey("accesskey"), Some(AwsSessionToken("sessiontoken"))),
     Some("demobucket"),
+    None,
     Read
   )
 
