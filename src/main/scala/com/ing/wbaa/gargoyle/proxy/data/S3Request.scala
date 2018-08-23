@@ -34,6 +34,7 @@ object S3Request extends LazyLogging {
     val accessType = httpMethod.value match {
       case "GET"    => Read
       case "PUT"    => Write
+      case "POST"   => Write
       case "DELETE" => Delete
     }
 

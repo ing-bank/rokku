@@ -58,6 +58,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
         "S3Request(" +
         "AwsRequestCredential(AwsAccessKey(notOkAccessKey),Some(AwsSessionToken(okSessionToken)))," +
         "Some(okBucket)," +
+        "None," +
         "Read)")
     }
   }
@@ -102,6 +103,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
         s"S3Request(" +
         s"AwsRequestCredential(AwsAccessKey(okAccessKey),Some(AwsSessionToken(okSessionToken)))," +
         s"Some(okBucket)," +
+        s"None," +
         s"Read)")
     }
   }
