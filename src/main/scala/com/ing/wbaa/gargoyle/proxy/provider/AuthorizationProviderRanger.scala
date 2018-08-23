@@ -1,7 +1,7 @@
 package com.ing.wbaa.gargoyle.proxy.provider
 
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleRangerSettings
-import com.ing.wbaa.gargoyle.proxy.data.{ S3Request, User }
+import com.ing.wbaa.gargoyle.proxy.data.{ Read, S3Request, User }
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
 import org.apache.ranger.plugin.service.RangerBasePlugin
@@ -36,30 +36,55 @@ trait AuthorizationProviderRanger extends LazyLogging {
   def rangerPluginForceInit: RangerBasePlugin = rangerPlugin
 
   /**
-   * Check authorization with Ranger. Currently we deny any requests not to a specific bucket (e.g. listBuckets)
+   *  Check authorization with Ranger. Operations like list-buckets or create, delete bucket must be
+   *  enabled in configuration. They are disabled by default
    */
   def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = {
-    request.bucket match {
-      case Some(bucket) =>
-        import scala.collection.JavaConverters._
+    request match {
+      case S3Request(_, bucketOpt, bucketObjectOpt, accessType) =>
+        bucketOpt match {
+          case Some(bucket) =>
+            import scala.collection.JavaConverters._
 
-        val resource = new RangerAccessResourceImpl(
-          Map[String, AnyRef]("path" -> bucket).asJava
-        )
+            val resource = new RangerAccessResourceImpl(
+              Map[String, AnyRef]("path" -> bucket).asJava
+            )
+            val bucketObjectExists = if (bucketObjectOpt.getOrElse("").length > 1) true else false
+            // TODO: use .setContext for metadata like arn
+            val rangerRequest = new RangerAccessRequestImpl(
+              resource,
+              request.accessType.rangerName,
+              user.userName,
+              user.userGroups.asJava
+            )
 
-        // TODO: use .setContext for metadata like arn
-        val rangerRequest = new RangerAccessRequestImpl(
-          resource,
-          request.accessType.rangerName,
-          user.userName,
-          user.userGroups.asJava
-        )
+            if (bucketObjectExists) {
+              // object operations
+              logger.debug(s"Checking ranger with request: $rangerRequest")
+              Option(rangerPlugin.isAccessAllowed(rangerRequest)).exists(_.getIsAllowed)
+            } else if (!bucketObjectExists && accessType == Read) {
+              // list-objects operation
+              logger.debug(s"Checking ranger with request: $rangerRequest")
+              Option(rangerPlugin.isAccessAllowed(rangerRequest)).exists(_.getIsAllowed)
+            } else if (rangerSettings.createBucketsEnabled) {
+              // create, delete
+              logger.debug(s"Skipping ranger with request: $rangerRequest")
+              true
+            } else {
+              logger.info("Authorization failed since no bucket is specified. Currently these commands are blocked.")
+              false
+            }
 
-        logger.debug(s"Checking ranger with request: $rangerRequest")
-        Option(rangerPlugin.isAccessAllowed(rangerRequest)).exists(_.getIsAllowed)
-      case None =>
-        logger.info("Authorization failed since no bucket is specified. Currently these commands are blocked.")
-        false
+          case None =>
+            // list buckets
+            if (accessType == Read && rangerSettings.listBucketsEnabled) {
+              logger.debug(s"Skipping ranger with request: ${request}")
+              true
+            } else {
+              logger.info("Authorization failed since no bucket is specified. Currently these commands are blocked.")
+              false
+            }
+        }
     }
   }
 }
