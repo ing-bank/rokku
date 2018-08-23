@@ -25,7 +25,7 @@ object S3Request extends LazyLogging {
       .toList
       .lift(1)
 
-    val bucketObject = path.toString
+    val bucketObjectRoot = path.toString
       .split("/")
       .toList
       .lift(2)
@@ -38,6 +38,6 @@ object S3Request extends LazyLogging {
       case "DELETE" => Delete
     }
 
-    S3Request(credential, bucket, bucketObject, accessType)
+    S3Request(credential, bucket, bucketObjectRoot, accessType)
   }
 }
