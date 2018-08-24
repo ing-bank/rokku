@@ -79,7 +79,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
         true
 
       case _ =>
-        logger.info("Authorization failed since no bucket is specified. Currently these commands are blocked.")
+        logger.info("Authorization failed. Make sure your request uses supported parameters")
         false
     }
   }

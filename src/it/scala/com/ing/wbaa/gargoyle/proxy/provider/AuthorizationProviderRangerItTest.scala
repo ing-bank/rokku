@@ -81,6 +81,11 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
       }) { apr =>
         assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucketObject = None, accessType = Delete), user))
       }
+
+      "doesn't authorize when method is not REST (GET, PUT, DELETE etc.)" in withAuthorizationProviderRanger() { apr =>
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(bucketObject = None, accessType = NoAccess), user))
+      }
+
     }
   }
 }
