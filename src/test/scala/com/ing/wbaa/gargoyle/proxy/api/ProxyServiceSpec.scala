@@ -28,7 +28,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
   }
 
-  private def testRequest(accessKey: String = "okAccessKey") = HttpRequest(
+  private def testRequest(accessKey: String = "okAccessKey", path: String = "/okBucket") = HttpRequest(
     headers = List(
       RawHeader("authorization", s"AWS $accessKey:bla"),
       RawHeader("x-amz-security-token", "okSessionToken"),
@@ -37,7 +37,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     uri = Uri(
       scheme = "http",
       authority = Authority(Uri.Host("host"), 3456),
-      path = Uri.Path("/okBucket"))
+      path = Uri.Path(path))
   )
 
   "A proxy service" should "Successfully execute a request" in {
@@ -107,4 +107,20 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
         s"Read)")
     }
   }
+
+  it should "return a rejection when allow-list-bucket is false" in {
+    testRequest("okAccessKey", "/") ~> new ProxyServiceMock {
+      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = false
+    }.proxyServiceRoute ~> check {
+      assert(status == StatusCodes.Unauthorized)
+      val response = responseAs[String]
+      assert(response == s"User (okUser) not authorized for request: " +
+        s"S3Request(" +
+        s"AwsRequestCredential(AwsAccessKey(okAccessKey),Some(AwsSessionToken(okSessionToken)))," +
+        s"None," +
+        s"None," +
+        s"Read)")
+    }
+  }
+
 }

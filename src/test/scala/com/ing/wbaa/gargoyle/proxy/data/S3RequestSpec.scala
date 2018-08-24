@@ -12,6 +12,11 @@ class S3RequestSpec extends FlatSpec with DiagrammedAssertions {
     assert(result == S3Request(testCred, Some("demobucket"), None, Read))
   }
 
+  "S3Request" should "parse an S3 request from an http Path with object and Method" in {
+    val result = S3Request(testCred, Uri.Path("/demobucket/demoobject"), HttpMethods.GET)
+    assert(result == S3Request(testCred, Some("demobucket"), Some("demoobject"), Read))
+  }
+
   it should "parse none for bucket if path is only root" in {
     val result = S3Request(testCred, Uri.Path("/"), HttpMethods.GET)
     assert(result == S3Request(testCred, None, None, Read))

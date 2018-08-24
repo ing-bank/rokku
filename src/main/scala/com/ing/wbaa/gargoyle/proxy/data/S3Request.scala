@@ -30,7 +30,6 @@ object S3Request extends LazyLogging {
       .toList
       .lift(2)
 
-    //    val accessType = if (httpMethod == HttpMethods.GET) Read else Write
     val accessType = httpMethod.value match {
       case "GET"    => Read
       case "PUT"    => Write
