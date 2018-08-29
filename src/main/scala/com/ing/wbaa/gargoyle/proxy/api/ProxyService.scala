@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, RemoteAddress, StatusCodes }
 import akka.http.scaladsl.server.Route
 import com.ing.wbaa.gargoyle.proxy.api.directive.ProxyDirectives
-import com.ing.wbaa.gargoyle.proxy.data.{ AwsAccessKey, AwsRequestCredential, S3Request, User }
+import com.ing.wbaa.gargoyle.proxy.data.{ AwsRequestCredential, S3Request, User }
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.Future
@@ -17,17 +17,17 @@ trait ProxyService extends LazyLogging {
   import ProxyDirectives._
   import akka.http.scaladsl.server.Directives._
 
-  implicit def system: ActorSystem
+  protected[this] implicit def system: ActorSystem
 
   // Request Handler methods
-  def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse]
+  protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse]
 
   // Authentication methods
-  def getUserForAccessKey(accessKey: AwsAccessKey): Future[Option[User]]
-  def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean]
+  protected[this] def getUserForAccessKey(awsRequestCredential: AwsRequestCredential): Future[Option[User]]
+  protected[this] def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean]
 
   // Authorization methods
-  def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
+  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
@@ -39,7 +39,7 @@ trait ProxyService extends LazyLogging {
               case Success(true) =>
                 logger.debug(s"Request authenticated: $s3Request")
 
-                onComplete(getUserForAccessKey(s3Request.credential.accessKey)) {
+                onComplete(getUserForAccessKey(s3Request.credential)) {
                   case Success(Some(user: User)) =>
                     logger.debug(s"User retrieved: $user")
 

@@ -11,12 +11,12 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 trait RequestHandlerS3 extends LazyLogging {
 
-  implicit def system: ActorSystem
-  implicit def executionContext: ExecutionContext
+  protected[this] implicit def system: ActorSystem
+  protected[this] implicit def executionContext: ExecutionContext
 
-  def storageS3Settings: GargoyleStorageS3Settings
+  protected[this] def storageS3Settings: GargoyleStorageS3Settings
 
-  def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse] = {
+  protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse] = {
     val newRequest = translateRequest(request, clientAddress)
 
     logger.debug(s"Newly generated request: $newRequest")
@@ -34,7 +34,7 @@ trait RequestHandlerS3 extends LazyLogging {
    * @param clientAddress originating client address
    * @return translated request for s3
    */
-  def translateRequest(request: HttpRequest, clientAddress: RemoteAddress): HttpRequest = {
+  protected[this] def translateRequest(request: HttpRequest, clientAddress: RemoteAddress): HttpRequest = {
     val headersIn: Seq[HttpHeader] =
       request.headers ++ List(
         RawHeader("X-Forwarded-For", clientAddress.toOption.map(_.getHostAddress).getOrElse("unknown")),
