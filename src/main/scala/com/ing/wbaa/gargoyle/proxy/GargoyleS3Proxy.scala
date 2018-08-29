@@ -14,12 +14,12 @@ import scala.util.{ Failure, Success }
 
 trait GargoyleS3Proxy extends LazyLogging with ProxyService {
 
-  implicit def system: ActorSystem
-  implicit lazy val materializer: ActorMaterializer = ActorMaterializer()(system)
+  protected[this] implicit def system: ActorSystem
+  protected[this] implicit lazy val materializer: ActorMaterializer = ActorMaterializer()(system)
 
-  def httpSettings: GargoyleHttpSettings
+  protected[this] def httpSettings: GargoyleHttpSettings
 
-  implicit val executionContext: ExecutionContext = system.dispatcher
+  protected[this] implicit val executionContext: ExecutionContext = system.dispatcher
 
   // The routes we serve.
   final val allRoutes = HealthService.route ~ proxyServiceRoute

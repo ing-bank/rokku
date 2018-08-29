@@ -10,10 +10,13 @@ import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
 import scala.concurrent.ExecutionContext
 
-class RequestHandlerS3Spec extends WordSpec with DiagrammedAssertions {
+class RequestHandlerS3Spec extends WordSpec with DiagrammedAssertions with RequestHandlerS3 {
 
-  private[this] final implicit val actorSystem: ActorSystem = ActorSystem.create("test-system")
-  private[this] final implicit val ec: ExecutionContext = actorSystem.dispatcher
+  override implicit val system: ActorSystem = ActorSystem.create("test-system")
+  override implicit val executionContext: ExecutionContext = system.dispatcher
+  override val storageS3Settings: GargoyleStorageS3Settings = new GargoyleStorageS3Settings(system.settings.config) {
+    override val storageS3Authority: Uri.Authority = Uri.Authority(Uri.Host("1.2.3.4"), 1234)
+  }
 
   "Request Handler" should {
     "translate request" which {
@@ -21,13 +24,7 @@ class RequestHandlerS3Spec extends WordSpec with DiagrammedAssertions {
         val request = HttpRequest()
         val remoteAddress = RemoteAddress(InetAddress.getByName("192.168.3.12"))
 
-        val result = new RequestHandlerS3 {
-          override implicit val system: ActorSystem = actorSystem
-          override implicit val executionContext: ExecutionContext = ec
-          override val storageS3Settings: GargoyleStorageS3Settings = new GargoyleStorageS3Settings(system.settings.config) {
-            override val storageS3Authority: Uri.Authority = Uri.Authority(Uri.Host("1.2.3.4"), 1234)
-          }
-        }.translateRequest(request, remoteAddress)
+        val result = translateRequest(request, remoteAddress)
         val expected = request
           .withUri(request.uri.withAuthority("1.2.3.4", 1234))
           .withHeaders(RawHeader("X-Forwarded-For", "192.168.3.12"), RawHeader("X-Forwarded-Proto", "HTTP/1.1"))

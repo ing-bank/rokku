@@ -1,7 +1,7 @@
 package com.ing.wbaa.gargoyle.proxy.api.directive
 
 import akka.http.scaladsl.model.HttpHeader
-import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.server.{ Directive1, MissingHeaderRejection }
 import com.ing.wbaa.gargoyle.proxy.data._
 import com.typesafe.scalalogging.LazyLogging
 
@@ -12,7 +12,7 @@ object ProxyDirectives extends LazyLogging {
   /**
    * Extract data from the Authorization header of S3
    */
-  private def extractAuthorizationS3(httpHeader: HttpHeader): Option[AwsAccessKey] =
+  private[this] def extractAuthorizationS3(httpHeader: HttpHeader): Option[AwsAccessKey] =
     if (httpHeader.is("authorization")) {
       val signerType = httpHeader.value().split(" ").headOption
       logger.debug(s"Signertype used: $signerType")
@@ -43,18 +43,22 @@ object ProxyDirectives extends LazyLogging {
 
   val extracts3Request: Directive1[S3Request] =
     extractRequest tflatMap { case Tuple1(httpRequest) =>
-      optionalHeaderValueByName("x-amz-security-token") tflatMap { case Tuple1(sessionToken) =>
-        headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
+      optionalHeaderValueByName("x-amz-security-token") tflatMap {
+        case Tuple1(Some(sessionToken)) =>
+          headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
 
-          val s3Request = S3Request(
-            AwsRequestCredential(awsAccessKey, sessionToken.map(AwsSessionToken)),
-            httpRequest.uri.path,
-            httpRequest.method
-          )
+            val s3Request = S3Request(
+              AwsRequestCredential(awsAccessKey, AwsSessionToken(sessionToken)),
+              httpRequest.uri.path,
+              httpRequest.method
+            )
 
-          logger.debug(s"Extracted S3 Request: $s3Request")
-          s3Request
-        }
+            logger.debug(s"Extracted S3 Request: $s3Request")
+            s3Request
+          }
+        case Tuple1(None) =>
+          logger.info("STS token not provided in header of request")
+          reject(MissingHeaderRejection("x-amz-security-token"))
       }
     }
 }

@@ -1,4 +1,4 @@
-version: "2"
+version: "3.7"
 services:
 
   ceph:
@@ -18,10 +18,10 @@ services:
     command: demo
 
   postgres-server:
-    image: nielsdenissen/ranger-postgres:0.0.3
+    image: nielsdenissen/ranger-postgres:0.0.4
 
   ranger-admin:
-    image: nielsdenissen/ranger-admin:0.0.3
+    image: nielsdenissen/ranger-admin:0.0.4
     stdin_open: true
     tty: true
     depends_on:
@@ -30,13 +30,17 @@ services:
       - "6080:6080"
 
   gargoyle-sts:
-    image: kr7ysztof/gargoyle-sts:0.0.4
+    image: kr7ysztof/gargoyle-sts:0.0.5
     environment:
       - STS_HOST=0.0.0.0
       - STS_PORT=12345
       - GARGOYLE_KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
-      - GARGOYLE_KEYCLOAK_URL=http://127.0.0.1:8080
-    network_mode: host
+      - GARGOYLE_KEYCLOAK_URL=http://keycloak:8080
+      - GARGOYLE_STS_KEYCLOAK_CHECK_REALM_URL=false
+    ports:
+      - "12345:12345"
+    depends_on:
+      - "keycloak"
 
   keycloak:
     image: kr7ysztof/keycloak-it:0.0.1

@@ -11,7 +11,7 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
   final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
   val s3Request = S3Request(
-    AwsRequestCredential(AwsAccessKey("accesskey"), Some(AwsSessionToken("sessiontoken"))),
+    AwsRequestCredential(AwsAccessKey("accesskey"), AwsSessionToken("sessiontoken")),
     Some("demobucket"),
     None,
     Read
@@ -19,7 +19,7 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
 
   val user = User(
     "testuser",
-    Set("testgroup"),
+    Some("testgroup"),
   )
 
   /**
@@ -36,8 +36,12 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
 
   "Authorization Provider Ranger" should {
     "authorize a request" that {
-      "successfully authorizes" in withAuthorizationProviderRanger() { apr =>
+      "successfully authorizes a request on a bucket" in withAuthorizationProviderRanger() { apr =>
         assert(apr.isUserAuthorizedForRequest(s3Request, user))
+      }
+
+      "successfully authorizes a request on an object in a bucket" in withAuthorizationProviderRanger() { apr =>
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucketObjectRoot = Some("object")), user))
       }
 
       "doesn't authorize for requests without bucket" in withAuthorizationProviderRanger() { apr =>
@@ -49,7 +53,7 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
       }
 
       "doesn't authorize for unauthorized user and group" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request, user.copy(userName = "unauthorized", userGroups = Set("unauthorized"))))
+        assert(!apr.isUserAuthorizedForRequest(s3Request, user.copy(userName = "unauthorized", userGroups = Some("unauthorized"))))
       }
 
       "does authorize for unauthorized user but authorized group" in withAuthorizationProviderRanger() { apr =>
@@ -57,33 +61,33 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
       }
 
       "does authorize for authorized user but unauthorized group" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userGroups = Set("unauthorized"))))
+        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userGroups = Some("unauthorized"))))
       }
 
       "doesn't authorize allow-list-buckets with default settings" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None, bucketObject = None, accessType = Read), user))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None, bucketObjectRoot = None, accessType = Read), user))
       }
 
       "does authorize allow-list-buckets set to true" in withAuthorizationProviderRanger(new GargoyleRangerSettings(testSystem.settings.config) {
         override val listBucketsEnabled: Boolean = true
       }) { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None, bucketObject = None, accessType = Read), user))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None, bucketObjectRoot = None, accessType = Read), user))
       }
 
       "does authorize allow-create-buckets set to true" in withAuthorizationProviderRanger(new GargoyleRangerSettings(testSystem.settings.config) {
         override val createBucketsEnabled: Boolean = true
       }) { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucketObject = None, accessType = Write), user))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucketObjectRoot = None, accessType = Write), user))
       }
 
       "does authorize delete buckets set to true" in withAuthorizationProviderRanger(new GargoyleRangerSettings(testSystem.settings.config) {
         override val createBucketsEnabled: Boolean = true
       }) { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucketObject = None, accessType = Delete), user))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucketObjectRoot = None, accessType = Delete), user))
       }
 
       "doesn't authorize when method is not REST (GET, PUT, DELETE etc.)" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(bucketObject = None, accessType = NoAccess), user))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(bucketObjectRoot = None, accessType = NoAccess), user))
       }
 
     }

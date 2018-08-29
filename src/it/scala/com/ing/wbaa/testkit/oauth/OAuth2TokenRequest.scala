@@ -6,7 +6,7 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 case class KeycloackToken(access_token: String)
 
@@ -15,31 +15,28 @@ case class KeycloackToken(access_token: String)
   */
 trait OAuth2TokenRequest {
 
-  protected implicit def system: ActorSystem
+  protected[this] implicit def testSystem: ActorSystem
 
-  protected implicit def materializer: ActorMaterializer
+  protected[this] implicit def materializer: ActorMaterializer
 
-  protected implicit def exContext: ExecutionContextExecutor
+  protected[this] implicit def executionContext: ExecutionContext
 
-  protected[this] def gargoyleKeycloakTokenUrl: String
-
+  private[this] def gargoyleKeycloakTokenUrl: String = testSystem.settings.config.getString("gargoyle.sts.keycloak.token.url")
 
   import spray.json._
   import DefaultJsonProtocol._
 
-  private implicit val keycloakTokenJson: RootJsonFormat[KeycloackToken] = jsonFormat1(KeycloackToken)
+  private[this] implicit val keycloakTokenJson: RootJsonFormat[KeycloackToken] = jsonFormat1(KeycloackToken)
 
-
-  private def getTokenResponse(formData: Map[String, String]): Future[HttpResponse] = {
+  private[this] def getTokenResponse(formData: Map[String, String]): Future[HttpResponse] = {
     Http().singleRequest(HttpRequest(
       uri = Uri(gargoyleKeycloakTokenUrl),
       method = HttpMethods.POST,
       entity = akka.http.scaladsl.model.FormData(formData).toEntity(HttpCharsets.`UTF-8`)))
   }
 
-  def keycloackToken(formData: Map[String, String]): Future[KeycloackToken] =
+  protected[this] def retrieveKeycloackToken(formData: Map[String, String]): Future[KeycloackToken] =
     getTokenResponse(formData).map(_.entity.dataBytes.map(_.utf8String)
       .map(_.parseJson.convertTo[KeycloackToken])
       .runWith(Sink.seq)).flatMap(_.map(_.head)).recover { case _ => KeycloackToken("invalid") }
-
 }

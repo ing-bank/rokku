@@ -1,64 +1,78 @@
 package com.ing.wbaa.gargoyle.proxy.provider
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.ActorMaterializer
+import com.amazonaws.services.securitytoken.model.AssumeRoleWithWebIdentityRequest
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStsSettings
-import com.ing.wbaa.gargoyle.proxy.data.{AwsAccessKey, AwsRequestCredential, AwsSessionToken, User}
+import com.ing.wbaa.gargoyle.proxy.data._
+import com.ing.wbaa.testkit.awssdk.StsSdkHelpers
+import com.ing.wbaa.testkit.oauth.OAuth2TokenRequest
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAssertions {
-  final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
+class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAssertions
+  with AuthenticationProviderSTS
+  with StsSdkHelpers
+  with OAuth2TokenRequest {
+  override implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
+  override implicit val system: ActorSystem = testSystem
+  override implicit val executionContext: ExecutionContext = testSystem.dispatcher
+  override implicit val materializer: ActorMaterializer = ActorMaterializer()(testSystem)
 
-  /**
-    * Fixture for setting up an sts provider object
-    *
-    * @param testCode Code that accepts the created authentication provider
-    * @return Assertion
-    */
-  def withAuthenticationProviderSts(testCode: AuthenticationProviderSTS => Future[Assertion]): Future[Assertion] = {
-    val aps = new AuthenticationProviderSTS {
-      override implicit def system: ActorSystem = testSystem
-      override implicit def executionContext: ExecutionContext = testSystem.dispatcher
-      override implicit def materializer: Materializer = ActorMaterializer()(testSystem)
-      override def stsSettings: GargoyleStsSettings = GargoyleStsSettings(testSystem)
+  override val stsSettings: GargoyleStsSettings = GargoyleStsSettings(testSystem)
+
+  private val validKeycloakCredentials = Map(
+    "grant_type" -> "password",
+    "username" -> "userone",
+    "password" -> "password",
+    "client_id" -> "sts-gargoyle"
+  )
+
+  def withAwsCredentialsValidInSTS(testCode: AwsRequestCredential => Future[Assertion]): Future[Assertion] = {
+    val stsSdk = getAmazonSTSSdk(GargoyleStsSettings(testSystem).stsBaseUri)
+    retrieveKeycloackToken(validKeycloakCredentials).flatMap { keycloakToken =>
+      val cred = stsSdk.assumeRoleWithWebIdentity(new AssumeRoleWithWebIdentityRequest()
+        .withRoleArn("arn:aws:iam::123456789012:role/user")
+        .withProviderId("provider")
+        .withRoleSessionName("sessionName")
+        .withWebIdentityToken(keycloakToken.access_token))
+        .getCredentials
+
+      testCode(AwsRequestCredential(AwsAccessKey(cred.getAccessKeyId), AwsSessionToken(cred.getSessionToken)))
     }
-    testCode(aps)
   }
 
   "Authentication Provider STS" should {
     "get a user" that {
-      "successfully retrieves a user" in withAuthenticationProviderSts { aps =>
-        aps.getUserForAccessKey(AwsAccessKey("accesskey")).map { userResult =>
-          assert(userResult.contains(User("testuser", Set("testgroup", "groupTwo"))))
-        }(executionContext)
+      "successfully retrieves a user" in {
+        withAwsCredentialsValidInSTS { awsCredential =>
+          getUserForAccessKey(awsCredential).map { userResult =>
+            assert(userResult.contains(User("userone", Some("user"))))
+          }
+        }
       }
 
-      "return None when a user could not be found with STS" in withAuthenticationProviderSts { aps =>
-        aps.getUserForAccessKey(AwsAccessKey("nonexistent")).map { userResult =>
+      "return None when a user could not be found with STS" in {
+        getUserForAccessKey(AwsRequestCredential(AwsAccessKey("nonexistent"), AwsSessionToken("sessiontoken"))).map { userResult =>
           assert(userResult.isEmpty)
-        }(executionContext)
+        }
       }
     }
 
     "check authentication" that {
-      "succeeds for valid credentials" in withAuthenticationProviderSts { aps =>
-        aps.areCredentialsAuthentic(AwsRequestCredential(AwsAccessKey("accesskey"), Some(AwsSessionToken("okSessionToken")))).map { userResult =>
-          assert(userResult)
-        }(executionContext)
+      "succeeds for valid credentials" in {
+        withAwsCredentialsValidInSTS { awsCredential =>
+          areCredentialsAuthentic(awsCredential).map { userResult =>
+            assert(userResult)
+          }
+        }
       }
 
-      "fail when no token is provided" in withAuthenticationProviderSts { aps =>
-        aps.areCredentialsAuthentic(AwsRequestCredential(AwsAccessKey("accesskey"), None)).map { userResult =>
+      "fail when user is not authenticated" in {
+        areCredentialsAuthentic(AwsRequestCredential(AwsAccessKey("notauthenticated"), AwsSessionToken("okSessionToken"))).map { userResult =>
           assert(!userResult)
-        }(executionContext)
-      }
-
-      "fail when user is not authenticated" in withAuthenticationProviderSts { aps =>
-        aps.areCredentialsAuthentic(AwsRequestCredential(AwsAccessKey("notauthenticated"), Some(AwsSessionToken("okSessionToken")))).map { userResult =>
-          assert(!userResult)
-        }(executionContext)
+        }
       }
     }
   }

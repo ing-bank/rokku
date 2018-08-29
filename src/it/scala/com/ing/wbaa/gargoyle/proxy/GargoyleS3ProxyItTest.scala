@@ -7,24 +7,31 @@ import com.amazonaws.auth.BasicSessionCredentials
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
 import com.amazonaws.services.securitytoken.model.{AssumeRoleWithWebIdentityRequest, GetSessionTokenRequest}
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings, GargoyleStsSettings}
-import com.ing.wbaa.gargoyle.proxy.data.{S3Request, User}
+import com.ing.wbaa.gargoyle.proxy.data._
 import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
 import com.ing.wbaa.gargoyle.proxy.provider.AuthenticationProviderSTS
 import com.ing.wbaa.testkit.GargoyleFixtures
 import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
-import com.ing.wbaa.testkit.oauth.{KeycloackToken, OAuth2TokenRequest}
+import com.ing.wbaa.testkit.oauth.OAuth2TokenRequest
+import com.ing.wbaa.testkit.radosgw.RadosGwHelpers
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   with S3SdkHelpers
   with StsSdkHelpers
-  with GargoyleFixtures {
+  with GargoyleFixtures
+  with OAuth2TokenRequest
+  with RadosGwHelpers {
 
   import scala.collection.JavaConverters._
 
-  final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
+  override implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
+
+  override implicit def materializer: ActorMaterializer = ActorMaterializer()(testSystem)
+
+  override implicit def executionContext: ExecutionContext = testSystem.dispatcher
 
   // Settings for tests:
   //  - Force a random port to listen on.
@@ -34,27 +41,12 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     override val httpBind: String = "127.0.0.1"
   }
 
-  private val validKeycloakCredentials = Map("grant_type" -> "password", "username" -> "userone", "password" -> "password", "client_id" -> "sts-gargoyle")
-
-  /**s
-    * Provides a keycloak token
-    *
-    * @param formData oauth2 form data (grant_type, client_id, username, password)
-    * @param testCode - code accepting a keycloak token
-    * @return - Future[Assertion]
-    */
-  private def withOAuth2TokenRequest(formData: Map[String, String])(testCode: KeycloackToken => Future[Assertion]): Future[Assertion] = {
-    val tokenRequest = new OAuth2TokenRequest {
-      override protected implicit def system: ActorSystem = testSystem
-
-      override protected implicit def materializer: ActorMaterializer = ActorMaterializer()(testSystem)
-
-      override protected implicit def exContext: ExecutionContextExecutor = testSystem.dispatcher
-
-      override protected[this] def gargoyleKeycloakTokenUrl: String = testSystem.settings.config.getString("gargoyle.sts.keycloak.token.url")
-    }
-    tokenRequest.keycloackToken(formData).flatMap(testCode)
-  }
+  private val validKeycloakCredentials = Map(
+    "grant_type" -> "password",
+    "username" -> "userone",
+    "password" -> "password",
+    "client_id" -> "sts-gargoyle"
+  )
 
   /**
     * Fixture for starting and stopping a test proxy that tests can interact with.
@@ -78,10 +70,9 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     }
   }
 
-
   "Gargoyle S3 Proxy" should {
     "connect to ceph with credentials from STS (GetSessionToken)" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
-      withOAuth2TokenRequest(validKeycloakCredentials) { keycloakToken =>
+      retrieveKeycloackToken(validKeycloakCredentials).map { keycloakToken =>
         val cred = stsSdk.getSessionToken(new GetSessionTokenRequest()
           .withTokenCode(keycloakToken.access_token))
           .getCredentials
@@ -91,6 +82,13 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
           cred.getSecretAccessKey,
           cred.getSessionToken
         )
+
+        generateCredentialsOnCeph(
+          "dude",
+          AwsRequestCredential(AwsAccessKey(cred.getAccessKeyId), AwsSessionToken(cred.getSessionToken)),
+          cred.getSecretAccessKey
+        )
+
         val s3Sdk = getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)
         withBucket(s3Sdk) { testBucket =>
           assert(s3Sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
@@ -98,10 +96,11 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       }
     }
 
+
     "connect to ceph with credentials from STS (AssumeRole)" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
-      withOAuth2TokenRequest(validKeycloakCredentials) { keycloakToken =>
+      retrieveKeycloackToken(validKeycloakCredentials).map { keycloakToken =>
         val cred = stsSdk.assumeRoleWithWebIdentity(new AssumeRoleWithWebIdentityRequest()
-          .withRoleArn("arn")
+          .withRoleArn("arn:aws:iam::123456789012:role/user")
           .withProviderId("provider")
           .withRoleSessionName("sessionName")
           .withWebIdentityToken(keycloakToken.access_token))
@@ -111,6 +110,12 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
           cred.getAccessKeyId,
           cred.getSecretAccessKey,
           cred.getSessionToken
+        )
+
+        generateCredentialsOnCeph(
+          "dude",
+          AwsRequestCredential(AwsAccessKey(cred.getAccessKeyId), AwsSessionToken(cred.getSessionToken)),
+          cred.getSecretAccessKey
         )
 
         val s3Sdk = getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)
