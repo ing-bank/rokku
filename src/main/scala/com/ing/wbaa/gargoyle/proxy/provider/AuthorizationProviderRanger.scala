@@ -52,7 +52,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
         rangerResource,
         request.accessType.rangerName,
         user.userName,
-        user.userGroups.toSet[String].asJava
+        user.userGroup.toSet[String].asJava
       )
 
       logger.debug(s"Checking ranger with request: $rangerRequest")
