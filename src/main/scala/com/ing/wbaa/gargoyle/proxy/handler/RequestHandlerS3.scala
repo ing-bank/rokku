@@ -9,7 +9,7 @@ import com.ing.wbaa.gargoyle.proxy.data.User
 import com.ing.wbaa.gargoyle.proxy.handler.radosgw.RadosGatewayHandler
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
 
@@ -18,7 +18,7 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
 
   protected[this] def storageS3Settings: GargoyleStorageS3Settings
 
-  private[this] def fireRequestToS3(request: HttpRequest): Future[HttpResponse] = {
+  protected[this] def fireRequestToS3(request: HttpRequest): Future[HttpResponse] = {
     logger.debug(s"Newly generated request: $request")
     val response = Http().singleRequest(request)
     response.foreach(r => logger.debug(s"Recieved response from Ceph: $r"))
@@ -26,16 +26,16 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
   }
 
   /**
-    * Executes a request to S3.
-    *
-    * If we get back a Forbidden code, we can try to check if there's new credentials for Ceph first.
-    * If so, we can retry the request.
-    */
+   * Executes a request to S3.
+   *
+   * If we get back a Forbidden code, we can try to check if there's new credentials for Ceph first.
+   * If so, we can retry the request.
+   */
   protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse] = {
     val newRequest = translateRequest(request, clientAddress)
 
     fireRequestToS3(newRequest).flatMap { response =>
-      if(response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest)
+      if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest)
       else Future.successful(response)
     }
   }
