@@ -18,12 +18,12 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
   private trait ProxyServiceMock extends ProxyService {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
 
-    override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse] =
+    override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse] =
       Future(HttpResponse(entity =
         s"sendToS3: ${clientAddress.toOption.map(_.getHostName).getOrElse("unknown")}:${clientAddress.getPort()}"
       ))
     override def getUserForAccessKey(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(
-      Some(User("okUser", Some("okGroup")))
+      Some(User("okUser", Some("okGroup"), "accesskey", "secretkey"))
     )
     override def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future(true)
     override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true

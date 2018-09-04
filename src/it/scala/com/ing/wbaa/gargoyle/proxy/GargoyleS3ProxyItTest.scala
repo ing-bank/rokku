@@ -13,7 +13,6 @@ import com.ing.wbaa.gargoyle.proxy.provider.AuthenticationProviderSTS
 import com.ing.wbaa.testkit.GargoyleFixtures
 import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
 import com.ing.wbaa.testkit.oauth.OAuth2TokenRequest
-import com.ing.wbaa.testkit.radosgw.RadosGwHelpers
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,8 +21,7 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   with S3SdkHelpers
   with StsSdkHelpers
   with GargoyleFixtures
-  with OAuth2TokenRequest
-  with RadosGwHelpers {
+  with OAuth2TokenRequest {
 
   import scala.collection.JavaConverters._
 
@@ -55,7 +53,7 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     * @return Future[Assertion]
     */
   def withSdkToMockProxy(testCode: (AWSSecurityTokenService, Authority) => Future[Assertion]): Future[Assertion] = {
-    val proxy = new GargoyleS3Proxy with RequestHandlerS3 with AuthenticationProviderSTS {
+    val proxy: GargoyleS3Proxy = new GargoyleS3Proxy with RequestHandlerS3 with AuthenticationProviderSTS {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
       override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(testSystem)
@@ -83,19 +81,12 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
           cred.getSessionToken
         )
 
-        generateCredentialsOnCeph(
-          "dude",
-          AwsRequestCredential(AwsAccessKey(cred.getAccessKeyId), AwsSessionToken(cred.getSessionToken)),
-          cred.getSecretAccessKey
-        )
-
         val s3Sdk = getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)
         withBucket(s3Sdk) { testBucket =>
           assert(s3Sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
         }
       }
     }
-
 
     "connect to ceph with credentials from STS (AssumeRole)" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
       retrieveKeycloackToken(validKeycloakCredentials).map { keycloakToken =>
@@ -110,12 +101,6 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
           cred.getAccessKeyId,
           cred.getSecretAccessKey,
           cred.getSessionToken
-        )
-
-        generateCredentialsOnCeph(
-          "dude",
-          AwsRequestCredential(AwsAccessKey(cred.getAccessKeyId), AwsSessionToken(cred.getSessionToken)),
-          cred.getSecretAccessKey
         )
 
         val s3Sdk = getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)

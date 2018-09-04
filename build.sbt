@@ -31,9 +31,9 @@ libraryDependencies ++= Seq(
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.372",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0",
+    "io.github.twonote"            % "radosgw-admin4j"         % "1.0.2",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
-    "com.amazonaws"                % "aws-java-sdk-sts"        % "1.11.372"        % IntegrationTest,
-    "io.github.twonote"            % "radosgw-admin4j"         % "1.0.2"           % IntegrationTest
+    "com.amazonaws"                % "aws-java-sdk-sts"        % "1.11.372"        % IntegrationTest
 )
 
 // Fix logging dependencies:

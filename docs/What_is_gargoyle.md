@@ -49,6 +49,9 @@ assume a certain role. If verified it returns a new short term token to the user
 credentials.
 6. **Gargoyle Proxy** verifies authorisation of the request with Apache Ranger and writes audit log to Apache Ranger.
 7. **Gargoyle Proxy** passes through the request to CEPH if the STS and Apache Ranger checks both succeeded.
+    >If needed the proxy will automatically create the user on CEPH using the user info from the STS service.
+    This user will only have rights for his own buckets initially, and should stil manually be made a system user to 
+    access other buckets he has rights for in Apache Ranger.
 8. **CEPH** validates the request to ensure it hasn't been tampered with.
 9. **Gargoyle Proxy** logs lineage data with Apache Atlas.
 

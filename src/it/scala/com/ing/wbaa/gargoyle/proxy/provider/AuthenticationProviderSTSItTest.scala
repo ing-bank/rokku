@@ -48,7 +48,10 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAsser
       "successfully retrieves a user" in {
         withAwsCredentialsValidInSTS { awsCredential =>
           getUserForAccessKey(awsCredential).map { userResult =>
-            assert(userResult.contains(User("userone", Some("user"))))
+            assert(userResult.map(_.userName).contains("userone"))
+            assert(userResult.flatMap(_.userGroup).contains("user"))
+            assert(userResult.exists(_.accessKey.length == 32))
+            assert(userResult.exists(_.secretKey.length == 32))
           }
         }
       }

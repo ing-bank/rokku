@@ -21,7 +21,8 @@ trait OAuth2TokenRequest {
 
   protected[this] implicit def executionContext: ExecutionContext
 
-  private[this] def gargoyleKeycloakTokenUrl: String = testSystem.settings.config.getString("gargoyle.sts.keycloak.token.url")
+  private[this] def gargoyleKeycloakTokenUrl: String =
+    testSystem.settings.config.getString("gargoyle.sts.keycloak.token.url")
 
   import spray.json._
   import DefaultJsonProtocol._

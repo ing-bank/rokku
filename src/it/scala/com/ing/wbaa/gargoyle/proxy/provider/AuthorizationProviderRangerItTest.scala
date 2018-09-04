@@ -20,6 +20,8 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
   val user = User(
     "testuser",
     Some("testgroup"),
+    "secretkey",
+    "accesskey"
   )
 
   /**
@@ -53,7 +55,7 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
       }
 
       "doesn't authorize for unauthorized user and group" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request, user.copy(userName = "unauthorized", userGroups = Some("unauthorized"))))
+        assert(!apr.isUserAuthorizedForRequest(s3Request, user.copy(userName = "unauthorized", userGroup = Some("unauthorized"))))
       }
 
       "does authorize for unauthorized user but authorized group" in withAuthorizationProviderRanger() { apr =>
@@ -61,7 +63,7 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
       }
 
       "does authorize for authorized user but unauthorized group" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userGroups = Some("unauthorized"))))
+        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userGroup = Some("unauthorized"))))
       }
 
       "doesn't authorize allow-list-buckets with default settings" in withAuthorizationProviderRanger() { apr =>

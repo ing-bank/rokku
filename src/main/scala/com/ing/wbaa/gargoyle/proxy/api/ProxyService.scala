@@ -20,7 +20,7 @@ trait ProxyService extends LazyLogging {
   protected[this] implicit def system: ActorSystem
 
   // Request Handler methods
-  protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress): Future[HttpResponse]
+  protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse]
 
   // Authentication methods
   protected[this] def getUserForAccessKey(awsRequestCredential: AwsRequestCredential): Future[Option[User]]
@@ -40,14 +40,14 @@ trait ProxyService extends LazyLogging {
                 logger.debug(s"Request authenticated: $s3Request")
 
                 onComplete(getUserForAccessKey(s3Request.credential)) {
-                  case Success(Some(user: User)) =>
-                    logger.debug(s"User retrieved: $user")
+                  case Success(Some(userSTS: User)) =>
+                    logger.debug(s"User retrieved: $userSTS")
 
-                    if (isUserAuthorizedForRequest(s3Request, user)) {
-                      logger.info(s"User (${user.userName}) successfully authorized for request: $s3Request")
-                      complete(executeRequest(httpRequest, remoteAddress))
+                    if (isUserAuthorizedForRequest(s3Request, userSTS)) {
+                      logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
+                      complete(executeRequest(httpRequest, remoteAddress, userSTS))
                     } else {
-                      val msg = s"User (${user.userName}) not authorized for request: $s3Request"
+                      val msg = s"User (${userSTS.userName}) not authorized for request: $s3Request"
                       logger.warn(msg)
                       complete((StatusCodes.Unauthorized, msg))
                     }

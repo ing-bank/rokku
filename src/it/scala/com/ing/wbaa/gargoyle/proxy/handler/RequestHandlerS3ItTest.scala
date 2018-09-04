@@ -33,12 +33,13 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
     * @return Assertion
     */
   def withS3SdkToMockProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
-    val proxy = new GargoyleS3Proxy with RequestHandlerS3 {
+    val proxy: GargoyleS3Proxy = new GargoyleS3Proxy with RequestHandlerS3 {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
       override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
       override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(testSystem)
-      override def getUserForAccessKey(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(Some(User("userId", Some("group"))))
+      override def getUserForAccessKey(awsRequestCredential: AwsRequestCredential): Future[Option[User]] =
+        Future(Some(User("userId", Some("group"), "accesskey", "secretkey")))
       override def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future.successful(true)
     }
     proxy.startup.map { binding =>
