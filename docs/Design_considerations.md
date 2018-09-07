@@ -78,6 +78,32 @@ default. This requires that STS keeps consistent state between itself, Ranger an
 
 ## Deployment choices
 
+### Dependent components - Ranger and Atlas
+
+In general Ranger and Atlas come as part of Hortonworks HDP. But they are also available as standalone
+components.
+There are two options to consider:
+
+#### option 1 - integrate with services from HDP and reuse existing setup
+
+Pros:
+- already existing infrastructure
+- separate maintenance is not required  
+
+Cons:
+- setup and integration may be more complex
+
+
+#### option 2 - deploy and maintain separate instances of Ranger and Atlas
+
+Pros:
+- infra just for Gargoyle needs
+- dedicated setup is done for Gargoyle
+
+Cons:
+- new components for maintenance 
+    
+
 ### On RGW nodes vs. Openshift
 
 Gargoyle proxy will be placed on the same nodes that Ceph RadosGW. RGW will listen on localhost, while
@@ -98,9 +124,25 @@ operations like multipart upload?
 ### Event logging 
 
 Log agent allowing log shipment to external system like kafka or ELK.
-Logs should be also reported to console or file?  
 We should decide on particular software library for this. For instance fluentd can be used to
 send messages to various sinks.
+
+#### logging infra components
+
+Apache Ranger requires Solr to store audit logs. DB audit is no longer supported. Solr is not preferred because
+of additional complexity in maintenance.
+
+Possible options:
+* proxy and sts -> flat file -> filebeat -> kafka
+* proxy and sts -> kafka direct
+* proxy -> solr and sts -> kafka or file (not preferred)  
+     
+#### open points 
+
+* What proxy events we want to log - is ranger audit enough? It will not catch list-create bucket events 
+* We want to use the same logging for proxy and sts? 
+* We should have request id (or some id) to correlate sts and proxy logs. Id can be encoded in JWT token?
+* Logs should be also reported to console or file?  
 
 ### Metrics collection
 
