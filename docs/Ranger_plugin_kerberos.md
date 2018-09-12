@@ -43,6 +43,19 @@ kinit -kt /path/to/user.keytab prinipal/<fqdn host@REALM
 policy.download.auth.users  <username>
 ```
 
+##### NOTE
+If Ranger is setup for SSL connections, review `ranger-s3-security.xml` file and make sure that ssl section is set
+accordingly
+
+```
+<property>
+ <name>ranger.plugin.s3.policy.rest.ssl.config.file</name>
+ <value>/etc/hadoop/conf/ranger-policymgr-ssl.xml</value> 
+ <description>
+    Path to the file containing SSL details to contact Ranger Admin
+ </description>
+</property> 
+```
 
 ## troubleshooting
 
