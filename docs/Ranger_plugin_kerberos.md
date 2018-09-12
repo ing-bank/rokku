@@ -29,7 +29,7 @@ HDP cluster or in classpath.
 to verify if authorizer is connecting to secured endpoints check access_log. it should contain similar attempts
 
 ```
-127.0.0.1 - - [11/Sep/2018:16:34:51 +0000] "GET /service/plugins/secure/policies/download/testservice?lastKnownVersion=-1&lastActivationTime=0&pluginId=testservice@linux1.tech.pl-testservice&clusterName= HTTP/1.1" 401 - "-" "Java/1.8.0_181
+127.0.0.1 - - [11/Sep/2018:16:34:51 +0000] "GET /service/plugins/secure/policies/download/testservice?lastKnownVersion=-1&lastActivationTime=0&pluginId=testservice@some.host-testservice&clusterName= HTTP/1.1" 401 - "-" "Java/1.8.0_181
 ``` 
 
 non secured one connects to `/service/plugins/policies/download/testservice` 
@@ -78,6 +78,6 @@ useful links
 
 ```
 # kinit -kt /path/to/keytab principal
-# curl --negotiate -u : -vk  -X GET http://linux1.tech.pl:6080/service/plugins/secure/policies/download/testservice
+# curl --negotiate -u : -vk  -X GET http://ranger:6080/service/plugins/secure/policies/download/testservice
 ```
 
