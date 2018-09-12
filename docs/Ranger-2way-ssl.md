@@ -70,7 +70,7 @@ java -cp "/opt/ranger-1.1.0-admin/cred/lib/*" org.apache.ranger.credentialapi.bu
 
 ## Steps to configure plugin
 
-1. Modify `ranger-s3-audit.xml` file in order to point Ranger Authorizer to secure Ranger Rest API
+1. Modify `ranger-s3-security.xml` file in order to point Ranger Authorizer to secure Ranger Rest API
 
 ```
 <property>
@@ -78,7 +78,7 @@ java -cp "/opt/ranger-1.1.0-admin/cred/lib/*" org.apache.ranger.credentialapi.bu
     <value>https://localhost:6182</value>
 ```
 
-2. Add following section to `ranger-s3-audit.xml` and adjust value to directory containing `ranger-s3-policymgr-ssl.xml`
+2. Add following section to `ranger-s3-security.xml` and adjust value to directory containing `ranger-s3-policymgr-ssl.xml`
 
 ```
  <property>
