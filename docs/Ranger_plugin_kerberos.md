@@ -34,11 +34,14 @@ to verify if authorizer is connecting to secured endpoints check access_log. it 
 
 non secured one connects to `/service/plugins/policies/download/testservice` 
 
-2. Before running service request kerberos ticket
+2. Before running service request issue kerberos ticket
 
 kinit -kt /path/to/user.keytab prinipal/<fqdn host@REALM
 
 3. In ranger plugin settings add following to control which user can download policies
+```
+policy.download.auth.users  <username>
+```
 
 
 ## troubleshooting
@@ -50,18 +53,13 @@ If all steps are correctly configured plugin will be listed in Ranger Audit plug
 * access_log
 * ranger-admin-hostname-ranger.log
 
-
-```
-policy.download.auth.users  <username>
-```
-
 4. Run proxy service
 
 ## test Ranger setup
 useful links
 
-[Ranger kerberos setup CWIKI](https://cwiki.apache.org/confluence/display/RANGER/Ranger+installation+in+Kerberized++Environment)
-[Kerberos setup on centos](https://gist.github.com/ashrithr/4767927948eca70845db)
+* [Ranger kerberos setup CWIKI](https://cwiki.apache.org/confluence/display/RANGER/Ranger+installation+in+Kerberized++Environment)
+* [Kerberos setup on centos](https://gist.github.com/ashrithr/4767927948eca70845db)
 
 * test kerberos with curl
 
