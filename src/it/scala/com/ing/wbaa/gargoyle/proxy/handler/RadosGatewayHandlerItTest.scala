@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
 import com.ing.wbaa.gargoyle.proxy.data.User
 import com.ing.wbaa.gargoyle.proxy.handler.radosgw.RadosGatewayHandler
-import org.scalatest.{DiagrammedAssertions, WordSpec}
+import org.scalatest.{WordSpec, DiagrammedAssertions}
 import org.twonote.rgwadmin4j.{RgwAdmin, RgwAdminBuilder}
 
 import scala.util.Random
@@ -34,7 +34,11 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
         val isCreated = handleUserCreationRadosGw(u)
         assert(isCreated)
         val retrievedUser = rgwAdmin.getUserInfo(u.userName)
+
         assert(retrievedUser.isPresent)
+        assert(retrievedUser.get().getS3Credentials.size() == 1)
+        assert(retrievedUser.get().getS3Credentials.get(0).getAccessKey == u.accessKey)
+        assert(retrievedUser.get().getS3Credentials.get(0).getSecretKey == u.secretKey)
       }
 
       "for an existing user with no credentials create the credentials" in {
@@ -46,6 +50,12 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
 
         val isUpdated = handleUserCreationRadosGw(u)
         assert(isUpdated)
+
+        val retrievedUser = rgwAdmin.getUserInfo(u.userName)
+        assert(retrievedUser.isPresent)
+        assert(retrievedUser.get().getS3Credentials.size() == 1)
+        assert(retrievedUser.get().getS3Credentials.get(0).getAccessKey == u.accessKey)
+        assert(retrievedUser.get().getS3Credentials.get(0).getSecretKey == u.secretKey)
       }
 
       "for an existing user with more than 1 credentials returns false" in {
@@ -57,6 +67,22 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
 
         val isUpdated = handleUserCreationRadosGw(u)
         assert(!isUpdated)
+      }
+
+      "resets credentials when user in STS and ceph mismatch credentials" in {
+        val u = testUser
+        val isCreated = handleUserCreationRadosGw(u)
+        assert(isCreated)
+
+        val u2 = testUser
+        val isUpdated = handleUserCreationRadosGw(u.copy(accessKey = u2.accessKey, secretKey = u2.secretKey))
+        assert(isUpdated)
+
+        val retrievedUser = rgwAdmin.getUserInfo(u.userName)
+        assert(retrievedUser.isPresent)
+        assert(retrievedUser.get().getS3Credentials.size() == 1)
+        assert(retrievedUser.get().getS3Credentials.get(0).getAccessKey == u2.accessKey)
+        assert(retrievedUser.get().getS3Credentials.get(0).getSecretKey == u2.secretKey)
       }
 
       "doesn't do anything when user in STS and ceph already match" in {

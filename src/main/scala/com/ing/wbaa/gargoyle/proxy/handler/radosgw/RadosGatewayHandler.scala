@@ -50,6 +50,24 @@ trait RadosGatewayHandler extends LazyLogging {
     }
   }
 
+  private[this] def updateCredentialsOnCeph(uid: String, oldAccessKey: String, newAccessKey: String, newSecretKey: String): Boolean = {
+    Try {
+      rgwAdmin.removeS3Credential(uid, oldAccessKey)
+      rgwAdmin.createS3Credential(uid, newAccessKey, newSecretKey)
+    } match {
+      case Success(creds) =>
+        logger.info(s"Updated on CEPH: " +
+          s"UID=${creds.get(0).getUserId}, " +
+          s"AccessKey=${creds.get(0).getAccessKey}," +
+          s"SecretKey=${creds.get(0).getSecretKey}")
+        true
+
+      case Failure(exc) =>
+        logger.error("Unexpected exception during user update", exc)
+        false
+    }
+  }
+
   private[this] def getUserOnCeph(uid: String): Option[UserOnCeph] = {
     import scala.collection.JavaConverters._
 
@@ -95,10 +113,17 @@ trait RadosGatewayHandler extends LazyLogging {
         logger.error(s"User from STS exists on CEPH, but has multiple credentials (userSTS: $userSTS)")
         false
 
-      // User on CEPH and STS match, so nothing to be done
-      case Some(creds) if creds == List(CredentialsOnCeph(userSTS.accessKey, userSTS.secretKey)) =>
-        logger.info(s"User from STS exists on CEPH with same credentials already (userSTS: $userSTS)")
-        false
+      // User on CEPH exists and has single credential
+      case Some(List(CredentialsOnCeph(cephAccessKey, cephSecretKey))) =>
+        // User on CEPH and STS match, so nothing to be done
+        if (cephAccessKey == userSTS.accessKey && cephSecretKey == userSTS.secretKey) {
+          logger.debug(s"User from STS exists on CEPH with same credentials already (userSTS: $userSTS)")
+          false
+        } // Keys for user on CEPH don't match with keys in STS, update keys in CEPH according to those of sts
+        else {
+          logger.info(s"Keys for the user from STS don't match those on CEPH (userSTS: $userSTS, userCeph: $cephAccessKey/$cephSecretKey)")
+          updateCredentialsOnCeph(userSTS.userName, cephAccessKey, userSTS.accessKey, userSTS.secretKey)
+        }
     }
   }
 }
