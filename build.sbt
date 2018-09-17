@@ -32,6 +32,7 @@ libraryDependencies ++= Seq(
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0",
     "io.github.twonote"            % "radosgw-admin4j"         % "1.0.2",
+    "org.scala-lang.modules"       %% "scala-xml"              % "1.1.0",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
     "com.amazonaws"                % "aws-java-sdk-sts"        % "1.11.372"        % IntegrationTest
 )
@@ -72,6 +73,9 @@ scalariformPreferences := scalariformPreferences.value
     .setPreference(DoubleIndentMethodDeclaration, true)
     .setPreference(NewlineAtEndOfFile, true)
     .setPreference(SingleCasePatternOnNewline, false)
+
+// hack for ranger conf dir - should contain files like ranger-s3-security.xml etc.
+scriptClasspath in bashScriptDefines ~= (cp => cp :+ ":/etc/gargoyle")
 
 //Coverage settings
 coverageMinimum := 70
