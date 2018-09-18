@@ -81,4 +81,4 @@ scriptClasspath in bashScriptDefines ~= (cp => cp :+ ":/etc/gargoyle")
 coverageMinimum := 70
 coverageFailOnMinimum := false
 coverageHighlighting := true
-coverageEnabled := true
+coverageEnabled := false
