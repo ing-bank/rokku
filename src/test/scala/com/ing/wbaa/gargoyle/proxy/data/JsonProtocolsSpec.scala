@@ -12,7 +12,7 @@ class JsonProtocolsSpec extends WordSpec with DiagrammedAssertions with JsonProt
         val jsonString =
           """{
             | "userName": "user",
-            | "userGroup": "group1",
+            | "userAssumedGroup": "group1",
             | "accessKey": "accesskey",
             | "secretKey": "secretkey"
             |}""".stripMargin

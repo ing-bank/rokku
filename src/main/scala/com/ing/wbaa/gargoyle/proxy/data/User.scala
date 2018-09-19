@@ -5,7 +5,7 @@ case class UserAssumedGroup(value: String) extends AnyVal
 
 case class UserRawJson(
     userName: String,
-    userGroup: Option[String],
+    userAssumedGroup: Option[String],
     accessKey: String,
     secretKey: String)
 
@@ -19,7 +19,7 @@ object User {
   def apply(userRawJson: UserRawJson): User =
     User(
       UserName(userRawJson.userName),
-      userRawJson.userGroup.map(UserAssumedGroup),
+      userRawJson.userAssumedGroup.map(UserAssumedGroup),
       AwsAccessKey(userRawJson.accessKey),
       AwsSecretKey(userRawJson.secretKey)
     )
