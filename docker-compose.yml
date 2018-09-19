@@ -30,7 +30,7 @@ services:
       - "6080:6080"
 
   gargoyle-sts:
-    image: kr7ysztof/gargoyle-sts:NPA
+    image: kr7ysztof/gargoyle-sts:0.0.7
     environment:
       - STS_HOST=0.0.0.0
       - STS_PORT=12345
