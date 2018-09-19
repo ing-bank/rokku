@@ -73,8 +73,11 @@ scalariformPreferences := scalariformPreferences.value
     .setPreference(NewlineAtEndOfFile, true)
     .setPreference(SingleCasePatternOnNewline, false)
 
+// hack for ranger conf dir - should contain files like ranger-s3-security.xml etc.
+scriptClasspath in bashScriptDefines ~= (cp => cp :+ ":/etc/gargoyle")
+
 //Coverage settings
-coverageMinimum := 70
-coverageFailOnMinimum := false
-coverageHighlighting := true
-coverageEnabled := true
+Compile / coverageMinimum := 70
+Compile / coverageFailOnMinimum := false
+Compile / coverageHighlighting := true
+Compile / coverageEnabled := true
