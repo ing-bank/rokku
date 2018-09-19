@@ -39,42 +39,26 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAsser
         .withWebIdentityToken(keycloakToken.access_token))
         .getCredentials
 
-      testCode(AwsRequestCredential(AwsAccessKey(cred.getAccessKeyId), AwsSessionToken(cred.getSessionToken)))
+      testCode(AwsRequestCredential(AwsAccessKey(cred.getAccessKeyId), Some(AwsSessionToken(cred.getSessionToken))))
     }
   }
 
   "Authentication Provider STS" should {
-    "get a user" that {
-      "successfully retrieves a user" in {
-        withAwsCredentialsValidInSTS { awsCredential =>
-          getUserForAccessKey(awsCredential).map { userResult =>
-            assert(userResult.map(_.userName).contains("userone"))
-            assert(userResult.flatMap(_.userGroup).contains("user"))
-            assert(userResult.exists(_.accessKey.length == 32))
-            assert(userResult.exists(_.secretKey.length == 32))
-          }
-        }
-      }
-
-      "return None when a user could not be found with STS" in {
-        getUserForAccessKey(AwsRequestCredential(AwsAccessKey("nonexistent"), AwsSessionToken("sessiontoken"))).map { userResult =>
-          assert(userResult.isEmpty)
-        }
-      }
-    }
-
     "check authentication" that {
       "succeeds for valid credentials" in {
         withAwsCredentialsValidInSTS { awsCredential =>
-          areCredentialsAuthentic(awsCredential).map { userResult =>
-            assert(userResult)
+          areCredentialsActive(awsCredential).map { userResult =>
+            assert(userResult.map(_.userName).contains(UserName("userone")))
+            assert(userResult.flatMap(_.userAssumedGroup).contains(UserAssumedGroup("user")))
+            assert(userResult.exists(_.accessKey.value.length == 32))
+            assert(userResult.exists(_.secretKey.value.length == 32))
           }
         }
       }
 
       "fail when user is not authenticated" in {
-        areCredentialsAuthentic(AwsRequestCredential(AwsAccessKey("notauthenticated"), AwsSessionToken("okSessionToken"))).map { userResult =>
-          assert(!userResult)
+        areCredentialsActive(AwsRequestCredential(AwsAccessKey("notauthenticated"), Some(AwsSessionToken("okSessionToken")))).map { userResult =>
+          assert(userResult.isEmpty)
         }
       }
     }

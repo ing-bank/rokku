@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.Uri.{Authority, Host}
 import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.gargoyle.proxy.GargoyleS3Proxy
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings}
-import com.ing.wbaa.gargoyle.proxy.data.{AwsRequestCredential, S3Request, User}
+import com.ing.wbaa.gargoyle.proxy.data.{AwsRequestCredential, S3Request, User, UserRawJson}
 import com.ing.wbaa.testkit.GargoyleFixtures
 import org.scalatest._
 
@@ -38,9 +38,8 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
       override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
       override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
       override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(testSystem)
-      override def getUserForAccessKey(awsRequestCredential: AwsRequestCredential): Future[Option[User]] =
-        Future(Some(User("userId", Some("group"), "accesskey", "secretkey")))
-      override def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean] = Future.successful(true)
+      override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] =
+        Future(Some(User(UserRawJson("userId", Some("group"), "accesskey", "secretkey"))))
     }
     proxy.startup.map { binding =>
       try testCode(getAmazonS3(
