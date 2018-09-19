@@ -16,6 +16,8 @@ When all is runnning we can start the proxy:
 
     sbt run
 
+NOTE: `ranger-s3-security.xml` must exist in resources directory or in directory from classpath
+
 > for windows docker runs on different it so you need to:
 > set environmental variables:
 > * GARGOYLE_STS_HOST
@@ -24,8 +26,6 @@ When all is runnning we can start the proxy:
 > * change GARGOYLE_KEYCLOAK_URL in the docker-compose.yml
 > * change the ranger.plugin.s3.policy.rest.url in ranger-s3-security.xml
 
-NOTE: `ranger-s3-security.xml` must exist in resources directory or in directory from classpath
-
 ## Proxy as docker image
 
 When proxy is started as docker image, it will look for ranger-s3-security.xml file to find out how to connect to 
@@ -33,7 +33,7 @@ Ranger.
 Docker image should be started with volume mount, like
 
 ```
-docker run -d -v/host/dir/with/xmls:/etc/gargoyle -p 8010:8010 gragoyle-s3proxy
+docker run -d -v /host/dir/with/xmls:/etc/gargoyle -p 8010:8010 gragoyle-s3proxy
 ``` 
 
 Sample `ranger-s3-security.xml` can be found in Ranger github repository or in this repository in integration tests 
