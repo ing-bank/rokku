@@ -32,7 +32,6 @@ libraryDependencies ++= Seq(
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0",
     "io.github.twonote"            % "radosgw-admin4j"         % "1.0.2",
-    "org.scala-lang.modules"       %% "scala-xml"              % "1.1.0",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
     "com.amazonaws"                % "aws-java-sdk-sts"        % "1.11.372"        % IntegrationTest
 )
@@ -78,7 +77,7 @@ scalariformPreferences := scalariformPreferences.value
 scriptClasspath in bashScriptDefines ~= (cp => cp :+ ":/etc/gargoyle")
 
 //Coverage settings
-coverageMinimum := 70
-coverageFailOnMinimum := false
-coverageHighlighting := true
-coverageEnabled := false
+Compile / coverageMinimum := 70
+Compile / coverageFailOnMinimum := false
+Compile / coverageHighlighting := true
+Compile / coverageEnabled := true
