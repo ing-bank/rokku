@@ -16,7 +16,7 @@ When all is runnning we can start the proxy:
 
     sbt run
 
-NOTE: `ranger-s3-security.xml` must exist in resources directory or in directory from classpath
+NOTE: `ranger-s3-security.xml` must exist in resources directory or in directory from classpath (`/etc/gargoyle` is one of these directories where you can put the xml)
 
 > for windows docker runs on different it so you need to:
 > set environmental variables:
