@@ -1,7 +1,8 @@
 package com.ing.wbaa.gargoyle.proxy.api
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, RemoteAddress, StatusCodes }
+import akka.http.scaladsl.model.Uri.Authority
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import com.ing.wbaa.gargoyle.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.gargoyle.proxy.data.{ AwsRequestCredential, S3Request, User }
@@ -30,14 +31,13 @@ trait ProxyService extends LazyLogging {
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
 
   // Atlas method
-  protected[this] def createLineageFromRequest(httpRequest: HttpRequest): Future[(String, String, String, String)]
+  protected[this] def createLineageFromRequest(s3Request: S3Request, authority: Authority, contentType: ContentType): Future[Option[(String, String, String, String)]]
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
       extractClientIP { remoteAddress =>
         extractRequest { httpRequest =>
           extracts3Request { s3Request =>
-
             onComplete(areCredentialsAuthentic(s3Request.credential)) {
               case Success(true) =>
                 logger.debug(s"Request authenticated: $s3Request")
@@ -48,7 +48,7 @@ trait ProxyService extends LazyLogging {
 
                     if (isUserAuthorizedForRequest(s3Request, userSTS)) {
                       logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
-                      createLineageFromRequest(httpRequest) //todo: make this resistent for atlas not reachable
+                      createLineageFromRequest(s3Request, httpRequest.uri.authority, httpRequest.entity.contentType) //todo: make this resistent for atlas not reachable
                       complete(executeRequest(httpRequest, remoteAddress, userSTS))
                     } else {
                       val msg = s"User (${userSTS.userName}) not authorized for request: $s3Request"

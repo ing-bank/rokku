@@ -1,52 +1,67 @@
 package com.ing.wbaa.gargoyle.proxy.provider
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.ContentType
+import akka.http.scaladsl.model.Uri.Authority
 import akka.stream.Materializer
+import com.ing.wbaa.gargoyle.proxy.data.S3Request
 import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ Bucket, BucketAttributes, Classification, Entities, FileAttributes, IngestedFile, Ingestion, IngestionAttributes, Server, ServerAttributes, guidRef }
 import com.ing.wbaa.gargoyle.proxy.provider.Atlas.RestClient
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-trait LineageProviderAtlas {
+trait LineageProviderAtlas extends LazyLogging {
 
   protected[this] implicit def system: ActorSystem
   protected[this] implicit def executionContext: ExecutionContext
   protected[this] implicit def materializer: Materializer
 
-  def createLineageFromRequest(httpRequest: HttpRequest): Future[(String, String, String, String)] = {
+  def createLineageFromRequest(s3Request: S3Request, authority: Authority, contentType: ContentType): Future[Option[(String, String, String, String)]] = {
 
     val client = new RestClient()
 
-    val userSTS = "Adam" // replace with proxy val
-    val host = httpRequest.uri.authority.toString()
-    val hostIP = httpRequest.uri.authority.host.address()
-    val bucketPath = httpRequest.uri.path.toString() // extract file / bucket etc.
-    val method = httpRequest.method.value
+    val userSTS = s3Request.credential.accessKey.value
+    val host = authority.host.address()
+    val bucket = s3Request.bucket.getOrElse("notDef")
+    val bucketObject = s3Request.bucketObjectRoot.getOrElse("emptyObject")
+    val method = s3Request.accessType.rangerName
 
     //create entities
-    val server = Server("server", userSTS, ServerAttributes(host, host, host, hostIP), Seq(Classification("storage_node")))
-    val bucket = Bucket("Bucket", userSTS, BucketAttributes(bucketPath, bucketPath, bucketPath), Seq(Classification("customer_PII")))
+    val serverEntity = Server("server", userSTS, ServerAttributes(host, host, host, host), Seq(Classification("storage_node")))
+    val bucketEntity = Bucket("Bucket", userSTS, BucketAttributes(bucket, bucket, bucket), Seq(Classification("customer_PII")))
 
-    val responseJsons = for {
-      serverGuid <- client.postData(Entities(Seq(server)).toJson)
-      bucketGuid <- client.postData(Entities(Seq(bucket)).toJson)
-      fileGuid <- client.postData(Entities(Seq(
-        IngestedFile("DataFile", userSTS, FileAttributes(bucketPath, bucketPath, bucketPath, "notDef",
+    def fileEntity(serverGuid: String, bucketGuid: String) =
+      IngestedFile(
+        "DataFile",
+        userSTS,
+        FileAttributes(bucketObject, bucketObject, bucketObject, contentType.mediaType.value,
           guidRef(bucketGuid, "Bucket"),
           guidRef(serverGuid, "server"),
           List(guidRef(serverGuid, "server")),
-          Seq(Classification("customer_PII"))
-        )))).toJson)
-      processGuid <- client.postData(Entities(Seq(
-        Ingestion("aws_cli_script", userSTS, IngestionAttributes("aws_cli_s3api", "aws_cli_s3api", method, userSTS,
+          Seq(Classification("customer_PII"))))
+
+    def processEntity(serverGuid: String, bucketGuid: String, fileGuid: String) =
+      Ingestion(
+        "aws_cli_script",
+        userSTS,
+        IngestionAttributes("aws_cli_s3api", "aws_cli_s3api", method, userSTS,
           guidRef(serverGuid, "server"),
           List(guidRef(fileGuid, "DataFile")),
           List(guidRef(bucketGuid, "Bucket"))
         ))
-      )).toJson)
-    } yield (serverGuid, bucketGuid, fileGuid, processGuid)
 
-    responseJsons
+    if (bucket != "notDef") {
+      logger.debug(s"Creating lineage for request to ${method} file ${bucketObject} to ${bucket}")
+
+      val guidResponse = for {
+        serverGuid <- client.postData(Entities(Seq(serverEntity)).toJson)
+        bucketGuid <- client.postData(Entities(Seq(bucketEntity)).toJson)
+        fileGuid <- if(bucketObject != "emptyObject") client.postData(Entities(Seq(fileEntity(serverGuid, bucketGuid))).toJson)
+        processGuid <- client.postData(Entities(Seq(processEntity(serverGuid, bucketGuid, fileGuid))).toJson)
+      } yield Some(Tuple4(serverGuid, bucketGuid, fileGuid, processGuid))
+      guidResponse
+    } else { Future(None) }
+
   }
 }
