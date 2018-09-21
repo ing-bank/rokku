@@ -51,8 +51,8 @@ trait AuthorizationProviderRanger extends LazyLogging {
       val rangerRequest = new RangerAccessRequestImpl(
         rangerResource,
         request.accessType.rangerName,
-        user.userName,
-        user.userGroup.toSet[String].asJava
+        user.userName.value,
+        user.userAssumedGroup.map(_.value).toSet[String].asJava
       )
 
       logger.debug(s"Checking ranger with request: $rangerRequest")

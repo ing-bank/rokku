@@ -1,7 +1,7 @@
 package com.ing.wbaa.gargoyle.proxy.api.directive
 
 import akka.http.scaladsl.model.HttpHeader
-import akka.http.scaladsl.server.{ Directive1, MissingHeaderRejection }
+import akka.http.scaladsl.server.Directive1
 import com.ing.wbaa.gargoyle.proxy.data._
 import com.typesafe.scalalogging.LazyLogging
 
@@ -44,11 +44,11 @@ object ProxyDirectives extends LazyLogging {
   val extracts3Request: Directive1[S3Request] =
     extractRequest tflatMap { case Tuple1(httpRequest) =>
       optionalHeaderValueByName("x-amz-security-token") tflatMap {
-        case Tuple1(Some(sessionToken)) =>
+        case Tuple1(optionalSessionToken) =>
           headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
 
             val s3Request = S3Request(
-              AwsRequestCredential(awsAccessKey, AwsSessionToken(sessionToken)),
+              AwsRequestCredential(awsAccessKey, optionalSessionToken.map(AwsSessionToken)),
               httpRequest.uri.path,
               httpRequest.method
             )
@@ -56,9 +56,6 @@ object ProxyDirectives extends LazyLogging {
             logger.debug(s"Extracted S3 Request: $s3Request")
             s3Request
           }
-        case Tuple1(None) =>
-          logger.info("STS token not provided in header of request")
-          reject(MissingHeaderRejection("x-amz-security-token"))
       }
     }
 }

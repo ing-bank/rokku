@@ -11,17 +11,17 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
   final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
   val s3Request = S3Request(
-    AwsRequestCredential(AwsAccessKey("accesskey"), AwsSessionToken("sessiontoken")),
+    AwsRequestCredential(AwsAccessKey("accesskey"), Some(AwsSessionToken("sessiontoken"))),
     Some("demobucket"),
     None,
     Read
   )
 
   val user = User(
-    "testuser",
-    Some("testgroup"),
-    "secretkey",
-    "accesskey"
+    UserName("testuser"),
+    Some(UserAssumedGroup("testgroup")),
+    AwsAccessKey("accesskey"),
+    AwsSecretKey("secretkey")
   )
 
   /**
@@ -55,15 +55,16 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
       }
 
       "doesn't authorize for unauthorized user and group" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request, user.copy(userName = "unauthorized", userGroup = Some("unauthorized"))))
+        assert(!apr.isUserAuthorizedForRequest(s3Request, user.copy(
+          userName = UserName("unauthorized"), userAssumedGroup = Some(UserAssumedGroup("unauthorized")))))
       }
 
       "does authorize for unauthorized user but authorized group" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userName = "unauthorized")))
+        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userName = UserName("unauthorized"))))
       }
 
       "does authorize for authorized user but unauthorized group" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userGroup = Some("unauthorized"))))
+        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userAssumedGroup = Some(UserAssumedGroup("unauthorized")))))
       }
 
       "doesn't authorize allow-list-buckets with default settings" in withAuthorizationProviderRanger() { apr =>

@@ -2,7 +2,7 @@ package com.ing.wbaa.gargoyle.proxy.handler.radosgw
 
 import akka.actor.ActorSystem
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
-import com.ing.wbaa.gargoyle.proxy.data.User
+import com.ing.wbaa.gargoyle.proxy.data.{ AwsAccessKey, AwsSecretKey, User, UserName }
 import com.typesafe.scalalogging.LazyLogging
 import org.twonote.rgwadmin4j.{ RgwAdmin, RgwAdminBuilder }
 
@@ -14,8 +14,8 @@ trait RadosGatewayHandler extends LazyLogging {
 
   protected[this] def storageS3Settings: GargoyleStorageS3Settings
 
-  private[this] case class CredentialsOnCeph(accessKey: String, secretKey: String)
-  private[this] case class UserOnCeph(uid: String, credentials: List[CredentialsOnCeph])
+  private[this] case class CredentialsOnCeph(awsAccessKey: AwsAccessKey, awsSecretKey: AwsSecretKey)
+  private[this] case class UserOnCeph(userName: UserName, credentials: List[CredentialsOnCeph])
 
   private[this] lazy val rgwAdmin: RgwAdmin = new RgwAdminBuilder()
     .accessKey(storageS3Settings.storageS3AdminAccesskey)
@@ -23,16 +23,16 @@ trait RadosGatewayHandler extends LazyLogging {
     .endpoint(s"http://${storageS3Settings.storageS3Authority.host.address()}:${storageS3Settings.storageS3Authority.port}/admin")
     .build
 
-  private[this] def createCredentialsOnCeph(uid: String, accessKey: String, secretKey: String): Boolean = {
+  private[this] def createCredentialsOnCeph(userName: UserName, awsAccessKey: AwsAccessKey, awsSecretKey: AwsSecretKey): Boolean = {
     import scala.collection.JavaConverters._
 
     Try {
       rgwAdmin.createUser(
-        uid,
+        userName.value,
         Map(
-          "display-name" -> uid,
-          "access-key" -> accessKey,
-          "secret-key" -> secretKey
+          "display-name" -> userName.value,
+          "access-key" -> awsAccessKey.value,
+          "secret-key" -> awsSecretKey.value
         ).asJava
       )
     } match {
@@ -50,10 +50,10 @@ trait RadosGatewayHandler extends LazyLogging {
     }
   }
 
-  private[this] def updateCredentialsOnCeph(uid: String, oldAccessKey: String, newAccessKey: String, newSecretKey: String): Boolean = {
+  private[this] def updateCredentialsOnCeph(userName: UserName, oldAccessKey: AwsAccessKey, newAccessKey: AwsAccessKey, newSecretKey: AwsSecretKey): Boolean = {
     Try {
-      rgwAdmin.removeS3Credential(uid, oldAccessKey)
-      rgwAdmin.createS3Credential(uid, newAccessKey, newSecretKey)
+      rgwAdmin.removeS3Credential(userName.value, oldAccessKey.value)
+      rgwAdmin.createS3Credential(userName.value, newAccessKey.value, newSecretKey.value)
     } match {
       case Success(creds) =>
         logger.info(s"Updated on CEPH: " +
@@ -68,15 +68,17 @@ trait RadosGatewayHandler extends LazyLogging {
     }
   }
 
-  private[this] def getUserOnCeph(uid: String): Option[UserOnCeph] = {
+  private[this] def getUserOnCeph(userName: UserName): Option[UserOnCeph] = {
     import scala.collection.JavaConverters._
 
-    Try(rgwAdmin.getUserInfo(uid)).toOption.flatMap(cuo =>
+    Try(rgwAdmin.getUserInfo(userName.value)).toOption.flatMap(cuo =>
       if (cuo.isPresent) {
         val cephUser = cuo.get
         Some(UserOnCeph(
-          cephUser.getUserId,
-          cephUser.getS3Credentials.asScala.toList.map(c => CredentialsOnCeph(c.getAccessKey, c.getSecretKey))
+          UserName(cephUser.getUserId),
+          cephUser.getS3Credentials.asScala.toList.map(c =>
+            CredentialsOnCeph(AwsAccessKey(c.getAccessKey), AwsSecretKey(c.getSecretKey))
+          )
         ))
       } else None
     )

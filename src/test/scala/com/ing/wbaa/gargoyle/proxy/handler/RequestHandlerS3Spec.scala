@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
-import com.ing.wbaa.gargoyle.proxy.data.User
+import com.ing.wbaa.gargoyle.proxy.data.{ User, UserRawJson }
 import org.scalatest.{ AsyncWordSpec, DiagrammedAssertions }
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -47,7 +47,7 @@ class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with 
         executeRequest(
           HttpRequest(),
           RemoteAddress(new InetSocketAddress(2000)),
-          User("u", None, "a", "s")
+          User(UserRawJson("u", None, "a", "s"))
         ).map(_ => assert(numFiredRequests - initialNumFiredRequests == 2))
       }
     }

@@ -4,5 +4,5 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import spray.json.{ DefaultJsonProtocol, RootJsonFormat }
 
 trait JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
-  implicit val userFormat: RootJsonFormat[User] = jsonFormat4(User)
+  implicit val userRawJsonFormat: RootJsonFormat[UserRawJson] = jsonFormat4(UserRawJson)
 }
