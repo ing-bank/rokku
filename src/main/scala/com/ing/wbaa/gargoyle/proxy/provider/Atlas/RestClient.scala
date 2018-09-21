@@ -7,23 +7,24 @@ import akka.http.scaladsl.model.headers.{ Authorization, BasicHttpCredentials }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
+import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
 import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ createResponse, updateResponse }
 import spray.json.{ JsValue, _ }
 
 import scala.concurrent.Future
 
-class RestClient()(implicit system: ActorSystem) extends AtlasModelJsonSupport {
+class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSettings) extends AtlasModelJsonSupport {
 
+  // todo: do I need those here?
   implicit val mat = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  //todo: add from config
   private val http = Http(system)
-  private val atlasApiUriV1 = Uri("http://localhost:21000/api/atlas")
-  private val atlasApiUriV2 = Uri("http://localhost:21000/api/atlas/v2")
+  private val atlasApiUriV1 = atlasSettings.atlasBaseUri + "/api/atlas"
+  private val atlasApiUriV2 = atlasSettings.atlasBaseUri + "/api/atlas/v2"
   private val bulkEntity = "/entity/bulk"
-  private val username = "admin"
-  private val password = "admin"
+  private val username = atlasSettings.atlasApiUser
+  private val password = atlasSettings.atlasApiPassword
 
   private val authHeader = Authorization(BasicHttpCredentials(username, password))
 

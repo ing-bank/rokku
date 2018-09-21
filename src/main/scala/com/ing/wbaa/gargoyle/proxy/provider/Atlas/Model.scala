@@ -59,7 +59,7 @@ object Model extends AtlasModelJsonSupport {
       name: String,
       operation: String,
       run_as: String,
-      server: guidRef,
+      Server: guidRef,
       inputs: List[guidRef],
       outputs: List[guidRef])
     extends Asset with Referenceable with Inputs with Outputs
@@ -77,10 +77,11 @@ object Model extends AtlasModelJsonSupport {
       file_name: String,
       format: String,
       bucket: guidRef,
-      server: guidRef,
+      Server: guidRef,
       inputs: List[guidRef],
+      outputs: List[guidRef],
       classifications: Seq[Classification])
-    extends Asset with Referenceable with Inputs
+    extends Asset with Referenceable with Inputs with Outputs
 
   case class IngestedFile(
       typeName: String,
@@ -126,7 +127,7 @@ trait AtlasModelJsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val readsIngestion = jsonFormat3(Ingestion)
   implicit val readsIngestionEntities = jsonFormat1(Entities[Ingestion])
   // File
-  implicit val readsFileAttributes = jsonFormat8(FileAttributes)
+  implicit val readsFileAttributes = jsonFormat9(FileAttributes)
   implicit val readsFile = jsonFormat3(IngestedFile)
   implicit val readsFileEntities = jsonFormat1(Entities[IngestedFile])
 
