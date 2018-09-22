@@ -48,7 +48,7 @@ trait ProxyService extends LazyLogging {
 
                     if (isUserAuthorizedForRequest(s3Request, userSTS)) {
                       logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
-                      createLineageFromRequest(s3Request, httpRequest.uri.authority, httpRequest.entity.contentType) //todo: make this resistent for atlas not reachable
+                      createLineageFromRequest(s3Request, httpRequest.uri.authority, httpRequest.entity.contentType) //todo: make this resistent for atlas not reachable and different place
                       complete(executeRequest(httpRequest, remoteAddress, userSTS))
                     } else {
                       val msg = s"User (${userSTS.userName}) not authorized for request: $s3Request"

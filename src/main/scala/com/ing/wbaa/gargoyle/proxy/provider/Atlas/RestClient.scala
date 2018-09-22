@@ -28,13 +28,24 @@ class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSet
 
   private val authHeader = Authorization(BasicHttpCredentials(username, password))
 
-  // remove?
-  def getTypeGUID(typeName: String, value: String): Future[String] = {
+  def getEntityGUID(typeName: String, value: String): Future[String] = {
     http.singleRequest(HttpRequest(
       HttpMethods.GET,
       atlasApiUriV1 + s"/entities?type=${typeName}&property=qualifiedName&value=${value}"
     ).withHeaders(authHeader))
       .flatMap { case HttpResponse(_, _, entity, _) => entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(b => b.utf8String) }
+  }
+
+  def deleteEntity(guid: String): Future[String] = {
+    http.singleRequest(HttpRequest(
+      HttpMethods.DELETE,
+      atlasApiUriV2 + s"/entity/guid/$guid"
+    ).withHeaders(authHeader))
+      .flatMap { response =>
+        val delStatus = Unmarshal(response.entity).to[String]
+        println("Deleting Entity: " + delStatus)
+        delStatus
+      }
   }
 
   def postData(json: JsValue): Future[String] = {
