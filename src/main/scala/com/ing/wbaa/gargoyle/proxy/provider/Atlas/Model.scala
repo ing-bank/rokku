@@ -94,6 +94,7 @@ object Model extends AtlasModelJsonSupport {
 
   // Entity search result
   case class EntityId(state: String, jsonClass: String, typeName: String, version: Int, id: String)
+  case class Definition(typeName: String, values: JsObject, id: EntityId, traits: JsObject, traitNames: JsObject, systemAttributes: JsObject, jsonClass: String)
   case class EntitySearchResult(requestId: String, definition: JsObject)
 
   // Entity create / update result
@@ -118,6 +119,7 @@ trait AtlasModelJsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val readsBucketEntities = jsonFormat1(Entities[Bucket])
   // Entity search result
   implicit val idReader = jsonFormat5(EntityId)
+  implicit val readsDefinition = jsonFormat7(Definition)
   implicit val resultReader = jsonFormat2(EntitySearchResult)
   // Entity create / update result
   implicit val readsCreateResponse = jsonFormat2(createResponse)

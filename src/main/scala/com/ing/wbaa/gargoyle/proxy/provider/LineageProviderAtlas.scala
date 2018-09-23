@@ -1,5 +1,8 @@
 package com.ing.wbaa.gargoyle.proxy.provider
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentType
 import akka.http.scaladsl.model.Uri.Authority
@@ -73,10 +76,12 @@ trait LineageProviderAtlas extends LazyLogging {
 
     val client = new RestClient()
 
+    val dateFormatted = DateTimeFormatter.ofPattern("dd-MM-yyyy").format(LocalDateTime.now())
+
     val userSTS = s3Request.credential.accessKey.value
     val host = authority.host.address()
-    val bucket = s3Request.bucket.getOrElse("notDef")
-    val bucketObject = s3Request.bucketObjectRoot.getOrElse("emptyObject")
+    val bucket = s3Request.bucket.getOrElse("notDef") // add week_date
+    val bucketObject = s"${s3Request.bucketObjectRoot.getOrElse("emptyObject")}_${dateFormatted}"
     val method = s3Request.accessType.rangerName
 
     val timestamp = System.currentTimeMillis()
@@ -92,7 +97,7 @@ trait LineageProviderAtlas extends LazyLogging {
             fileGuid <- client.postData(Entities(Seq(fileEntity(serverGuid, bucketGuid, bucketObject, userSTS, bucketGuid, "Bucket", serverGuid, "Server", contentType))).toJson)
             processGuid <- client.postData(Entities(Seq(processEntity(serverGuid, bucketGuid, fileGuid, userSTS, method, bucketGuid, "Bucket", fileGuid, "DataFile", timestamp))).toJson)
           } yield Some(Tuple4(serverGuid, bucketGuid, fileGuid, processGuid))
-        case Write => // add condition to prevent dobule lineage
+        case Write => // add condition to prevent dobule lineage method from request
           logger.debug(s"Creating Write lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
           for {
             serverGuid <- client.postData(Entities(Seq(serverEntity(userSTS, host))).toJson)
@@ -100,14 +105,17 @@ trait LineageProviderAtlas extends LazyLogging {
             fileGuid <- client.postData(Entities(Seq(fileEntity(serverGuid, bucketGuid, bucketObject, userSTS, serverGuid, "Server", bucketGuid, "Bucket", contentType))).toJson)
             processGuid <- client.postData(Entities(Seq(processEntity(serverGuid, bucketGuid, fileGuid, userSTS, method, fileGuid, "DataFile", bucketGuid, "Bucket", timestamp))).toJson)
           } yield Some(Tuple4(serverGuid, bucketGuid, fileGuid, processGuid))
+        // delete File entity
         case Delete =>
           logger.debug(s"Creating Delete lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
           for {
             entityGuid <- client.getEntityGUID("DataFile", bucketObject)
-            guid <-
-              logger.debug(s"Invoking delete")
-              client.deleteEntity(entityGuid)
-          } yield (Some(Tuple4("", "", "", "")))
+            guid <- {
+              logger.debug(s"Invoking delete for " + entityGuid)
+              client.deleteEntity(entityGuid) // + dateFormatted
+            }
+          } yield (Some(Tuple4("", "", entityGuid, "")))
+        // todo: delete Process entity
         case _ => Future(None)
       }
     } else {
