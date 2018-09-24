@@ -7,21 +7,25 @@ import akka.http.scaladsl.model._
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
 import com.ing.wbaa.gargoyle.proxy.data.User
 import com.ing.wbaa.gargoyle.proxy.handler.radosgw.RadosGatewayHandler
+import com.ing.wbaa.gargoyle.proxy.provider.LineageProviderAtlas
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
+trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler with LineageProviderAtlas {
 
   protected[this] implicit def system: ActorSystem
   protected[this] implicit def executionContext: ExecutionContext
 
   protected[this] def storageS3Settings: GargoyleStorageS3Settings
 
-  protected[this] def fireRequestToS3(request: HttpRequest): Future[HttpResponse] = {
+  protected[this] def fireRequestToS3(request: HttpRequest, userSTS: User): Future[HttpResponse] = {
     logger.debug(s"Newly generated request: $request")
     val response = Http().singleRequest(request)
-    response.foreach(r => logger.debug(s"Recieved response from Ceph: $r"))
+    response.foreach { r =>
+      if (r.status == StatusCodes.OK) createLineageFromRequest(request, userSTS)
+      logger.debug(s"Recieved response from Ceph: $r")
+    }
     response
   }
 
@@ -34,8 +38,8 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
   protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse] = {
     val newRequest = translateRequest(request, clientAddress)
 
-    fireRequestToS3(newRequest).flatMap { response =>
-      if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest)
+    fireRequestToS3(newRequest, userSTS).flatMap { response =>
+      if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest, userSTS)
       else Future.successful(response)
     }
   }

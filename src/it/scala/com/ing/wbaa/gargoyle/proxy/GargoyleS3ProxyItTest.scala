@@ -6,7 +6,7 @@ import akka.stream.ActorMaterializer
 import com.amazonaws.auth.BasicSessionCredentials
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
 import com.amazonaws.services.securitytoken.model.{AssumeRoleWithWebIdentityRequest, GetSessionTokenRequest}
-import com.ing.wbaa.gargoyle.proxy.config.{GargoyleHttpSettings, GargoyleStorageS3Settings, GargoyleStsSettings}
+import com.ing.wbaa.gargoyle.proxy.config.{GargoyleAtlasSettings, GargoyleHttpSettings, GargoyleStorageS3Settings, GargoyleStsSettings}
 import com.ing.wbaa.gargoyle.proxy.data._
 import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
 import com.ing.wbaa.gargoyle.proxy.provider.AuthenticationProviderSTS
@@ -58,6 +58,7 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
       override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(testSystem)
       override val stsSettings: GargoyleStsSettings = GargoyleStsSettings(testSystem)
+      override val atlasSettings: GargoyleAtlasSettings = new GargoyleAtlasSettings(system.settings.config)
 
       override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
     }

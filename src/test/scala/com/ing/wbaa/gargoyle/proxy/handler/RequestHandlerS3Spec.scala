@@ -5,7 +5,7 @@ import java.net.{ InetAddress, InetSocketAddress }
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
-import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
+import com.ing.wbaa.gargoyle.proxy.config.{ GargoyleAtlasSettings, GargoyleStorageS3Settings }
 import com.ing.wbaa.gargoyle.proxy.data.{ User, UserRawJson }
 import org.scalatest.{ AsyncWordSpec, DiagrammedAssertions }
 
@@ -18,9 +18,10 @@ class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with 
   override val storageS3Settings: GargoyleStorageS3Settings = new GargoyleStorageS3Settings(system.settings.config) {
     override val storageS3Authority: Uri.Authority = Uri.Authority(Uri.Host("1.2.3.4"), 1234)
   }
+  override val atlasSettings: GargoyleAtlasSettings = new GargoyleAtlasSettings(system.settings.config)
 
   var numFiredRequests = 0
-  override def fireRequestToS3(request: HttpRequest): Future[HttpResponse] = {
+  override def fireRequestToS3(request: HttpRequest, userSTS: User): Future[HttpResponse] = {
     numFiredRequests = numFiredRequests + 1
     Future.successful(HttpResponse(status = StatusCodes.Forbidden))
   }

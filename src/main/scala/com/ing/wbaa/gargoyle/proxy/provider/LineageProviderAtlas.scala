@@ -4,9 +4,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.ContentType
-import akka.http.scaladsl.model.Uri.Authority
-import akka.stream.Materializer
+import akka.http.scaladsl.model.{ ContentType, HttpMethods, HttpRequest }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
 import com.ing.wbaa.gargoyle.proxy.data._
 import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ Bucket, BucketAttributes, Classification, Entities, FileAttributes, IngestedFile, Ingestion, IngestionAttributes, Server, ServerAttributes, guidRef }
@@ -19,7 +17,6 @@ trait LineageProviderAtlas extends LazyLogging {
 
   protected[this] implicit def system: ActorSystem
   protected[this] implicit def executionContext: ExecutionContext
-  protected[this] implicit def materializer: Materializer
   protected[this] implicit def atlasSettings: GargoyleAtlasSettings
 
   private def serverEntities(userSTS: String, host: String) =
@@ -92,30 +89,29 @@ trait LineageProviderAtlas extends LazyLogging {
     } yield (Some(Tuple4("", "", entityGuid, "")))
   }
 
-  def createLineageFromRequest(s3Request: S3Request, authority: Authority, contentType: ContentType): Future[Option[(String, String, String, String)]] = {
+  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[Option[(String, String, String, String)]] = {
 
     implicit val client = new RestClient()
-
     val dateFormatted = DateTimeFormatter.ofPattern("dd-MM-yyyy").format(LocalDateTime.now())
-
-    val userSTS = s3Request.credential.accessKey.value
-    val host = authority.host.address()
-    val bucket = s3Request.bucket.getOrElse("notDef") // add week_date
-    val bucketObject = s"${s3Request.bucketObjectRoot.getOrElse("emptyObject")}_${dateFormatted}"
-    val method = s3Request.accessType.rangerName
-
+    val host = httpRequest.uri.authority.host.address()
+    val path = httpRequest.uri.path
+    val bucket = path.toString.split("/").toList.lift(1).getOrElse("notDef")
+    val bucketObject = s"${path.toString.split("/").toList.lift(1).getOrElse("emptyObject")}_${dateFormatted}"
+    val method = httpRequest.method
+    val contentType = httpRequest.entity.contentType
+    val userName = userSTS.userName.value
     val timestamp = System.currentTimeMillis()
 
     if (bucket != "notDef" && bucketObject != "emptyObject") {
       logger.debug(s"Creating lineage for request to ${method} file ${bucketObject} in ${bucket} at ${timestamp}")
-      s3Request.accessType match {
-        case Read =>
-          logger.debug(s"Creating Read lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
-          postEnities(userSTS, host, bucket, bucketObject, method, contentType, timestamp)
-        case Write => // add condition to prevent dobule lineage method from request
-          logger.debug(s"Creating Write lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
-          postEnities(userSTS, host, bucket, bucketObject, method, contentType, timestamp)
-        case Delete =>
+      method match {
+        case HttpMethods.GET =>
+          logger.debug(s"Creating Read lineage for request to ${method.value} file ${bucketObject} to ${bucket} at ${timestamp}")
+          postEnities(userName, host, bucket, bucketObject, method.value, contentType, timestamp)
+        case HttpMethods.POST => // add condition to prevent dobule lineage method from request
+          logger.debug(s"Creating Write lineage for request to ${method.value} file ${bucketObject} to ${bucket} at ${timestamp}")
+          postEnities(userName, host, bucket, bucketObject, method.value, contentType, timestamp)
+        case HttpMethods.DELETE =>
           logger.debug(s"Creating Delete lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
           //todo: add other Entities
           deleteEntities("DataFile", bucketObject)

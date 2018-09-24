@@ -5,7 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Authorization, BasicHttpCredentials }
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.Materializer
+import akka.stream.{ ActorMaterializer, Materializer }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
 import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ EntityId, EntitySearchResult, createResponse, updateResponse }
 import com.typesafe.scalalogging.LazyLogging
@@ -13,9 +13,10 @@ import spray.json.{ JsValue, _ }
 
 import scala.concurrent.Future
 
-class RestClient()(implicit system: ActorSystem, materializer: Materializer, atlasSettings: GargoyleAtlasSettings)
+class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSettings)
   extends AtlasModelJsonSupport with LazyLogging {
 
+  implicit val materializer: Materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
   private val http = Http(system)
