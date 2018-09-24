@@ -20,17 +20,15 @@ trait LineageProviderAtlas extends LazyLogging {
   protected[this] implicit def system: ActorSystem
   protected[this] implicit def executionContext: ExecutionContext
   protected[this] implicit def materializer: Materializer
-
   protected[this] implicit def atlasSettings: GargoyleAtlasSettings
 
-  //create entities
-  private def serverEntity(userSTS: String, host: String) =
-    Server("Server", userSTS, ServerAttributes(host, host, host, host), Seq(Classification("staging_node")))
+  private def serverEntities(userSTS: String, host: String) =
+    Entities(Seq(Server("Server", userSTS, ServerAttributes(host, host, host, host), Seq(Classification("staging_node")))))
 
-  private def bucketEntity(userSTS: String, bucket: String) =
-    Bucket("Bucket", userSTS, BucketAttributes(bucket, bucket, bucket), Seq(Classification("customer_PII")))
+  private def bucketEntities(userSTS: String, bucket: String) =
+    Entities(Seq(Bucket("Bucket", userSTS, BucketAttributes(bucket, bucket, bucket), Seq(Classification("customer_PII")))))
 
-  private def fileEntity(
+  private def fileEntities(
       serverGuid: String,
       bucketGuid: String,
       bucketObject: String,
@@ -40,7 +38,7 @@ trait LineageProviderAtlas extends LazyLogging {
       outputGuid: String,
       outputType: String,
       contentType: ContentType) = {
-    IngestedFile(
+    Entities(Seq(IngestedFile(
       "DataFile",
       userSTS,
       FileAttributes(bucketObject, bucketObject, bucketObject, contentType.mediaType.value,
@@ -48,10 +46,10 @@ trait LineageProviderAtlas extends LazyLogging {
         guidRef(serverGuid, "Server"),
         List(guidRef(inputGuid, inputType)),
         List(guidRef(outputGuid, outputType)),
-        Seq(Classification("customer_PII"))))
+        Seq(Classification("customer_PII"))))))
   }
 
-  private def processEntity(
+  private def processEntities(
       serverGuid: String,
       bucketGuid: String,
       fileGuid: String,
@@ -62,19 +60,41 @@ trait LineageProviderAtlas extends LazyLogging {
       outputGuid: String,
       outputType: String,
       timestamp: Long) = {
-    Ingestion(
+    Entities(Seq(Ingestion(
       "aws_cli_script",
       userSTS,
       IngestionAttributes(s"aws_cli_${timestamp}", s"aws_cli_${timestamp}", method, userSTS,
         guidRef(serverGuid, "Server"),
         List(guidRef(inputGuid, inputType)),
-        List(guidRef(outputGuid, outputType))
-      ))
+        List(guidRef(outputGuid, outputType))))))
+  }
+
+  def postEnities(userSTS: String, host: String, bucket: String, bucketObject: String, method: String, contentType: ContentType, timestamp: Long)(implicit client: RestClient): Future[Option[(String, String, String, String)]] = {
+    for {
+      serverGuid <- client.postData(serverEntities(userSTS, host).toJson)
+      bucketGuid <- client.postData(bucketEntities(userSTS, bucket).toJson)
+      fileGuid <- method match {
+        case access if access == "read"  => client.postData(fileEntities(serverGuid, bucketGuid, bucketObject, userSTS, bucketGuid, "Bucket", serverGuid, "Server", contentType).toJson)
+        case access if access == "write" => client.postData(fileEntities(serverGuid, bucketGuid, bucketObject, userSTS, serverGuid, "Server", bucketGuid, "Bucket", contentType).toJson)
+      }
+      processGuid <- method match {
+        case access if access == "read"  => client.postData(processEntities(serverGuid, bucketGuid, fileGuid, userSTS, method, bucketGuid, "Bucket", fileGuid, "DataFile", timestamp).toJson)
+        case access if access == "write" => client.postData(processEntities(serverGuid, bucketGuid, fileGuid, userSTS, method, fileGuid, "DataFile", bucketGuid, "Bucket", timestamp).toJson)
+      }
+    } yield Some(Tuple4(serverGuid, bucketGuid, fileGuid, processGuid))
+  }
+
+  // file entity
+  def deleteEntities(typeName: String, entityName: String)(implicit client: RestClient): Future[Option[(String, String, String, String)]] = {
+    for {
+      entityGuid <- client.getEntityGUID(typeName, entityName)
+      guid <- client.deleteEntity(entityGuid)
+    } yield (Some(Tuple4("", "", entityGuid, "")))
   }
 
   def createLineageFromRequest(s3Request: S3Request, authority: Authority, contentType: ContentType): Future[Option[(String, String, String, String)]] = {
 
-    val client = new RestClient()
+    implicit val client = new RestClient()
 
     val dateFormatted = DateTimeFormatter.ofPattern("dd-MM-yyyy").format(LocalDateTime.now())
 
@@ -87,35 +107,18 @@ trait LineageProviderAtlas extends LazyLogging {
     val timestamp = System.currentTimeMillis()
 
     if (bucket != "notDef" && bucketObject != "emptyObject") {
-      logger.debug(s"Creating lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
+      logger.debug(s"Creating lineage for request to ${method} file ${bucketObject} in ${bucket} at ${timestamp}")
       s3Request.accessType match {
         case Read =>
           logger.debug(s"Creating Read lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
-          for {
-            serverGuid <- client.postData(Entities(Seq(serverEntity(userSTS, host))).toJson)
-            bucketGuid <- client.postData(Entities(Seq(bucketEntity(userSTS, bucket))).toJson)
-            fileGuid <- client.postData(Entities(Seq(fileEntity(serverGuid, bucketGuid, bucketObject, userSTS, bucketGuid, "Bucket", serverGuid, "Server", contentType))).toJson)
-            processGuid <- client.postData(Entities(Seq(processEntity(serverGuid, bucketGuid, fileGuid, userSTS, method, bucketGuid, "Bucket", fileGuid, "DataFile", timestamp))).toJson)
-          } yield Some(Tuple4(serverGuid, bucketGuid, fileGuid, processGuid))
+          postEnities(userSTS, host, bucket, bucketObject, method, contentType, timestamp)
         case Write => // add condition to prevent dobule lineage method from request
           logger.debug(s"Creating Write lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
-          for {
-            serverGuid <- client.postData(Entities(Seq(serverEntity(userSTS, host))).toJson)
-            bucketGuid <- client.postData(Entities(Seq(bucketEntity(userSTS, bucket))).toJson)
-            fileGuid <- client.postData(Entities(Seq(fileEntity(serverGuid, bucketGuid, bucketObject, userSTS, serverGuid, "Server", bucketGuid, "Bucket", contentType))).toJson)
-            processGuid <- client.postData(Entities(Seq(processEntity(serverGuid, bucketGuid, fileGuid, userSTS, method, fileGuid, "DataFile", bucketGuid, "Bucket", timestamp))).toJson)
-          } yield Some(Tuple4(serverGuid, bucketGuid, fileGuid, processGuid))
-        // delete File entity
+          postEnities(userSTS, host, bucket, bucketObject, method, contentType, timestamp)
         case Delete =>
           logger.debug(s"Creating Delete lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
-          for {
-            entityGuid <- client.getEntityGUID("DataFile", bucketObject)
-            guid <- {
-              logger.debug(s"Invoking delete for " + entityGuid)
-              client.deleteEntity(entityGuid) // + dateFormatted
-            }
-          } yield (Some(Tuple4("", "", entityGuid, "")))
-        // todo: delete Process entity
+          //todo: add other Entities
+          deleteEntities("DataFile", bucketObject)
         case _ => Future(None)
       }
     } else {

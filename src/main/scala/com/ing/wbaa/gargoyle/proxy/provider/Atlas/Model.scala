@@ -98,8 +98,11 @@ object Model extends AtlasModelJsonSupport {
   case class EntitySearchResult(requestId: String, definition: JsObject)
 
   // Entity create / update result
-  case class createResponse(mutatedEntities: JsObject, guidAssignments: JsObject)
-  case class updateResponse(guidAssignments: JsObject)
+  trait GuidResponse {
+    def guidAssignments: JsObject
+  }
+  case class createResponse(mutatedEntities: JsObject, guidAssignments: JsObject) extends GuidResponse
+  case class updateResponse(guidAssignments: JsObject) extends GuidResponse
 
 }
 
