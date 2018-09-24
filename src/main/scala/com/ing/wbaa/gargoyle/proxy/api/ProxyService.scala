@@ -1,11 +1,10 @@
 package com.ing.wbaa.gargoyle.proxy.api
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri.Authority
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, RemoteAddress, StatusCodes }
+import akka.http.scaladsl.server.{ AuthorizationFailedRejection, Route }
 import com.ing.wbaa.gargoyle.proxy.api.directive.ProxyDirectives
-import com.ing.wbaa.gargoyle.proxy.data.{ AwsRequestCredential, S3Request, User }
+import com.ing.wbaa.gargoyle.proxy.data.{ AwsRequestCredential, AwsSecretKey, S3Request, User }
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.Future
@@ -24,49 +23,40 @@ trait ProxyService extends LazyLogging {
   protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse]
 
   // Authentication methods
-  protected[this] def getUserForAccessKey(awsRequestCredential: AwsRequestCredential): Future[Option[User]]
-  protected[this] def areCredentialsAuthentic(awsRequestCredential: AwsRequestCredential): Future[Boolean]
+  protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]]
+
+  // TODO: Implement request authentication using aws signing
+  protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
 
   // Authorization methods
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
-
-  // Atlas method
-  protected[this] def createLineageFromRequest(s3Request: S3Request, authority: Authority, contentType: ContentType): Future[Option[(String, String, String, String)]]
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
       extractClientIP { remoteAddress =>
         extractRequest { httpRequest =>
           extracts3Request { s3Request =>
-            onComplete(areCredentialsAuthentic(s3Request.credential)) {
-              case Success(true) =>
-                logger.debug(s"Request authenticated: $s3Request")
 
-                onComplete(getUserForAccessKey(s3Request.credential)) {
-                  case Success(Some(userSTS: User)) =>
-                    logger.debug(s"User retrieved: $userSTS")
+            onComplete(areCredentialsActive(s3Request.credential)) {
+              case Success(Some(userSTS: User)) =>
+                logger.debug(s"Credentials active for request, user retrieved: $userSTS")
 
-                    if (isUserAuthorizedForRequest(s3Request, userSTS)) {
-                      logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
-                      createLineageFromRequest(s3Request, httpRequest.uri.authority, httpRequest.entity.contentType) //todo: make this resistent for atlas not reachable and different place
-                      complete(executeRequest(httpRequest, remoteAddress, userSTS))
-                    } else {
-                      val msg = s"User (${userSTS.userName}) not authorized for request: $s3Request"
-                      logger.warn(msg)
-                      complete((StatusCodes.Unauthorized, msg))
-                    }
+                if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
+                  logger.debug(s"Request authenticated: $httpRequest")
 
-                  case Success(None) =>
-                    val msg = s"User not found for accesskey: ${s3Request.credential.accessKey.value}"
-                    logger.warn(msg)
-                    complete((StatusCodes.Unauthorized, msg))
-
-                  case Failure(exception) =>
-                    logger.error("An error occurred retrieving the User from STS service", exception)
-                    complete(StatusCodes.InternalServerError)
+                  if (isUserAuthorizedForRequest(s3Request, userSTS)) {
+                    logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
+                    complete(executeRequest(httpRequest, remoteAddress, userSTS))
+                  } else {
+                    logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")
+                    reject(AuthorizationFailedRejection)
+                  }
+                } else {
+                  logger.warn(s"Request not authenticated: $httpRequest")
+                  complete(StatusCodes.Forbidden)
                 }
 
-              case Success(false) =>
+              case Success(None) =>
                 val msg = s"Request not authenticated: $s3Request"
                 logger.warn(msg)
                 complete((StatusCodes.Forbidden, msg))

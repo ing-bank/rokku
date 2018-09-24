@@ -2,9 +2,9 @@ package com.ing.wbaa.gargoyle.proxy.handler
 
 import akka.actor.ActorSystem
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
-import com.ing.wbaa.gargoyle.proxy.data.User
+import com.ing.wbaa.gargoyle.proxy.data.{User, UserRawJson}
 import com.ing.wbaa.gargoyle.proxy.handler.radosgw.RadosGatewayHandler
-import org.scalatest.{WordSpec, DiagrammedAssertions}
+import org.scalatest.{DiagrammedAssertions, WordSpec}
 import org.twonote.rgwadmin4j.{RgwAdmin, RgwAdminBuilder}
 
 import scala.util.Random
@@ -20,12 +20,12 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
     .endpoint(s"http://${storageS3Settings.storageS3Authority.host.address()}:${storageS3Settings.storageS3Authority.port}/admin")
     .build
 
-  def testUser: User = User(
+  def testUser: User = User(UserRawJson(
     Random.alphanumeric.take(32).mkString,
     None,
     Random.alphanumeric.take(32).mkString,
     Random.alphanumeric.take(32).mkString
-  )
+  ))
 
   "Rados Gateway Handler" should {
     "handle User Creation" that {
@@ -33,12 +33,12 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
         val u = testUser
         val isCreated = handleUserCreationRadosGw(u)
         assert(isCreated)
-        val retrievedUser = rgwAdmin.getUserInfo(u.userName)
+        val retrievedUser = rgwAdmin.getUserInfo(u.userName.value)
 
         assert(retrievedUser.isPresent)
         assert(retrievedUser.get().getS3Credentials.size() == 1)
-        assert(retrievedUser.get().getS3Credentials.get(0).getAccessKey == u.accessKey)
-        assert(retrievedUser.get().getS3Credentials.get(0).getSecretKey == u.secretKey)
+        assert(retrievedUser.get().getS3Credentials.get(0).getAccessKey == u.accessKey.value)
+        assert(retrievedUser.get().getS3Credentials.get(0).getSecretKey == u.secretKey.value)
       }
 
       "for an existing user with no credentials create the credentials" in {
@@ -46,16 +46,16 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
         val isCreated = handleUserCreationRadosGw(u)
         assert(isCreated)
 
-        rgwAdmin.removeS3Credential(u.userName, u.accessKey)
+        rgwAdmin.removeS3Credential(u.userName.value, u.accessKey.value)
 
         val isUpdated = handleUserCreationRadosGw(u)
         assert(isUpdated)
 
-        val retrievedUser = rgwAdmin.getUserInfo(u.userName)
+        val retrievedUser = rgwAdmin.getUserInfo(u.userName.value)
         assert(retrievedUser.isPresent)
         assert(retrievedUser.get().getS3Credentials.size() == 1)
-        assert(retrievedUser.get().getS3Credentials.get(0).getAccessKey == u.accessKey)
-        assert(retrievedUser.get().getS3Credentials.get(0).getSecretKey == u.secretKey)
+        assert(retrievedUser.get().getS3Credentials.get(0).getAccessKey == u.accessKey.value)
+        assert(retrievedUser.get().getS3Credentials.get(0).getSecretKey == u.secretKey.value)
       }
 
       "for an existing user with more than 1 credentials returns false" in {
@@ -63,7 +63,7 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
         val isCreated = handleUserCreationRadosGw(u)
         assert(isCreated)
 
-        rgwAdmin.createS3Credential(u.userName)
+        rgwAdmin.createS3Credential(u.userName.value)
 
         val isUpdated = handleUserCreationRadosGw(u)
         assert(!isUpdated)
@@ -78,11 +78,11 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
         val isUpdated = handleUserCreationRadosGw(u.copy(accessKey = u2.accessKey, secretKey = u2.secretKey))
         assert(isUpdated)
 
-        val retrievedUser = rgwAdmin.getUserInfo(u.userName)
+        val retrievedUser = rgwAdmin.getUserInfo(u.userName.value)
         assert(retrievedUser.isPresent)
         assert(retrievedUser.get().getS3Credentials.size() == 1)
-        assert(retrievedUser.get().getS3Credentials.get(0).getAccessKey == u2.accessKey)
-        assert(retrievedUser.get().getS3Credentials.get(0).getSecretKey == u2.secretKey)
+        assert(retrievedUser.get().getS3Credentials.get(0).getAccessKey == u2.accessKey.value)
+        assert(retrievedUser.get().getS3Credentials.get(0).getSecretKey == u2.secretKey.value)
       }
 
       "doesn't do anything when user in STS and ceph already match" in {
