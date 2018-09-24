@@ -8,6 +8,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{ ActorMaterializer, Materializer }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
 import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ EntityId, EntitySearchResult, createResponse, updateResponse }
+import com.ing.wbaa.gargoyle.proxy.provider.Atlas.RestClient.RestClientException
 import com.typesafe.scalalogging.LazyLogging
 import spray.json.{ JsValue, _ }
 
@@ -29,17 +30,24 @@ class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSet
 
   private val authHeader = Authorization(BasicHttpCredentials(username, password))
 
-  def getEntityGUID(typeName: String, value: String): Future[String] = {
+  def getEntityGUID(typeName: String, value: String) = {
     http.singleRequest(HttpRequest(
       HttpMethods.GET,
       atlasApiUriV1 + s"/entities?type=${typeName}&property=qualifiedName&value=${value}"
     ).withHeaders(authHeader))
-      .flatMap { response =>
-        Unmarshal(response.entity).to[String].map { jsonString =>
-          val searchResult = jsonString.parseJson.convertTo[EntitySearchResult]
-          logger.debug("Atlas RestClient: Extracted GUID: " + searchResult.definition.getFields("id").toList.head.convertTo[EntityId].id)
-          searchResult.definition.getFields("id").toList.head.convertTo[EntityId].id
-        }
+      .flatMap {
+        case response if response.status == StatusCodes.OK =>
+          Unmarshal(response.entity).to[String].map { jsonString =>
+            val searchResult = jsonString.parseJson.convertTo[EntitySearchResult]
+            logger.debug("Atlas RestClient: Extracted GUID: " + searchResult.definition.getFields("id").toList.head.convertTo[EntityId].id)
+            searchResult.definition.getFields("id").toList.head.convertTo[EntityId].id
+          }
+        case response =>
+          logger.debug(s"Atlas getEntityGUID failed: ${response.status}")
+          Future.failed(RestClientException(s"Atlas getEntityGUID failed: ${response.status}"))
+      }.recoverWith { case ex =>
+        logger.debug(s"Atlas getEntityGUID failed: ${ex.getMessage}")
+        Future.failed(RestClientException(s"Atlas getEntityGUID failed: ${ex.getMessage}", ex.getCause))
       }
   }
 
@@ -48,30 +56,48 @@ class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSet
       HttpMethods.DELETE,
       atlasApiUriV2 + s"$entityGuid/$guid"
     ).withHeaders(authHeader))
-      .flatMap { response =>
-        val delStatus = Unmarshal(response.entity).to[String]
-        logger.debug("Atlas RestClient: Deleting Entity: " + delStatus)
-        delStatus
+      .flatMap {
+        case response if response.status == StatusCodes.OK =>
+          val deleteResult = Unmarshal(response.entity).to[String]
+          logger.debug(s"Atlas RestClient: Deleting Entity: $deleteResult")
+          deleteResult
+        case response =>
+          logger.debug(s"Atlas deleteEntity failed: ${response.status}")
+          Future.failed(RestClientException(s"Atlas deleteEntity failed: ${response.status}"))
+      }.recoverWith { case ex =>
+        logger.debug(s"Atlas deleteEntity failed: ${ex.getMessage}")
+        Future.failed(RestClientException(s"Atlas deleteEntity failed: ${ex.getMessage}", ex.getCause))
       }
   }
 
   def postData(json: JsValue): Future[String] = {
-    //def parseGuidFrom[T <: GuidResponse](jsonString: String, typeName: T): String = jsonString.parseJson.convertTo[typeName.type].guidAssignments.convertTo[Map[String, String]].values.toList.head
-
     http.singleRequest(HttpRequest(
       HttpMethods.POST,
       atlasApiUriV2 + bulkEntity,
       Nil,
       HttpEntity(ContentTypes.`application/json`, json.toString)
     ).withHeaders(authHeader))
-      .flatMap { response =>
-        Unmarshal(response.entity).to[String].map { jsonString =>
-          if (jsonString.contains("CREATE")) {
-            jsonString.parseJson.convertTo[createResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
-          } else {
-            jsonString.parseJson.convertTo[updateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
+      .flatMap {
+        case response if response.status == StatusCodes.OK =>
+          Unmarshal(response.entity).to[String].map { jsonString =>
+            if (jsonString.contains("CREATE")) {
+              jsonString.parseJson.convertTo[createResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
+            } else {
+              jsonString.parseJson.convertTo[updateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
+            }
           }
-        }
+        case response =>
+          logger.debug(s"Atlas postData failed: ${response.status}")
+          Future.failed(RestClientException(s"Atlas postData failed: ${response.status}"))
+      }.recoverWith { case ex =>
+        logger.debug(s"Atlas postData failed: ${ex.getMessage}")
+        Future.failed(RestClientException(s"Atlas postData failed: ${ex.getMessage}", ex.getCause))
       }
   }
+
+}
+
+object RestClient {
+  final case class RestClientException(private val message: String, private val cause: Throwable = None.orNull)
+    extends Exception(message, cause)
 }

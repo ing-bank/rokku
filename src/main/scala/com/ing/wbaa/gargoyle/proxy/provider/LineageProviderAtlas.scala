@@ -96,21 +96,21 @@ trait LineageProviderAtlas extends LazyLogging {
     val host = httpRequest.uri.authority.host.address()
     val path = httpRequest.uri.path
     val bucket = path.toString.split("/").toList.lift(1).getOrElse("notDef")
-    val bucketObject = s"${path.toString.split("/").toList.lift(1).getOrElse("emptyObject")}_${dateFormatted}"
+    val bucketObject = s"${path.toString.split("/").toList.lift(2).getOrElse("emptyObject")}_${dateFormatted}"
     val method = httpRequest.method
     val contentType = httpRequest.entity.contentType
     val userName = userSTS.userName.value
     val timestamp = System.currentTimeMillis()
 
     if (bucket != "notDef" && bucketObject != "emptyObject") {
-      logger.debug(s"Creating lineage for request to ${method} file ${bucketObject} in ${bucket} at ${timestamp}")
+      logger.debug(s"Creating lineage for request ${method.value} file ${bucketObject} in ${bucket} at ${timestamp}")
       method match {
         case HttpMethods.GET =>
           logger.debug(s"Creating Read lineage for request to ${method.value} file ${bucketObject} to ${bucket} at ${timestamp}")
-          postEnities(userName, host, bucket, bucketObject, method.value, contentType, timestamp)
-        case HttpMethods.POST => // add condition to prevent dobule lineage method from request
+          postEnities(userName, host, bucket, bucketObject, "read", contentType, timestamp)
+        case HttpMethods.POST | HttpMethods.PUT =>
           logger.debug(s"Creating Write lineage for request to ${method.value} file ${bucketObject} to ${bucket} at ${timestamp}")
-          postEnities(userName, host, bucket, bucketObject, method.value, contentType, timestamp)
+          postEnities(userName, host, bucket, bucketObject, "write", contentType, timestamp)
         case HttpMethods.DELETE =>
           logger.debug(s"Creating Delete lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
           //todo: add other Entities
