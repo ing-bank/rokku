@@ -93,15 +93,34 @@ object Model extends AtlasModelJsonSupport {
   case class Entities[A](entities: Seq[A])
 
   // Entity search result
-  case class EntityId(state: String, jsonClass: String, typeName: String, version: Int, id: String)
-  case class Definition(typeName: String, values: JsObject, id: EntityId, traits: JsObject, traitNames: JsObject, systemAttributes: JsObject, jsonClass: String)
-  case class EntitySearchResult(requestId: String, definition: JsObject)
+  case class EntityId(
+      state: String,
+      jsonClass: String,
+      typeName: String,
+      version: Int,
+      id: String)
+
+  case class Definition(
+      typeName: String,
+      values: JsObject,
+      id: EntityId,
+      traits: JsObject,
+      traitNames: JsObject,
+      systemAttributes: JsObject, jsonClass: String)
+
+  case class EntitySearchResult(
+      requestId: String,
+      definition: JsObject)
 
   // Entity create / update result
   trait GuidResponse {
     def guidAssignments: JsObject
   }
-  case class createResponse(mutatedEntities: JsObject, guidAssignments: JsObject) extends GuidResponse
+
+  case class createResponse(
+      mutatedEntities: JsObject,
+      guidAssignments: JsObject) extends GuidResponse
+
   case class updateResponse(guidAssignments: JsObject) extends GuidResponse
 
 }

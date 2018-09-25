@@ -24,6 +24,7 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler with Lineage
     val response = Http().singleRequest(request)
     response.foreach { r =>
       if (r.status == StatusCodes.OK) createLineageFromRequest(request, userSTS)
+      if (r.status == StatusCodes.NoContent) createLineageFromRequest(request, userSTS) // delete on AWS response 204
       logger.debug(s"Recieved response from Ceph: $r")
     }
     response

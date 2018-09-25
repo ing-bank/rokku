@@ -21,8 +21,8 @@ class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSet
   implicit val executionContext = system.dispatcher
 
   private val http = Http(system)
-  private val atlasApiUriV1 = atlasSettings.atlasBaseUri + "/api/atlas"
-  private val atlasApiUriV2 = atlasSettings.atlasBaseUri + "/api/atlas/v2"
+  private val atlasApiUriV1 = atlasSettings.atlasBaseUri.withPath(Uri.Path("/api/atlas"))
+  private val atlasApiUriV2 = atlasSettings.atlasBaseUri.withPath(Uri.Path("/api/atlas/v2"))
   private val bulkEntity = "/entity/bulk"
   private val entityGuid = "/entity/guid"
   private val username = atlasSettings.atlasApiUser
@@ -70,6 +70,7 @@ class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSet
       }
   }
 
+  // post data will either create or update entity
   def postData(json: JsValue): Future[String] = {
     http.singleRequest(HttpRequest(
       HttpMethods.POST,
