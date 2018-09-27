@@ -9,7 +9,7 @@ class GargoyleAtlasSettings(config: Config) extends Extension {
   val atlasApiPort: Int = config.getInt("gargoyle.atlas.port")
   val atlasApiUser: String = config.getString("gargoyle.atlas.user")
   val atlasApiPassword: String = config.getString("gargoyle.atlas.password")
-  val atlasEnabled: String = config.getString("gargoyle.atlas.enabled")
+  val atlasEnabled: Boolean = config.getBoolean("gargoyle.atlas.enabled")
 
   def atlasBaseUri: Uri = Uri(
     scheme = "http",

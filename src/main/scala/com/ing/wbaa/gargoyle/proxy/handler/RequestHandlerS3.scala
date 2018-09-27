@@ -23,8 +23,10 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler with Lineage
     logger.debug(s"Newly generated request: $request")
     val response = Http().singleRequest(request)
     response.foreach { r =>
-      if (r.status == StatusCodes.OK) createLineageFromRequest(request, userSTS)
-      if (r.status == StatusCodes.NoContent) createLineageFromRequest(request, userSTS) // delete on AWS response 204
+      if (atlasSettings.atlasEnabled == true) {
+        if (r.status == StatusCodes.OK) createLineageFromRequest(request, userSTS)
+        if (r.status == StatusCodes.NoContent) createLineageFromRequest(request, userSTS) // delete on AWS response 204
+      }
       logger.debug(s"Recieved response from Ceph: $r")
     }
     response
