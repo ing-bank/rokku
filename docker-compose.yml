@@ -50,7 +50,7 @@ services:
     ports:
       - "8080:8080"
 
-   atlas:
-      image: arempter/gargoyle-atlas:latest
-      ports:
-        - "21000:21000"
+  atlas:
+    image: arempter/gargoyle-atlas:latest
+    ports:
+      - "21000:21000"
