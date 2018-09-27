@@ -56,7 +56,28 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with A
     }
   }
 
-  "Json proces to PUT Entities" should {
+  "Json file GET Entities" should {
+    "match current schema" in {
+      val testFileEntities =
+        Entities(Seq(IngestedFile(
+          "DataFile",
+          "fakeUser",
+          FileAttributes("fakeObject", "fakeObject", "fakeObject", "none/none",
+            guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "Bucket"),
+            guidRef("4af9ec97-b320-4e3b-9363-5763fa63b03b", "Server"),
+            List(guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "Bucket")),
+            List(guidRef("4af9ec97-b320-4e3b-9363-5763fa63b03b", "Server")),
+            Seq(Classification("customer_PII"))))))
+          .toJson
+          .toString()
+      val jsonEntities =
+        s"""{"entities":[{"typeName":"DataFile","createdBy":"fakeUser","attributes":{"format":"none/none","name":"fakeObject","Server":{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"Server"},"file_name":"fakeObject","outputs":[{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"Server"}],"classifications":[{"typeName":"customer_PII"}],"inputs":[{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"Bucket"}],"qualifiedName":"fakeObject","bucket":{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"Bucket"}}}]}"""
+
+      assert(testFileEntities == jsonEntities)
+    }
+  }
+
+  "Json process to PUT Entities" should {
     "match current schema" in {
       val testBucketEntities =
         Entities(Seq(Ingestion(
@@ -70,6 +91,25 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with A
           .toString()
       val jsonEntities =
         s"""{"entities":[{"typeName":"aws_cli_script","createdBy":"fakeUser","attributes":{"name":"aws_cli_${timestamp}","Server":{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"Server"},"outputs":[{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"Bucket"}],"inputs":[{"guid":"254f0c29-be7f-4dd6-a188-4cced02b0298","typeName":"DataFile"}],"operation":"write","qualifiedName":"aws_cli_${timestamp}","run_as":"fakeUser"}}]}"""
+
+      assert(testBucketEntities == jsonEntities)
+    }
+  }
+
+  "Json process to GET Entities" should {
+    "match current schema" in {
+      val testBucketEntities =
+        Entities(Seq(Ingestion(
+          "aws_cli_script",
+          "fakeUser",
+          IngestionAttributes(s"aws_cli_${timestamp}", s"aws_cli_${timestamp}", "read", "fakeUser",
+            guidRef("4af9ec97-b320-4e3b-9363-5763fa63b03b", "Server"),
+            List(guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "Bucket")),
+            List(guidRef("254f0c29-be7f-4dd6-a188-4cced02b0298", "DataFile"))))))
+          .toJson
+          .toString()
+      val jsonEntities =
+        s"""{"entities":[{"typeName":"aws_cli_script","createdBy":"fakeUser","attributes":{"name":"aws_cli_${timestamp}","Server":{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"Server"},"outputs":[{"guid":"254f0c29-be7f-4dd6-a188-4cced02b0298","typeName":"DataFile"}],"inputs":[{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"Bucket"}],"operation":"read","qualifiedName":"aws_cli_${timestamp}","run_as":"fakeUser"}}]}"""
 
       assert(testBucketEntities == jsonEntities)
     }
