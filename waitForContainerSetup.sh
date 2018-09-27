@@ -4,7 +4,7 @@
 set -e
 
 # Max query attempts before consider setup failed
-MAX_TRIES=90
+MAX_TRIES=150
 
 # Return true-like values if and only if logs contain the expected "ready" line
 function cephIsReady() {
@@ -18,6 +18,9 @@ function gargoyleStsIsReady() {
 }
 function gargoyleKeycloakIsReady() {
   docker-compose logs keycloak | grep "Admin console listening"
+}
+function gargoyleAtlasIsReady() {
+  docker-compose logs atlas | grep "Done setting up Atlas types"
 }
 
 function waitUntilServiceIsReady() {
@@ -41,3 +44,5 @@ waitUntilServiceIsReady gargoyleStsIsReady "Gargoyle STS"
 waitUntilServiceIsReady cephIsReady "Ceph"
 waitUntilServiceIsReady rangerAdminIsReady "Ranger Admin"
 waitUntilServiceIsReady gargoyleKeycloakIsReady "Keycloack"
+waitUntilServiceIsReady gargoyleAtlasIsReady "Atlas"
+
