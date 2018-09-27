@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
 import com.ing.wbaa.gargoyle.proxy.data._
+import com.ing.wbaa.gargoyle.proxy.provider.Atlas.RestClient.RestClientException
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,7 +34,7 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
 
       override protected[this] implicit def executionContext: ExecutionContext = system.dispatcher
 
-      override protected[this] implicit def atlasSettings: GargoyleAtlasSettings = new GargoyleAtlasSettings(system.settings.config)
+      override protected[this] implicit def atlasSettings: GargoyleAtlasSettings = atlasTestSettings
     })
 
   "LineageProviderAtlas" should {
@@ -90,14 +91,17 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
     }
   }
 
-//  "LineageProviderAtlas PUT" should {
-//    "fail on incorrect Settings" in withLineageProviderAtlas(new GargoyleAtlasSettings(testSystem.settings.config) {
-//      override val atlasApiHost: String = "fakeHost"
-//      override val atlasApiPort: Int = 21001
-//    }) { apr =>
-//      assertThrows[RestClientException](apr.createLineageFromRequest(
-//        fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS))
-//    }
-//  }
+  "LineageProviderAtlas PUT" should {
+    "fail on incorrect Settings" in withLineageProviderAtlas(new GargoyleAtlasSettings(testSystem.settings.config) {
+      override val atlasApiHost: String = "fakeHost"
+      override val atlasApiPort: Int = 21001
+      override def atlasBaseUri: Uri = Uri(
+        scheme = "http",
+        authority = Uri.Authority(host = Uri.Host(atlasApiHost), port = atlasApiPort)
+      )
+    }) { apr =>
+      recoverToSucceededIf[RestClientException](apr.createLineageFromRequest(fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS))
+    }
+  }
 
 }
