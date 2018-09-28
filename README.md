@@ -166,10 +166,12 @@ default (preview feature). To enable lineage shipment to Atlas, following settin
 ```
 gargoyle {
      atlas {
-        enabled = "true"
+        enabled = true
      }
 }
 ``` 
+
+As alternative environment value `GARGOYLE_ATLAS_ENABLED` should be set to true.
 
 To check lineage that has been created, login to Atlas web UI console, [default url](http://localhost:21000) with
 admin user and password 

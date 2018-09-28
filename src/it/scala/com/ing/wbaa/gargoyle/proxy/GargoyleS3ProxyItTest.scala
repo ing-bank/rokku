@@ -58,7 +58,7 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
       override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(testSystem)
       override val stsSettings: GargoyleStsSettings = GargoyleStsSettings(testSystem)
-      override val atlasSettings: GargoyleAtlasSettings = new GargoyleAtlasSettings(system.settings.config)
+      override val atlasSettings: GargoyleAtlasSettings = new GargoyleAtlasSettings(testSystem.settings.config)
 
       override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
     }

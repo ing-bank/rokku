@@ -71,7 +71,8 @@ trait LineageProviderAtlas extends LazyLogging {
         List(guidRef(outputGuid, outputType))))))
   }
 
-  def postEnities(userSTS: String, host: String, bucket: String, bucketObject: String, method: String, contentType: ContentType, timestamp: Long)(implicit client: RestClient): Future[Option[(String, String, String, String)]] = {
+  private def postEnities(userSTS: String, host: String, bucket: String, bucketObject: String, method: String, contentType: ContentType, timestamp: Long)
+                         (implicit client: RestClient): Future[Option[LineagePostGuidResponse]] = {
     for {
       serverGuid <- client.postData(serverEntities(userSTS, host).toJson)
       bucketGuid <- client.postData(bucketEntities(userSTS, bucket).toJson)
@@ -91,22 +92,22 @@ trait LineageProviderAtlas extends LazyLogging {
           client.postData(
             processEntities(serverGuid, bucketGuid, fileGuid, userSTS, method, fileGuid, "DataFile", bucketGuid, "Bucket", timestamp).toJson)
       }
-    } yield Some(Tuple4(serverGuid, bucketGuid, fileGuid, processGuid))
+    } yield Some(LineagePostGuidResponse(serverGuid, bucketGuid, fileGuid, processGuid))
   }
 
   // file entity delete
   // for now it is just deleting file entity and no related objects like eg. aws_cli_script, which uploaded or downloaded
   // file to bucket. Once we delete aws_cli_script object we will lose track of whats has been deleted
   // We need to come up with process of tracking file delete
-  def deleteEntities(typeName: String, entityName: String)(implicit client: RestClient): Future[Option[(String, String, String, String)]] = {
+  private def deleteEntities(typeName: String, entityName: String)(implicit client: RestClient): Future[Option[LineagePostGuidResponse]] = {
     for {
       entityGuid <- client.getEntityGUID(typeName, entityName)
       _ <- client.deleteEntity(entityGuid)
 
-    } yield (Some(Tuple4("", "", entityGuid, "")))
+    } yield (Some(LineagePostGuidResponse("", "", entityGuid, "")))
   }
 
-  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[Option[(String, String, String, String)]] = {
+  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[Option[LineagePostGuidResponse]] = {
 
     implicit val client = new RestClient()
     val timestamp = System.currentTimeMillis()

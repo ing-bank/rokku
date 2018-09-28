@@ -43,55 +43,40 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
       val createLineageResult  = apr.createLineageFromRequest(
         fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS)
 
-      createLineageResult.map {
-        case result => result.getOrElse(Tuple4("","","","")) match {
-          case guids =>
-            assert( guids._1.length > 0 )
-            assert( guids._2.length > 0 )
-            assert( guids._3.length > 0 )
-            assert( guids._4.length > 0 )
+      createLineageResult.map { result =>
+            assert( result.get.serverGuid.length > 0 )
+            assert( result.get.bucketGuid.length > 0 )
+            assert( result.get.fileGuid.length > 0 )
+            assert( result.get.processGuid.length > 0 )
         }
-      }
     }
-  }
 
-  "LineageProviderAtlas" should {
     "create Read lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
 
       val createLineageResult  = apr.createLineageFromRequest(
         fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS)
 
-      createLineageResult.map {
-        case result => result.getOrElse(Tuple4("","","","")) match {
-          case guids =>
-            assert( guids._1.length > 0 )
-            assert( guids._2.length > 0 )
-            assert( guids._3.length > 0 )
-            assert( guids._4.length > 0 )
+      createLineageResult.map { result =>
+            assert( result.get.serverGuid.length > 0 )
+            assert( result.get.bucketGuid.length > 0 )
+            assert( result.get.fileGuid.length > 0 )
+            assert( result.get.processGuid.length > 0 )
         }
-      }
     }
-  }
 
-  "LineageProviderAtlas" should {
     "create Delete lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
 
       val createLineageResult  = apr.createLineageFromRequest(
         fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS)
 
-      createLineageResult.map {
-        case result => result.getOrElse(Tuple4("","","","")) match {
-          case guids =>
-            assert( guids._1.length == 0 )
-            assert( guids._2.length == 0 )
-            assert( guids._3.length > 0 )
-            assert( guids._4.length == 0 )
-        }
+      createLineageResult.map { result =>
+            assert( result.get.serverGuid.length == 0 )
+            assert( result.get.bucketGuid.length == 0 )
+            assert( result.get.fileGuid.length > 0 )
+            assert( result.get.processGuid.length == 0 )
       }
     }
-  }
 
-  "LineageProviderAtlas PUT" should {
     "fail on incorrect Settings" in withLineageProviderAtlas(new GargoyleAtlasSettings(testSystem.settings.config) {
       override val atlasApiHost: String = "fakeHost"
       override val atlasApiPort: Int = 21001
@@ -103,5 +88,4 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
       recoverToSucceededIf[RestClientException](apr.createLineageFromRequest(fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS))
     }
   }
-
 }
