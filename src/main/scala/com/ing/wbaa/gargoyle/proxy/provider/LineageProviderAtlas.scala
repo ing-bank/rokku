@@ -17,10 +17,18 @@ trait LineageProviderAtlas extends LazyLogging {
   protected[this] implicit def atlasSettings: GargoyleAtlasSettings
 
   private def serverEntities(userSTS: String, host: String) =
-    Entities(Seq(Server("Server", userSTS, ServerAttributes(host, host, host, host), Seq(Classification("staging_node")))))
+    Entities(Seq(Server(
+      "Server",
+      userSTS,
+      ServerAttributes(host, host, host, host),
+      Seq(Classification("staging_node")))))
 
   private def bucketEntities(userSTS: String, bucket: String) =
-    Entities(Seq(Bucket("Bucket", userSTS, BucketAttributes(bucket, bucket, bucket), Seq(Classification("customer_PII")))))
+    Entities(Seq(Bucket(
+      "Bucket",
+      userSTS,
+      BucketAttributes(bucket, bucket, bucket),
+      Seq(Classification("customer_PII")))))
 
   private def fileEntities(
       serverGuid: String,
@@ -86,8 +94,10 @@ trait LineageProviderAtlas extends LazyLogging {
     } yield Some(Tuple4(serverGuid, bucketGuid, fileGuid, processGuid))
   }
 
-  // file entity
-  // todo: delete based on relations GUID
+  // file entity delete
+  // for now it is just deleting file entity and no related objects like eg. aws_cli_script, which uploaded or downloaded
+  // file to bucket. Once we delete aws_cli_script object we will lose track of whats has been deleted
+  // We need to come up with process of tracking file delete
   def deleteEntities(typeName: String, entityName: String)(implicit client: RestClient): Future[Option[(String, String, String, String)]] = {
     for {
       entityGuid <- client.getEntityGUID(typeName, entityName)
@@ -100,6 +110,8 @@ trait LineageProviderAtlas extends LazyLogging {
 
     implicit val client = new RestClient()
     val timestamp = System.currentTimeMillis()
+    // createLineageFromRequest is used in RequestHandlerS3 where there is no notion of S3Request. It seems easier to
+    // repeat httpRequest parsing here for needed values
     val host = httpRequest.uri.authority.host.address()
     val path = httpRequest.uri.path
     val bucket = path.toString.split("/").toList.lift(1).getOrElse("notDef")

@@ -1,7 +1,7 @@
 package com.ing.wbaa.gargoyle.proxy.provider
 
 import com.ing.wbaa.gargoyle.proxy.provider.Atlas.AtlasModelJsonSupport
-import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ Bucket, BucketAttributes, Classification, Entities, FileAttributes, IngestedFile, Ingestion, IngestionAttributes, Server, ServerAttributes, guidRef }
+import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ Bucket, BucketAttributes, Classification, CreateResponse, Entities, FileAttributes, IngestedFile, Ingestion, IngestionAttributes, Server, ServerAttributes, UpdateResponse, guidRef }
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
 class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with AtlasModelJsonSupport {
@@ -114,4 +114,25 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with A
       assert(testBucketEntities == jsonEntities)
     }
   }
+
+  "Json createResponse" should {
+    "parse a entity create response" that {
+      "has a guid" in {
+        val jsonString = """{"mutatedEntities":{"CREATE":[{"typeName":"Server","attributes":{"server_name":"someServer","qualifiedName":"someServer","ip_address":"127.0.0.1"},"guid":"47e47394-4555-4288-94f0-1ba1c4d4fab1","status":"ACTIVE"}]},"guidAssignments":{"-497649638924":"47e47394-4555-4288-94f0-1ba1c4d4fab1"}}"""
+        val guidString = jsonString.parseJson.convertTo[CreateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
+        assert(guidString.length == 36)
+      }
+    }
+  }
+
+  "Json updateResponse" should {
+    "parse a entity update response" that {
+      "has a guid" in {
+        val jsonString = """{"guidAssignments":{"-497649638928":"47e47394-4555-4288-94f0-1ba1c4d4fab1"}}"""
+        val guidString = jsonString.parseJson.convertTo[UpdateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
+        assert(guidString.length == 36)
+      }
+    }
+  }
+
 }

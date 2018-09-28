@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers.{ Authorization, BasicHttpCredentials }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{ ActorMaterializer, Materializer }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
-import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ EntityId, EntitySearchResult, createResponse, updateResponse }
+import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ EntityId, EntitySearchResult, CreateResponse, UpdateResponse }
 import com.ing.wbaa.gargoyle.proxy.provider.Atlas.RestClient.RestClientException
 import com.typesafe.scalalogging.LazyLogging
 import spray.json.{ JsValue, _ }
@@ -30,7 +30,7 @@ class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSet
 
   private val authHeader = Authorization(BasicHttpCredentials(username, password))
 
-  def getEntityGUID(typeName: String, value: String) = {
+  def getEntityGUID(typeName: String, value: String): Future[String] = {
     http.singleRequest(HttpRequest(
       HttpMethods.GET,
       atlasApiUriV1 + s"/entities?type=${typeName}&property=qualifiedName&value=${value}"
@@ -70,7 +70,7 @@ class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSet
       }
   }
 
-  // post data will either create or update entity
+  // post data will either create or update entity (Atlas API behaviour)
   def postData(json: JsValue): Future[String] = {
     http.singleRequest(HttpRequest(
       HttpMethods.POST,
@@ -82,9 +82,9 @@ class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSet
         case response if response.status == StatusCodes.OK =>
           Unmarshal(response.entity).to[String].map { jsonString =>
             if (jsonString.contains("CREATE")) {
-              jsonString.parseJson.convertTo[createResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
+              jsonString.parseJson.convertTo[CreateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
             } else {
-              jsonString.parseJson.convertTo[updateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
+              jsonString.parseJson.convertTo[UpdateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
             }
           }
         case response =>

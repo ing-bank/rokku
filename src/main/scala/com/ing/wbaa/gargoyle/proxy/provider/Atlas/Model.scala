@@ -117,11 +117,44 @@ object Model extends AtlasModelJsonSupport {
     def guidAssignments: JsObject
   }
 
-  case class createResponse(
+  case class CreateResponse(
       mutatedEntities: JsObject,
       guidAssignments: JsObject) extends GuidResponse
 
-  case class updateResponse(guidAssignments: JsObject) extends GuidResponse
+  case class UpdateResponse(guidAssignments: JsObject) extends GuidResponse
+
+  // lineage response
+  // below four classes (LineageRelations, LineageResponse, Relationship, RelationshipResponse) are not used at the moment.
+  // they are to be used, once we start working with entities lineage
+  case class LineageRelations(
+      fromEntityId: String,
+      toEntityId: String,
+      relationshipId: String)
+
+  case class LineageResponse(
+      baseEntityGuid: String,
+      lineageDirection: String,
+      lineageDepth: Int,
+      guidEntityMap: JsObject,
+      relations: Seq[LineageRelations])
+
+  case class Relationship(
+      typeName: String,
+      guid: String,
+      end1: JsObject,
+      end2: JsObject,
+      label: String,
+      propagateTags: String,
+      status: String,
+      createdBy: String,
+      updatedBy: String,
+      createTime: Long,
+      updateTime: Long,
+      version: Int,
+      propagatedClassifications: JsObject,
+      blockedPropagatedClassifications: JsObject)
+
+  case class RelationshipResponse(relationship: Relationship)
 
 }
 
@@ -144,8 +177,8 @@ trait AtlasModelJsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val readsDefinition = jsonFormat7(Definition)
   implicit val resultReader = jsonFormat2(EntitySearchResult)
   // Entity create / update result
-  implicit val readsCreateResponse = jsonFormat2(createResponse)
-  implicit val readsUpdateResponse = jsonFormat1(updateResponse)
+  implicit val readsCreateResponse = jsonFormat2(CreateResponse)
+  implicit val readsUpdateResponse = jsonFormat1(UpdateResponse)
   // IngestionProcess
   implicit val readsIngestionAttributes = jsonFormat7(IngestionAttributes)
   implicit val readsIngestion = jsonFormat3(Ingestion)
