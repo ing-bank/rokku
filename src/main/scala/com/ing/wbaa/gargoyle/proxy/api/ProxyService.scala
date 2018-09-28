@@ -26,7 +26,7 @@ trait ProxyService extends LazyLogging {
   protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]]
 
   // TODO: Implement request authentication using aws signing
-  protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
+  protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean
 
   // Authorization methods
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
