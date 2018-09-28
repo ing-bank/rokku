@@ -171,7 +171,11 @@ gargoyle {
 }
 ``` 
 
-As alternative environment value `GARGOYLE_ATLAS_ENABLED` should be set to true.
+As alternative environment value `GARGOYLE_ATLAS_ENABLED` should be set to true. 
+
+Lineage is done according following model
+ 
+![alt text](./docs/img/atlas_model.jpg)
 
 To check lineage that has been created, login to Atlas web UI console, [default url](http://localhost:21000) with
 admin user and password 

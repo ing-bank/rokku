@@ -1,4 +1,4 @@
-package com.ing.wbaa.gargoyle.proxy.provider.Atlas
+package com.ing.wbaa.gargoyle.proxy.provider.atlas
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import spray.json._

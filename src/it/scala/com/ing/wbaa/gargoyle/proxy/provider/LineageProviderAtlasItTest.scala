@@ -2,9 +2,10 @@ package com.ing.wbaa.gargoyle.proxy.provider
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
+import akka.stream.{ActorMaterializer, Materializer}
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
 import com.ing.wbaa.gargoyle.proxy.data._
-import com.ing.wbaa.gargoyle.proxy.provider.Atlas.RestClient.RestClientException
+import com.ing.wbaa.gargoyle.proxy.provider.atlas.RestClient.RestClientException
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -35,6 +36,8 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
       override protected[this] implicit def executionContext: ExecutionContext = system.dispatcher
 
       override protected[this] implicit def atlasSettings: GargoyleAtlasSettings = atlasTestSettings
+
+      override protected[this] implicit def materializer: Materializer = ActorMaterializer()(system)
     })
 
   "LineageProviderAtlas" should {

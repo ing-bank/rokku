@@ -2,22 +2,25 @@ package com.ing.wbaa.gargoyle.proxy.handler
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model._
-import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
-import com.ing.wbaa.gargoyle.proxy.data.User
+import akka.http.scaladsl.model.headers.RawHeader
+import com.ing.wbaa.gargoyle.proxy.config.{ GargoyleAtlasSettings, GargoyleStorageS3Settings }
+import com.ing.wbaa.gargoyle.proxy.data.{ LineagePostGuidResponse, User }
 import com.ing.wbaa.gargoyle.proxy.handler.radosgw.RadosGatewayHandler
-import com.ing.wbaa.gargoyle.proxy.provider.LineageProviderAtlas
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler with LineageProviderAtlas {
+trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
 
   protected[this] implicit def system: ActorSystem
   protected[this] implicit def executionContext: ExecutionContext
 
   protected[this] def storageS3Settings: GargoyleStorageS3Settings
+
+  protected[this] def atlasSettings: GargoyleAtlasSettings
+
+  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[Option[LineagePostGuidResponse]]
 
   protected[this] def fireRequestToS3(request: HttpRequest, userSTS: User): Future[HttpResponse] = {
     logger.debug(s"Newly generated request: $request")

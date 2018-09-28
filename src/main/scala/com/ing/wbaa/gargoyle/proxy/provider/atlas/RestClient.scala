@@ -1,35 +1,42 @@
-package com.ing.wbaa.gargoyle.proxy.provider.Atlas
+package com.ing.wbaa.gargoyle.proxy.provider.atlas
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Authorization, BasicHttpCredentials }
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.stream.Materializer
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
-import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ EntityId, EntitySearchResult, CreateResponse, UpdateResponse }
-import com.ing.wbaa.gargoyle.proxy.provider.Atlas.RestClient.RestClientException
+import com.ing.wbaa.gargoyle.proxy.provider.atlas.Model.{ CreateResponse, EntityId, EntitySearchResult, UpdateResponse }
+import com.ing.wbaa.gargoyle.proxy.provider.atlas.RestClient.RestClientException
 import com.typesafe.scalalogging.LazyLogging
 import spray.json.{ JsValue, _ }
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
-class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSettings)
-  extends AtlasModelJsonSupport with LazyLogging {
+trait RestClient extends AtlasModelJsonSupport with LazyLogging {
 
-  implicit val materializer: Materializer = ActorMaterializer()
-  implicit val executionContext = system.dispatcher
+  protected[this] implicit def system: ActorSystem
+  protected[this] implicit def executionContext: ExecutionContext
+  protected[this] implicit def materializer: Materializer
 
-  private val http = Http(system)
-  private val atlasApiUriV1 = atlasSettings.atlasBaseUri.withPath(Uri.Path("/api/atlas"))
-  private val atlasApiUriV2 = atlasSettings.atlasBaseUri.withPath(Uri.Path("/api/atlas/v2"))
-  private val bulkEntity = "/entity/bulk"
-  private val entityGuid = "/entity/guid"
-  private val username = atlasSettings.atlasApiUser
-  private val password = atlasSettings.atlasApiPassword
+  protected[this] implicit def atlasSettings: GargoyleAtlasSettings
 
-  private val authHeader = Authorization(BasicHttpCredentials(username, password))
+  private def http = Http(system)
+  private def atlasApiUriV1 = atlasSettings.atlasBaseUri.withPath(Uri.Path("/api/atlas"))
+  private def atlasApiUriV2 = atlasSettings.atlasBaseUri.withPath(Uri.Path("/api/atlas/v2"))
+  private def bulkEntity = "/entity/bulk"
+  private def entityGuid = "/entity/guid"
 
+  private def authHeader = Authorization(BasicHttpCredentials(atlasSettings.atlasApiUser, atlasSettings.atlasApiPassword))
+
+  /**
+   * Search entity Guid for given name
+   *
+   * @param typeName
+   * @param value
+   * @return Guid of entity
+   */
   def getEntityGUID(typeName: String, value: String): Future[String] = {
     http.singleRequest(HttpRequest(
       HttpMethods.GET,
@@ -51,6 +58,12 @@ class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSet
       }
   }
 
+  /**
+   * Delete entity by GUID
+   *
+   * @param guid
+   * @return Guid of deleted entity
+   */
   def deleteEntity(guid: String): Future[String] = {
     http.singleRequest(HttpRequest(
       HttpMethods.DELETE,
@@ -70,7 +83,13 @@ class RestClient()(implicit system: ActorSystem, atlasSettings: GargoyleAtlasSet
       }
   }
 
-  // post data will either create or update entity (Atlas API behaviour)
+  /**
+   * Creates or updates entity
+   * Post data will either create or update entity (Atlas API behaviour)
+   *
+   * @param json
+   * @return Guid of changed or added entity
+   */
   def postData(json: JsValue): Future[String] = {
     http.singleRequest(HttpRequest(
       HttpMethods.POST,
