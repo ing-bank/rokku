@@ -9,13 +9,14 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.ing.wbaa.gargoyle.proxy.data._
+import com.ing.wbaa.gargoyle.proxy.provider.SignatureProviderAws
 import org.scalatest.{ DiagrammedAssertions, FlatSpec }
 
 import scala.concurrent.Future
 
 class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with ScalatestRouteTest {
 
-  private trait ProxyServiceMock extends ProxyService {
+  private trait ProxyServiceMock extends ProxyService with SignatureProviderAws {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
 
     override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse] =
@@ -27,6 +28,8 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
       Some(User(UserName("okUser"), Some(UserAssumedGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
     )
     override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
+
+    override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
   }
 
   private def testRequest(accessKey: String = "okAccessKey", path: String = "/okBucket") = HttpRequest(
