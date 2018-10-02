@@ -35,7 +35,7 @@ trait ProxyService extends LazyLogging {
 
   // Atlas Lineage
   protected[this] def atlasSettings: GargoyleAtlasSettings
-  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[Option[LineagePostGuidResponse]]
+  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse]
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
@@ -53,10 +53,10 @@ trait ProxyService extends LazyLogging {
                   if (isUserAuthorizedForRequest(s3Request, userSTS)) {
                     logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
                     complete(executeRequest(httpRequest, remoteAddress, userSTS).map { request =>
-                      if (atlasSettings.atlasEnabled == true) {
-                        if (request.status == StatusCodes.OK) createLineageFromRequest(httpRequest, userSTS)
-                        if (request.status == StatusCodes.NoContent) createLineageFromRequest(httpRequest, userSTS) // delete on AWS response 204
-                      }
+                      if (atlasSettings.atlasEnabled && (request.status == StatusCodes.OK || request.status == StatusCodes.NoContent))
+                        // delete on AWS response 204
+                        createLineageFromRequest(httpRequest, userSTS)
+
                       request
                     })
                   } else {

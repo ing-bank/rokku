@@ -47,10 +47,10 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
         fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS)
 
       createLineageResult.map { result =>
-            assert( result.get.serverGuid.length > 0 )
-            assert( result.get.bucketGuid.length > 0 )
-            assert( result.get.fileGuid.length > 0 )
-            assert( result.get.processGuid.length > 0 )
+            assert( result.serverGuid.length > 0 )
+            assert( result.bucketGuid.length > 0 )
+            assert( result.fileGuid.length > 0 )
+            assert( result.processGuid.length > 0 )
         }
     }
 
@@ -60,10 +60,10 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
         fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS)
 
       createLineageResult.map { result =>
-            assert( result.get.serverGuid.length > 0 )
-            assert( result.get.bucketGuid.length > 0 )
-            assert( result.get.fileGuid.length > 0 )
-            assert( result.get.processGuid.length > 0 )
+            assert( result.serverGuid.length > 0 )
+            assert( result.bucketGuid.length > 0 )
+            assert( result.fileGuid.length > 0 )
+            assert( result.processGuid.length > 0 )
         }
     }
 
@@ -73,10 +73,10 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
         fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS)
 
       createLineageResult.map { result =>
-            assert( result.get.serverGuid.length == 0 )
-            assert( result.get.bucketGuid.length == 0 )
-            assert( result.get.fileGuid.length > 0 )
-            assert( result.get.processGuid.length == 0 )
+            assert( result.serverGuid.length == 0 )
+            assert( result.bucketGuid.length == 0 )
+            assert( result.fileGuid.length > 0 )
+            assert( result.processGuid.length == 0 )
       }
     }
 

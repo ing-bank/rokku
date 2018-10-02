@@ -75,7 +75,7 @@ trait LineageProviderAtlas extends LazyLogging with RestClient {
         List(guidRef(outputGuid, outputType))))))
   }
 
-  private def postEnities(userSTS: String, host: String, bucket: String, bucketObject: String, method: String, contentType: ContentType, timestamp: Long): Future[Option[LineagePostGuidResponse]] = {
+  private def postEnities(userSTS: String, host: String, bucket: String, bucketObject: String, method: String, contentType: ContentType, timestamp: Long): Future[LineagePostGuidResponse] = {
     for {
       serverGuid <- postData(serverEntities(userSTS, host).toJson)
       bucketGuid <- postData(bucketEntities(userSTS, bucket).toJson)
@@ -95,22 +95,21 @@ trait LineageProviderAtlas extends LazyLogging with RestClient {
           postData(
             processEntities(serverGuid, bucketGuid, fileGuid, userSTS, method, fileGuid, "DataFile", bucketGuid, "Bucket", timestamp).toJson)
       }
-    } yield Some(LineagePostGuidResponse(serverGuid, bucketGuid, fileGuid, processGuid))
+    } yield LineagePostGuidResponse(serverGuid, bucketGuid, fileGuid, processGuid)
   }
 
   // file entity delete
   // for now it is just deleting file entity and no related objects like eg. aws_cli_script, which uploaded or downloaded
   // file to bucket. Once we delete aws_cli_script object we will lose track of whats has been deleted
   // We need to come up with process of tracking file delete
-  private def deleteEntities(typeName: String, entityName: String): Future[Option[LineagePostGuidResponse]] = {
+  private def deleteEntities(typeName: String, entityName: String): Future[LineagePostGuidResponse] =
     for {
       entityGuid <- getEntityGUID(typeName, entityName)
       _ <- deleteEntity(entityGuid)
 
-    } yield (Some(LineagePostGuidResponse("", "", entityGuid, "")))
-  }
+    } yield LineagePostGuidResponse("", "", entityGuid, "")
 
-  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[Option[LineagePostGuidResponse]] = {
+  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse] = {
 
     val timestamp = System.currentTimeMillis()
     // createLineageFromRequest is used in RequestHandlerS3 where there is no notion of S3Request. It seems easier to
@@ -135,7 +134,7 @@ trait LineageProviderAtlas extends LazyLogging with RestClient {
         case HttpMethods.DELETE =>
           logger.debug(s"Creating Delete lineage for request to ${method} file ${bucketObject} to ${bucket} at ${timestamp}")
           deleteEntities("DataFile", bucketObject)
-        case _ => Future(None)
+        case _ => Future.failed(LineageProviderAtlasException("Create lineage failed"))
       }
     } else {
       Future.failed(LineageProviderAtlasException("Create lineage failed"))

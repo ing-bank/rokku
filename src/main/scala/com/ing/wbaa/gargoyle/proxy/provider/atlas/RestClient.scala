@@ -28,7 +28,7 @@ trait RestClient extends AtlasModelJsonSupport with LazyLogging {
   private lazy val bulkEntity = "/entity/bulk"
   private lazy val entityGuid = "/entity/guid"
 
-  private def authHeader = Authorization(BasicHttpCredentials(atlasSettings.atlasApiUser, atlasSettings.atlasApiPassword))
+  private lazy val authHeader = Authorization(BasicHttpCredentials(atlasSettings.atlasApiUser, atlasSettings.atlasApiPassword))
 
   /**
    * Search entity Guid for given name

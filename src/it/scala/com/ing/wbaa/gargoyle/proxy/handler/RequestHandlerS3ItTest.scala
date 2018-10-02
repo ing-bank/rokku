@@ -9,6 +9,7 @@ import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.gargoyle.proxy.GargoyleS3Proxy
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleAtlasSettings, GargoyleHttpSettings, GargoyleStorageS3Settings}
 import com.ing.wbaa.gargoyle.proxy.data._
+import com.ing.wbaa.gargoyle.proxy.provider.LineageProviderAtlas.LineageProviderAtlasException
 import com.ing.wbaa.testkit.GargoyleFixtures
 import org.scalatest._
 
@@ -44,7 +45,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] =
         Future(Some(User(UserRawJson("userId", Some("group"), "accesskey", "secretkey"))))
 
-      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[Option[LineagePostGuidResponse]] = Future(None)
+      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse] = Future.failed(LineageProviderAtlasException("Create lineage failed"))
     }
     proxy.startup.map { binding =>
       try testCode(getAmazonS3(
