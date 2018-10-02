@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.{ ContentType, HttpMethods, HttpRequest }
 import akka.stream.Materializer
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
 import com.ing.wbaa.gargoyle.proxy.data._
+import com.ing.wbaa.gargoyle.proxy.provider.LineageProviderAtlas.LineageProviderAtlasException
 import com.ing.wbaa.gargoyle.proxy.provider.atlas.Model.{ Bucket, BucketAttributes, Classification, Entities, FileAttributes, IngestedFile, Ingestion, IngestionAttributes, Server, ServerAttributes, guidRef }
 import com.ing.wbaa.gargoyle.proxy.provider.atlas.RestClient
 import com.typesafe.scalalogging.LazyLogging
@@ -137,7 +138,11 @@ trait LineageProviderAtlas extends LazyLogging with RestClient {
         case _ => Future(None)
       }
     } else {
-      Future(None)
+      Future.failed(LineageProviderAtlasException("Create lineage failed"))
     }
   }
+}
+object LineageProviderAtlas {
+  final case class LineageProviderAtlasException(private val message: String, private val cause: Throwable = None.orNull)
+    extends Exception(message, cause)
 }

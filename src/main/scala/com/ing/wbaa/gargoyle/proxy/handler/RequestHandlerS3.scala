@@ -4,8 +4,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
-import com.ing.wbaa.gargoyle.proxy.config.{ GargoyleAtlasSettings, GargoyleStorageS3Settings }
-import com.ing.wbaa.gargoyle.proxy.data.{ LineagePostGuidResponse, User }
+import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
+import com.ing.wbaa.gargoyle.proxy.data.User
 import com.ing.wbaa.gargoyle.proxy.handler.radosgw.RadosGatewayHandler
 import com.typesafe.scalalogging.LazyLogging
 
@@ -18,18 +18,10 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
 
   protected[this] def storageS3Settings: GargoyleStorageS3Settings
 
-  protected[this] def atlasSettings: GargoyleAtlasSettings
-
-  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[Option[LineagePostGuidResponse]]
-
   protected[this] def fireRequestToS3(request: HttpRequest, userSTS: User): Future[HttpResponse] = {
     logger.debug(s"Newly generated request: $request")
     val response = Http().singleRequest(request)
     response.foreach { r =>
-      if (atlasSettings.atlasEnabled == true) {
-        if (r.status == StatusCodes.OK) createLineageFromRequest(request, userSTS)
-        if (r.status == StatusCodes.NoContent) createLineageFromRequest(request, userSTS) // delete on AWS response 204
-      }
       logger.debug(s"Recieved response from Ceph: $r")
     }
     response

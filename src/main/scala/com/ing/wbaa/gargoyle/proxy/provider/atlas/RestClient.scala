@@ -22,11 +22,11 @@ trait RestClient extends AtlasModelJsonSupport with LazyLogging {
 
   protected[this] implicit def atlasSettings: GargoyleAtlasSettings
 
-  private def http = Http(system)
-  private def atlasApiUriV1 = atlasSettings.atlasBaseUri.withPath(Uri.Path("/api/atlas"))
-  private def atlasApiUriV2 = atlasSettings.atlasBaseUri.withPath(Uri.Path("/api/atlas/v2"))
-  private def bulkEntity = "/entity/bulk"
-  private def entityGuid = "/entity/guid"
+  private lazy val http = Http(system)
+  private lazy val atlasApiUriV1 = atlasSettings.atlasBaseUri.withPath(Uri.Path("/api/atlas"))
+  private lazy val atlasApiUriV2 = atlasSettings.atlasBaseUri.withPath(Uri.Path("/api/atlas/v2"))
+  private lazy val bulkEntity = "/entity/bulk"
+  private lazy val entityGuid = "/entity/guid"
 
   private def authHeader = Authorization(BasicHttpCredentials(atlasSettings.atlasApiUser, atlasSettings.atlasApiPassword))
 
