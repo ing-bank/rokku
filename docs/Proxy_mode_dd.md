@@ -12,7 +12,7 @@ and Proxy services.
 ## Considered options
 
 ### Option 1: Passthrough (with ACL manager)
-![alt text](./img/option_1:_Passthrough_(with_ACL_manager).png)
+![alt text](./img/option_1_Passthrough_(with_ACL_manager).png)
 
 In this solution a separate process will periodically translate Ranger policies to S3 ACLs. This way authorisation and
 validation of requests can be done by CEPH itself. Authentication of the short lived token goes through the STS service.
@@ -31,7 +31,7 @@ validation of requests can be done by CEPH itself. Authentication of the short l
 * If someone changes ACL in Ceph directly, we can have a sync issue with Ranger
 
 ### Option 2: Passthrough (with system users on Ceph)
-![alt text](./img/option_2:_Passthrough.png)
+![alt text](./img/option_2_Passthrough.png)
 
 This solution directly connects to Ranger to authorise requests when they come in. Users have their own 
 access/secret keys and these also exist on CEPH (or are created if not present yet). They are present as system users
@@ -50,7 +50,7 @@ itself.
 * In case a user gets access to Ceph directly, he can use his own access/secret key to do whatever.
 
 ### Option 3: NPA
-![alt text](./img/option_3:_NPA.png)
+![alt text](./img/option_3_NPA.png)
 
 In this solution authorisation happens with Ranger and Authentication of the token with STS. The original user request 
 is validated based on AWS Signature headers so validation happens inside the gargoyle proxy. 
