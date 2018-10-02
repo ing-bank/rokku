@@ -13,7 +13,7 @@ import com.typesafe.scalalogging.LazyLogging
 //todo: add extends AWS4Signer to class - not needed?
 trait SignatureProviderAws extends LazyLogging {
 
-  lazy val signer = new AWS4Signer()
+  //lazy val signer = new AWS4Signer()
 
   //move to data
   case class AWSHeaderValues(accessKey: String, signedHeaders: String, signature: String, contentSHA256: String, requestDate: String, securityToken: String, version: String, userAgent: String)
@@ -51,7 +51,7 @@ trait SignatureProviderAws extends LazyLogging {
     }
   }
 
-  def getSignature(authorization: String) = {
+  private def getSignature(authorization: String) = {
     if (authorization.contains("AWS4")) {
       """\S+ Signature=(\S+)""".r
         .findFirstMatchIn(authorization)
@@ -92,19 +92,16 @@ trait SignatureProviderAws extends LazyLogging {
     AWSHeaderValues(accessKey, signedHeaders, signature, contentSHA256, requestDate, securityToken, version, userAgent)
   }
 
-  private def getMethod(httpRequest: HttpRequest) =
-    httpRequest.method.value match {
-      case "GET"    => HttpMethodName.GET
-      case "POST"   => HttpMethodName.POST
-      case "PUT"    => HttpMethodName.PUT
-      case "DELETE" => HttpMethodName.DELETE
-    }
-
   private def getSignableRequest(httpRequest: HttpRequest, request: DefaultRequest[_] = new DefaultRequest("s3")): DefaultRequest[_] = {
     import scala.collection.JavaConverters._
 
     // add values to Default request for signature
-    request.setHttpMethod(getMethod(httpRequest))
+    request.setHttpMethod(httpRequest.method.value match {
+      case "GET"    => HttpMethodName.GET
+      case "POST"   => HttpMethodName.POST
+      case "PUT"    => HttpMethodName.PUT
+      case "DELETE" => HttpMethodName.DELETE
+    })
     request.setResourcePath(httpRequest.uri.path.toString())
     request.setEndpoint(
       new URI(s"http://${httpRequest.uri.authority.toString()}"
@@ -119,7 +116,6 @@ trait SignatureProviderAws extends LazyLogging {
   }
 
   private def signS3Request(request: DefaultRequest[_], cred: BasicAWSCredentials, version: String, region: String = "us-east-1"): Unit = {
-    // todo: do we want v3?
     version match {
       case "v2" =>
         logger.debug("v2 params: " + request.getHttpMethod.toString + " " + request.getResourcePath)
@@ -139,7 +135,7 @@ trait SignatureProviderAws extends LazyLogging {
     val awsHeaders = getAWSHeaders(httpRequest)
     val credentials = new BasicAWSCredentials(awsHeaders.accessKey, awsSecretKey.value)
     val incomingRequest = getSignableRequest(httpRequest)
-    val authorization = httpRequest.getHeader("authorization").get().value()
+//    val authorization = httpRequest.getHeader("authorization").get().value()
 
     // add headers from original request before sign
     incomingRequest.addHeader("X-Amz-Security-Token", awsHeaders.securityToken)
@@ -157,7 +153,7 @@ trait SignatureProviderAws extends LazyLogging {
 
     logger.debug("Signed Request:" + incomingRequest.getHeaders.toString)
 
-    val newSignature = getSignature(authorization)
+    val newSignature = getSignature(incomingRequest.getHeaders.get("Authorization"))
 
     logger.debug(s"New Signature ${newSignature} Original Signature: ${awsHeaders.signature}")
 
