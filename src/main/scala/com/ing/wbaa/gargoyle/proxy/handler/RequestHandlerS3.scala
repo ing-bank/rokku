@@ -10,6 +10,7 @@ import com.ing.wbaa.gargoyle.proxy.handler.radosgw.RadosGatewayHandler
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Success
 
 trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
 
@@ -18,13 +19,12 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
 
   protected[this] def storageS3Settings: GargoyleStorageS3Settings
 
-  protected[this] def fireRequestToS3(request: HttpRequest, userSTS: User): Future[HttpResponse] = {
+  protected[this] def fireRequestToS3(request: HttpRequest): Future[HttpResponse] = {
     logger.debug(s"Newly generated request: $request")
-    val response = Http().singleRequest(request)
-    response.foreach { r =>
-      logger.debug(s"Recieved response from Ceph: $r")
-    }
-    response
+    Http().singleRequest(request)
+      .andThen {
+        case Success(r) => logger.debug(s"Recieved response from Ceph: $r")
+      }
   }
 
   /**
@@ -36,8 +36,8 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
   protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse] = {
     val newRequest = translateRequest(request, clientAddress)
 
-    fireRequestToS3(newRequest, userSTS).flatMap { response =>
-      if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest, userSTS)
+    fireRequestToS3(newRequest).flatMap { response =>
+      if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest)
       else Future.successful(response)
     }
   }

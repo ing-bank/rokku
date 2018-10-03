@@ -24,7 +24,7 @@ class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with 
   override val atlasSettings: GargoyleAtlasSettings = new GargoyleAtlasSettings(system.settings.config)
 
   var numFiredRequests = 0
-  override def fireRequestToS3(request: HttpRequest, userSTS: User): Future[HttpResponse] = {
+  override def fireRequestToS3(request: HttpRequest): Future[HttpResponse] = {
     numFiredRequests = numFiredRequests + 1
     Future.successful(HttpResponse(status = StatusCodes.Forbidden))
   }
