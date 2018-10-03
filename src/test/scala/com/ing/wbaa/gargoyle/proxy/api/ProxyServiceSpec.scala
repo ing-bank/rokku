@@ -8,15 +8,20 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.stream.{ ActorMaterializer, Materializer }
+import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
 import com.ing.wbaa.gargoyle.proxy.data._
+import com.ing.wbaa.gargoyle.proxy.provider.LineageProviderAtlas
 import org.scalatest.{ DiagrammedAssertions, FlatSpec }
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with ScalatestRouteTest {
 
-  private trait ProxyServiceMock extends ProxyService {
+  private trait ProxyServiceMock extends ProxyService with LineageProviderAtlas {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
+    override implicit def executionContext: ExecutionContext = system.dispatcher
+    implicit def materializer: Materializer = ActorMaterializer()
 
     override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse] =
       Future(HttpResponse(entity =
@@ -27,6 +32,9 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
       Some(User(UserName("okUser"), Some(UserAssumedGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
     )
     override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
+
+    override def atlasSettings: GargoyleAtlasSettings = new GargoyleAtlasSettings(system.settings.config)
+
   }
 
   private def testRequest(accessKey: String = "okAccessKey", path: String = "/okBucket") = HttpRequest(

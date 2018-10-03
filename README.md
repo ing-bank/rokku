@@ -158,6 +158,29 @@ debug civetweb = 20
 
 2. Restart rgw process (either docker stop <ceph/daemon rgw> or whole ceph/demo)
 
+## Lineage to Atlas
+
+Currently it is possible to create lineage based on incoming request to proxy server. It is however disabled by
+default (preview feature). To enable lineage shipment to Atlas, following setting has to be added to application.conf:
+
+```
+gargoyle {
+     atlas {
+        enabled = true
+     }
+}
+``` 
+
+As alternative environment value `GARGOYLE_ATLAS_ENABLED` should be set to true. 
+
+Lineage is done according following model
+ 
+![alt text](./docs/img/atlas_model.jpg)
+
+To check lineage that has been created, login to Atlas web UI console, [default url](http://localhost:21000) with
+admin user and password 
+
+
 ## Setting Up AWS CLI
 
 It is possible to set up the AWS command-line tools for working with Ceph RadosGW and Gargoyle. Following are instructions

@@ -2,14 +2,15 @@ package com.ing.wbaa.gargoyle.proxy.handler
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleStorageS3Settings
 import com.ing.wbaa.gargoyle.proxy.data.User
 import com.ing.wbaa.gargoyle.proxy.handler.radosgw.RadosGatewayHandler
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Success
 
 trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
 
@@ -20,9 +21,10 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
 
   protected[this] def fireRequestToS3(request: HttpRequest): Future[HttpResponse] = {
     logger.debug(s"Newly generated request: $request")
-    val response = Http().singleRequest(request)
-    response.foreach(r => logger.debug(s"Recieved response from Ceph: $r"))
-    response
+    Http().singleRequest(request)
+      .andThen {
+        case Success(r) => logger.debug(s"Recieved response from Ceph: $r")
+      }
   }
 
   /**
