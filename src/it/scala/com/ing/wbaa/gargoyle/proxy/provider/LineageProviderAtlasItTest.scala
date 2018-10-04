@@ -2,9 +2,10 @@ package com.ing.wbaa.gargoyle.proxy.provider
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
+import akka.stream.{ActorMaterializer, Materializer}
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
 import com.ing.wbaa.gargoyle.proxy.data._
-import com.ing.wbaa.gargoyle.proxy.provider.Atlas.RestClient.RestClientException
+import com.ing.wbaa.gargoyle.proxy.provider.atlas.RestClient.RestClientException
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -35,6 +36,8 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
       override protected[this] implicit def executionContext: ExecutionContext = system.dispatcher
 
       override protected[this] implicit def atlasSettings: GargoyleAtlasSettings = atlasTestSettings
+
+      override protected[this] implicit def materializer: Materializer = ActorMaterializer()(system)
     })
 
   "LineageProviderAtlas" should {
@@ -43,55 +46,40 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
       val createLineageResult  = apr.createLineageFromRequest(
         fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS)
 
-      createLineageResult.map {
-        case result => result.getOrElse(Tuple4("","","","")) match {
-          case guids =>
-            assert( guids._1.length > 0 )
-            assert( guids._2.length > 0 )
-            assert( guids._3.length > 0 )
-            assert( guids._4.length > 0 )
+      createLineageResult.map { result =>
+            assert( result.serverGuid.length > 0 )
+            assert( result.bucketGuid.length > 0 )
+            assert( result.fileGuid.length > 0 )
+            assert( result.processGuid.length > 0 )
         }
-      }
     }
-  }
 
-  "LineageProviderAtlas" should {
     "create Read lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
 
       val createLineageResult  = apr.createLineageFromRequest(
         fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS)
 
-      createLineageResult.map {
-        case result => result.getOrElse(Tuple4("","","","")) match {
-          case guids =>
-            assert( guids._1.length > 0 )
-            assert( guids._2.length > 0 )
-            assert( guids._3.length > 0 )
-            assert( guids._4.length > 0 )
+      createLineageResult.map { result =>
+            assert( result.serverGuid.length > 0 )
+            assert( result.bucketGuid.length > 0 )
+            assert( result.fileGuid.length > 0 )
+            assert( result.processGuid.length > 0 )
         }
-      }
     }
-  }
 
-  "LineageProviderAtlas" should {
     "create Delete lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
 
       val createLineageResult  = apr.createLineageFromRequest(
         fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS)
 
-      createLineageResult.map {
-        case result => result.getOrElse(Tuple4("","","","")) match {
-          case guids =>
-            assert( guids._1.length == 0 )
-            assert( guids._2.length == 0 )
-            assert( guids._3.length > 0 )
-            assert( guids._4.length == 0 )
-        }
+      createLineageResult.map { result =>
+            assert( result.serverGuid.length == 0 )
+            assert( result.bucketGuid.length == 0 )
+            assert( result.fileGuid.length > 0 )
+            assert( result.processGuid.length == 0 )
       }
     }
-  }
 
-  "LineageProviderAtlas PUT" should {
     "fail on incorrect Settings" in withLineageProviderAtlas(new GargoyleAtlasSettings(testSystem.settings.config) {
       override val atlasApiHost: String = "fakeHost"
       override val atlasApiPort: Int = 21001
@@ -103,5 +91,4 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
       recoverToSucceededIf[RestClientException](apr.createLineageFromRequest(fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS))
     }
   }
-
 }

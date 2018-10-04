@@ -9,7 +9,7 @@ import com.amazonaws.services.securitytoken.model.{AssumeRoleWithWebIdentityRequ
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleAtlasSettings, GargoyleHttpSettings, GargoyleStorageS3Settings, GargoyleStsSettings}
 import com.ing.wbaa.gargoyle.proxy.data._
 import com.ing.wbaa.gargoyle.proxy.handler.RequestHandlerS3
-import com.ing.wbaa.gargoyle.proxy.provider.{AuthenticationProviderSTS, SignatureProviderAws}
+import com.ing.wbaa.gargoyle.proxy.provider.{AuthenticationProviderSTS, LineageProviderAtlas}
 import com.ing.wbaa.testkit.GargoyleFixtures
 import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
 import com.ing.wbaa.testkit.oauth.OAuth2TokenRequest
@@ -53,12 +53,12 @@ class GargoyleS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     * @return Future[Assertion]
     */
   def withSdkToMockProxy(testCode: (AWSSecurityTokenService, Authority) => Future[Assertion]): Future[Assertion] = {
-    val proxy: GargoyleS3Proxy = new GargoyleS3Proxy with RequestHandlerS3 with AuthenticationProviderSTS with SignatureProviderAws {
+    val proxy: GargoyleS3Proxy = new GargoyleS3Proxy with RequestHandlerS3 with AuthenticationProviderSTS with LineageProviderAtlas {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
       override val storageS3Settings: GargoyleStorageS3Settings = GargoyleStorageS3Settings(testSystem)
       override val stsSettings: GargoyleStsSettings = GargoyleStsSettings(testSystem)
-      override val atlasSettings: GargoyleAtlasSettings = new GargoyleAtlasSettings(system.settings.config)
+      override val atlasSettings: GargoyleAtlasSettings = new GargoyleAtlasSettings(testSystem.settings.config)
 
       override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
     }

@@ -9,7 +9,7 @@ import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.gargoyle.proxy.GargoyleS3Proxy
 import com.ing.wbaa.gargoyle.proxy.config.{GargoyleAtlasSettings, GargoyleHttpSettings, GargoyleStorageS3Settings}
 import com.ing.wbaa.gargoyle.proxy.data._
-import com.ing.wbaa.gargoyle.proxy.provider.SignatureProviderAws
+import com.ing.wbaa.gargoyle.proxy.provider.LineageProviderAtlas.LineageProviderAtlasException
 import com.ing.wbaa.testkit.GargoyleFixtures
 import org.scalatest._
 
@@ -35,7 +35,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
     * @return Assertion
     */
   def withS3SdkToMockProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
-    val proxy: GargoyleS3Proxy = new GargoyleS3Proxy with RequestHandlerS3 with SignatureProviderAws {
+    val proxy: GargoyleS3Proxy = new GargoyleS3Proxy with RequestHandlerS3 {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: GargoyleHttpSettings = gargoyleHttpSettings
       override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
@@ -45,7 +45,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] =
         Future(Some(User(UserRawJson("userId", Some("group"), "accesskey", "secretkey"))))
 
-      override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
+      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse] = Future.failed(LineageProviderAtlasException("Create lineage failed"))
     }
     proxy.startup.map { binding =>
       try testCode(getAmazonS3(

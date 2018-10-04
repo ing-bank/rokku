@@ -1,7 +1,7 @@
 package com.ing.wbaa.gargoyle.proxy.provider
 
-import com.ing.wbaa.gargoyle.proxy.provider.Atlas.AtlasModelJsonSupport
-import com.ing.wbaa.gargoyle.proxy.provider.Atlas.Model.{ Bucket, BucketAttributes, Classification, CreateResponse, Entities, FileAttributes, IngestedFile, Ingestion, IngestionAttributes, Server, ServerAttributes, UpdateResponse, guidRef }
+import com.ing.wbaa.gargoyle.proxy.provider.atlas.AtlasModelJsonSupport
+import com.ing.wbaa.gargoyle.proxy.provider.atlas.Model.{ Bucket, BucketAttributes, Classification, CreateResponse, Entities, FileAttributes, IngestedFile, Ingestion, IngestionAttributes, Server, ServerAttributes, UpdateResponse, guidRef }
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
 class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with AtlasModelJsonSupport {

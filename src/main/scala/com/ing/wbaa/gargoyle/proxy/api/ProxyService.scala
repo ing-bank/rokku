@@ -4,10 +4,11 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, RemoteAddress, StatusCodes }
 import akka.http.scaladsl.server.{ AuthorizationFailedRejection, Route }
 import com.ing.wbaa.gargoyle.proxy.api.directive.ProxyDirectives
-import com.ing.wbaa.gargoyle.proxy.data.{ AwsRequestCredential, AwsSecretKey, S3Request, User }
+import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
+import com.ing.wbaa.gargoyle.proxy.data._
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
 trait ProxyService extends LazyLogging {
@@ -18,6 +19,7 @@ trait ProxyService extends LazyLogging {
   import akka.http.scaladsl.server.Directives._
 
   protected[this] implicit def system: ActorSystem
+  protected[this] implicit def executionContext: ExecutionContext
 
   // Request Handler methods
   protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse]
@@ -30,6 +32,10 @@ trait ProxyService extends LazyLogging {
 
   // Authorization methods
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
+
+  // Atlas Lineage
+  protected[this] def atlasSettings: GargoyleAtlasSettings
+  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse]
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
@@ -46,7 +52,13 @@ trait ProxyService extends LazyLogging {
 
                   if (isUserAuthorizedForRequest(s3Request, userSTS)) {
                     logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
-                    complete(executeRequest(httpRequest, remoteAddress, userSTS))
+                    complete(executeRequest(httpRequest, remoteAddress, userSTS).map { request =>
+                      if (atlasSettings.atlasEnabled && (request.status == StatusCodes.OK || request.status == StatusCodes.NoContent))
+                        // delete on AWS response 204
+                        createLineageFromRequest(httpRequest, userSTS)
+
+                      request
+                    })
                   } else {
                     logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")
                     reject(AuthorizationFailedRejection)
