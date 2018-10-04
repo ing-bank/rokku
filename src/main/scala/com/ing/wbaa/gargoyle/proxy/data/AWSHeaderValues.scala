@@ -5,7 +5,7 @@ case class AWSHeaderValues(
     signedHeaders: String,
     signature: String,
     contentSHA256: Option[String],
-    requestDate: String,
+    requestDate: Option[String],
     securityToken: String,
     version: String,
     contentMD5: Option[String])

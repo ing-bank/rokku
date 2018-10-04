@@ -53,8 +53,6 @@ private sealed class CustomV2Signer(httpVerb: String, resourcePath: String, addi
 
 trait SignatureProviderAws extends LazyLogging {
 
-  //case class AWSHeaderValues(accessKey: String, signedHeaders: String, signature: String, contentSHA256: String, requestDate: String, securityToken: String, version: String, contentMD5: String)
-
   // we need to decode unsafe ASCII characters from hex. Some AWS parameters are encoded while reaching proxy
   private def cleanURLEncoding(param: String): String =
     if (param.contains("%7E")) {
@@ -166,15 +164,24 @@ trait SignatureProviderAws extends LazyLogging {
 
     version match {
       case ver if ver == "v2" =>
-        val requestDate = httpRequest.getHeader("Date").get().value()
+        val requestDate =
+          if (httpRequest.getHeader("Date").isPresent)
+            Some(httpRequest.getHeader("Date").get().value())
+          else None
 
         AWSHeaderValues(accessKey, signedHeaders, signature, None, requestDate, securityToken, version, contentMD5)
 
       case ver if ver == "v4" =>
-        val contentSHA256 = httpRequest.getHeader("X-Amz-Content-SHA256").get().value()
-        val requestDate = httpRequest.getHeader("X-Amz-Date").get().value()
+        val contentSHA256 =
+          if (httpRequest.getHeader("X-Amz-Content-SHA256").isPresent)
+            Some(httpRequest.getHeader("X-Amz-Content-SHA256").get().value())
+          else None
+        val requestDate =
+          if (httpRequest.getHeader("X-Amz-Date").isPresent)
+            Some(httpRequest.getHeader("X-Amz-Date").get().value())
+          else None
 
-        AWSHeaderValues(accessKey, signedHeaders, signature, Some(contentSHA256), requestDate, securityToken, version, contentMD5)
+        AWSHeaderValues(accessKey, signedHeaders, signature, contentSHA256, requestDate, securityToken, version, contentMD5)
     }
   }
 
@@ -247,11 +254,11 @@ trait SignatureProviderAws extends LazyLogging {
 
     if (awsHeaders.version == "v2") {
       incomingRequest.addHeader("Content-Type", httpRequest.entity.contentType.mediaType.value)
-      incomingRequest.addHeader("Date", awsHeaders.requestDate)
+      awsHeaders.requestDate.map(date => incomingRequest.addHeader("Date", date))
     }
 
     // generate new signature
-    signS3Request(incomingRequest, credentials, awsHeaders.version, awsHeaders.requestDate)
+    signS3Request(incomingRequest, credentials, awsHeaders.version, awsHeaders.requestDate.getOrElse(""))
 
     logger.debug("Signed Request:" + incomingRequest.getHeaders.toString)
 

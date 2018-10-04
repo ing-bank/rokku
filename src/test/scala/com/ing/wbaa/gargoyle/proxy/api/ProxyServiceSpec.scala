@@ -11,14 +11,13 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.{ ActorMaterializer, Materializer }
 import com.ing.wbaa.gargoyle.proxy.config.GargoyleAtlasSettings
 import com.ing.wbaa.gargoyle.proxy.data._
-import com.ing.wbaa.gargoyle.proxy.provider.LineageProviderAtlas
 import org.scalatest.{ DiagrammedAssertions, FlatSpec }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with ScalatestRouteTest {
 
-  private trait ProxyServiceMock extends ProxyService with LineageProviderAtlas {
+  private trait ProxyServiceMock extends ProxyService {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
     override implicit def executionContext: ExecutionContext = system.dispatcher
     implicit def materializer: Materializer = ActorMaterializer()
@@ -32,6 +31,10 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
       Some(User(UserName("okUser"), Some(UserAssumedGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
     )
     override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
+
+    override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
+
+    override def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse] = Future(LineagePostGuidResponse("", "", "", ""))
 
     override def atlasSettings: GargoyleAtlasSettings = new GargoyleAtlasSettings(system.settings.config)
 
