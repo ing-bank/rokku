@@ -61,7 +61,7 @@ trait SignatureProviderAws extends LazyLogging {
     } else { param }
 
   // java Map[String, util.List[String]] is need by AWS4Signer
-  private def extractRequestParameters(httpRequest: HttpRequest): Map[String, util.List[String]] = {
+  private def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]] = {
     import scala.collection.JavaConverters._
 
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
@@ -70,28 +70,31 @@ trait SignatureProviderAws extends LazyLogging {
       rawQueryString match {
         // for aws subresource ?acl etc.
         case queryString if queryString.length > 1 && !queryString.contains("=") =>
-          Map(queryString -> List.empty[String].asJava)
+          // aws uses subresource= during signature generation, so we add empty string to list
+          Map(queryString -> List[String]("").asJava).asJava
 
         // single param=value
         case queryString if queryString.contains("=") && !queryString.contains("&") =>
-          val params = queryString.split("=").toList
-          Map(params(0) -> List(cleanURLEncoding(params(1))).asJava)
+          queryString.split("=")
+            .grouped(2)
+            .map { case Array(k, v) =>
+              Map(k -> List(cleanURLEncoding(v)).asJava).asJava
+            }.toList.head
 
         // multiple param=value
         case queryString if queryString.contains("&") =>
-          queryString.split("&").toList.map { param => //todo: refactor this part
-            param.split("=").toList
-          }.map { paramValuePair =>
-            if (paramValuePair.length == 1) {
-              (paramValuePair(0), List[String]().asJava)
-            } else {
-              (paramValuePair(0), List(cleanURLEncoding(paramValuePair(1))).asJava)
-            }
-          }.toMap
-        case _ => Map[String, java.util.List[String]]().empty
+          queryString.split("&").map { paramAndValue =>
+            paramAndValue.split("=")
+              .grouped(2)
+              .map { case Array(k, v) =>
+                (k, List(cleanURLEncoding(v)).asJava)
+              }.toMap.asJava
+          }.toList.head
+
+        case _ => Map[String, java.util.List[String]]().empty.asJava
       }
     } else {
-      Map[String, java.util.List[String]]().empty
+      Map[String, java.util.List[String]]().empty.asJava
     }
   }
 
@@ -188,7 +191,6 @@ trait SignatureProviderAws extends LazyLogging {
   private def getSignableRequest(
       httpRequest: HttpRequest,
       request: DefaultRequest[_] = new DefaultRequest("s3")): DefaultRequest[_] = {
-    import scala.collection.JavaConverters._
 
     request.setHttpMethod(httpRequest.method.value match {
       case "GET"    => HttpMethodName.GET
@@ -200,8 +202,8 @@ trait SignatureProviderAws extends LazyLogging {
     request.setResourcePath(httpRequest.uri.path.toString())
     request.setEndpoint(new URI(s"http://${httpRequest.uri.authority.toString()}"))
 
-    if (!extractRequestParameters(httpRequest).asJava.isEmpty) {
-      val requestParameters = extractRequestParameters(httpRequest).asJava
+    if (!extractRequestParameters(httpRequest).isEmpty) {
+      val requestParameters = extractRequestParameters(httpRequest)
       logger.debug(s"Setting additional params for request $requestParameters")
 
       request.setResourcePath(httpRequest.uri.path.toString())
@@ -214,12 +216,12 @@ trait SignatureProviderAws extends LazyLogging {
 
   // for now we do not have any regions, we use default one
   private def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1"): Unit = {
+    val requestParams = request.getParameters.values()
+
     version match {
       case "v2" =>
         val resourcePath = {
           import scala.collection.JavaConverters._
-
-          val requestParams = request.getParameters.values()
 
           // this is case where we need to append subresource to resourcePath
           // original S3Signer expects key=value params pair to parse
