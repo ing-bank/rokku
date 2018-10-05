@@ -53,6 +53,9 @@ private sealed class CustomV2Signer(httpVerb: String, resourcePath: String, addi
 
 trait SignatureProviderAws extends LazyLogging {
 
+  private final val AWS_SIGN_V2 = "v2"
+  private final val AWS_SIGN_V4 = "v4"
+
   // we need to decode unsafe ASCII characters from hex. Some AWS parameters are encoded while reaching proxy
   private def cleanURLEncoding(param: String): String =
     if (param.contains("%7E")) {
@@ -61,7 +64,7 @@ trait SignatureProviderAws extends LazyLogging {
     } else { param }
 
   // java Map[String, util.List[String]] is need by AWS4Signer
-  private def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]] = {
+  private def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {
     import scala.collection.JavaConverters._
 
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
@@ -69,9 +72,13 @@ trait SignatureProviderAws extends LazyLogging {
     if (rawQueryString.length > 1) {
       rawQueryString match {
         // for aws subresource ?acl etc.
-        case queryString if queryString.length > 1 && !queryString.contains("=") =>
-          // aws uses subresource= during signature generation, so we add empty string to list
+        case queryString if queryString.length > 1 && !queryString.contains("=") && version == AWS_SIGN_V4 =>
+          // aws uses subresource= during signature generation, so we add empty string to list - /demobucket/?acl="
           Map(queryString -> List[String]("").asJava).asJava
+
+        case queryString if queryString.length > 1 && !queryString.contains("=") && version == AWS_SIGN_V2 =>
+          // v2 doesn't append = in signature - /demobucket/?acl"
+          Map(queryString -> List.empty[String].asJava).asJava
 
         // single param=value
         case queryString if queryString.contains("=") && !queryString.contains("&") =>
@@ -98,6 +105,7 @@ trait SignatureProviderAws extends LazyLogging {
     }
   }
 
+  // V2 is not using = after subresource
   private def buildV2QueryParams(params: util.Set[String]): String = {
     import scala.collection.JavaConverters._
 
@@ -152,7 +160,7 @@ trait SignatureProviderAws extends LazyLogging {
   private def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues = {
 
     val authorization = httpRequest.getHeader("authorization").get().value()
-    val version = if (authorization.contains("AWS4")) { "v4" } else { "v2" }
+    val version = if (authorization.contains("AWS4")) { AWS_SIGN_V4 } else { AWS_SIGN_V2 }
     val signature = getSignatureFromAuthorization(authorization)
     val accessKey = getCredentialFromAuthorization(authorization)
     // signed headers is the same for both versions
@@ -166,7 +174,7 @@ trait SignatureProviderAws extends LazyLogging {
       else None
 
     version match {
-      case ver if ver == "v2" =>
+      case ver if ver == AWS_SIGN_V2 =>
         val requestDate =
           if (httpRequest.getHeader("Date").isPresent)
             Some(httpRequest.getHeader("Date").get().value())
@@ -174,7 +182,7 @@ trait SignatureProviderAws extends LazyLogging {
 
         AWSHeaderValues(accessKey, signedHeaders, signature, None, requestDate, securityToken, version, contentMD5)
 
-      case ver if ver == "v4" =>
+      case ver if ver == AWS_SIGN_V4 =>
         val contentSHA256 =
           if (httpRequest.getHeader("X-Amz-Content-SHA256").isPresent)
             Some(httpRequest.getHeader("X-Amz-Content-SHA256").get().value())
@@ -190,6 +198,7 @@ trait SignatureProviderAws extends LazyLogging {
 
   private def getSignableRequest(
       httpRequest: HttpRequest,
+      version: String,
       request: DefaultRequest[_] = new DefaultRequest("s3")): DefaultRequest[_] = {
 
     request.setHttpMethod(httpRequest.method.value match {
@@ -202,8 +211,9 @@ trait SignatureProviderAws extends LazyLogging {
     request.setResourcePath(httpRequest.uri.path.toString())
     request.setEndpoint(new URI(s"http://${httpRequest.uri.authority.toString()}"))
 
-    if (!extractRequestParameters(httpRequest).isEmpty) {
-      val requestParameters = extractRequestParameters(httpRequest)
+    val requestParameters = extractRequestParameters(httpRequest, version)
+
+    if (!requestParameters.isEmpty) {
       logger.debug(s"Setting additional params for request $requestParameters")
 
       request.setResourcePath(httpRequest.uri.path.toString())
@@ -219,14 +229,15 @@ trait SignatureProviderAws extends LazyLogging {
     val requestParams = request.getParameters.values()
 
     version match {
-      case "v2" =>
+      case AWS_SIGN_V2 =>
         val resourcePath = {
           import scala.collection.JavaConverters._
 
           // this is case where we need to append subresource to resourcePath
           // original S3Signer expects key=value params pair to parse
           if (requestParams.size() > 0 && requestParams.asScala.head.isEmpty) {
-            request.getResourcePath + buildV2QueryParams(request.getParameters.keySet())
+            val queryParams = buildV2QueryParams(request.getParameters.keySet())
+            request.getResourcePath + queryParams
           } else {
             request.getResourcePath
           }
@@ -234,7 +245,7 @@ trait SignatureProviderAws extends LazyLogging {
         val singer = new CustomV2Signer(request.getHttpMethod.toString, resourcePath)
         singer.sign(request, credentials)
 
-      case "v4" =>
+      case AWS_SIGN_V4 =>
         val signer = new CustomV4Signer()
         signer.setRegionName(region)
         signer.setServiceName(request.getServiceName)
@@ -246,7 +257,7 @@ trait SignatureProviderAws extends LazyLogging {
   def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = {
     val awsHeaders = getAWSHeaders(httpRequest)
     val credentials = new BasicAWSCredentials(awsHeaders.accessKey, awsSecretKey.value)
-    val incomingRequest = getSignableRequest(httpRequest)
+    val incomingRequest = getSignableRequest(httpRequest, awsHeaders.version)
 
     // add headers from original request before sign
     incomingRequest.addHeader("X-Amz-Security-Token", awsHeaders.securityToken)
@@ -254,7 +265,7 @@ trait SignatureProviderAws extends LazyLogging {
     awsHeaders.contentSHA256.map(contentSHA256 => incomingRequest.addHeader("X-Amz-Content-SHA256", contentSHA256))
     awsHeaders.contentMD5.map(contentMD5 => incomingRequest.addHeader("Content-MD5", contentMD5))
 
-    if (awsHeaders.version == "v2") {
+    if (awsHeaders.version == AWS_SIGN_V2) {
       incomingRequest.addHeader("Content-Type", httpRequest.entity.contentType.mediaType.value)
       awsHeaders.requestDate.map(date => incomingRequest.addHeader("Date", date))
     }
