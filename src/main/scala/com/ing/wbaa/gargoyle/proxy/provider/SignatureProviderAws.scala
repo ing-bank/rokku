@@ -159,14 +159,23 @@ trait SignatureProviderAws extends LazyLogging {
 
   private def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues = {
 
-    val authorization = httpRequest.getHeader("authorization").get().value()
-    val version = if (authorization.contains("AWS4")) { AWS_SIGN_V4 } else { AWS_SIGN_V2 }
-    val signature = getSignatureFromAuthorization(authorization)
-    val accessKey = getCredentialFromAuthorization(authorization)
-    // signed headers is the same for both versions
-    val signedHeaders = getSignedHeaders(authorization)
+    val authorization: Option[String] =
+      if (httpRequest.getHeader("authorization").isPresent)
+        Some(httpRequest.getHeader("authorization").get().value())
+      else None
 
-    val securityToken = httpRequest.getHeader("X-Amz-Security-Token").get().value()
+    val version =
+      authorization.map(auth => if (auth.contains("AWS4")) { AWS_SIGN_V4 } else { AWS_SIGN_V2 }).getOrElse("")
+
+    val signature = authorization.map(auth => getSignatureFromAuthorization(auth))
+    val accessKey = authorization.map(auth => getCredentialFromAuthorization(auth))
+    // signed headers is the same for both versions
+    val signedHeaders = authorization.map(auth => getSignedHeaders(auth))
+
+    val securityToken =
+      if (httpRequest.getHeader("X-Amz-Security-Token").isPresent)
+        Some(httpRequest.getHeader("X-Amz-Security-Token").get().value())
+      else None
 
     val contentMD5: Option[String] =
       if (httpRequest.getHeader("Content-MD5").isPresent)
@@ -256,11 +265,11 @@ trait SignatureProviderAws extends LazyLogging {
 
   def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = {
     val awsHeaders = getAWSHeaders(httpRequest)
-    val credentials = new BasicAWSCredentials(awsHeaders.accessKey, awsSecretKey.value)
+    val credentials = new BasicAWSCredentials(awsHeaders.accessKey.getOrElse(""), awsSecretKey.value)
     val incomingRequest = getSignableRequest(httpRequest, awsHeaders.version)
 
     // add headers from original request before sign
-    incomingRequest.addHeader("X-Amz-Security-Token", awsHeaders.securityToken)
+    incomingRequest.addHeader("X-Amz-Security-Token", awsHeaders.securityToken.getOrElse(""))
 
     awsHeaders.contentSHA256.map(contentSHA256 => incomingRequest.addHeader("X-Amz-Content-SHA256", contentSHA256))
     awsHeaders.contentMD5.map(contentMD5 => incomingRequest.addHeader("Content-MD5", contentMD5))
@@ -271,15 +280,24 @@ trait SignatureProviderAws extends LazyLogging {
     }
 
     // generate new signature
-    signS3Request(incomingRequest, credentials, awsHeaders.version, awsHeaders.requestDate.getOrElse(""))
+    if (!credentials.getAWSAccessKeyId.isEmpty) {
+      signS3Request(incomingRequest, credentials, awsHeaders.version, awsHeaders.requestDate.getOrElse(""))
+      logger.debug("Signed Request:" + incomingRequest.getHeaders.toString)
+    } else {
+      logger.debug("Unable to create AWS signature to verify incoming request")
+    }
 
-    logger.debug("Signed Request:" + incomingRequest.getHeaders.toString)
+    val newSignature: Option[String] =
+      if (incomingRequest.getHeaders.containsKey("Authorization")) {
+        Some(getSignatureFromAuthorization(incomingRequest.getHeaders.get("Authorization")))
+      } else None
 
-    val newSignature = getSignatureFromAuthorization(incomingRequest.getHeaders.get("Authorization"))
-
-    logger.debug(s"New Signature ${newSignature} Original Signature: ${awsHeaders.signature}")
-
-    awsHeaders.signature == newSignature
+    newSignature match {
+      case Some(proxySignature) =>
+        logger.debug(s"New Signature ${proxySignature} Original Signature: ${awsHeaders.signature.getOrElse("")}")
+        awsHeaders.signature.getOrElse("") == proxySignature
+      case _ => false
+    }
   }
 
 }

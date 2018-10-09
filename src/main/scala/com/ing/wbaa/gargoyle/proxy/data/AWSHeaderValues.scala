@@ -1,11 +1,11 @@
 package com.ing.wbaa.gargoyle.proxy.data
 
 case class AWSHeaderValues(
-    accessKey: String,
-    signedHeaders: String,
-    signature: String,
+    accessKey: Option[String],
+    signedHeaders: Option[String],
+    signature: Option[String],
     contentSHA256: Option[String],
     requestDate: Option[String],
-    securityToken: String,
+    securityToken: Option[String],
     version: String,
     contentMD5: Option[String])
