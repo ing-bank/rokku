@@ -159,28 +159,20 @@ trait SignatureProviderAws extends LazyLogging {
 
   private def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues = {
 
-    val authorization: Option[String] =
-      if (httpRequest.getHeader("authorization").isPresent)
-        Some(httpRequest.getHeader("authorization").get().value())
+    def extractHeaderOption(header: String): Option[String] =
+      if (httpRequest.getHeader(header).isPresent)
+        Some(httpRequest.getHeader(header).get().value())
       else None
 
+    val authorization: Option[String] = extractHeaderOption("authorization")
     val version =
       authorization.map(auth => if (auth.contains("AWS4")) { AWS_SIGN_V4 } else { AWS_SIGN_V2 }).getOrElse("")
-
     val signature = authorization.map(auth => getSignatureFromAuthorization(auth))
     val accessKey = authorization.map(auth => getCredentialFromAuthorization(auth))
     // signed headers is the same for both versions
     val signedHeaders = authorization.map(auth => getSignedHeaders(auth))
-
-    val securityToken =
-      if (httpRequest.getHeader("X-Amz-Security-Token").isPresent)
-        Some(httpRequest.getHeader("X-Amz-Security-Token").get().value())
-      else None
-
-    val contentMD5: Option[String] =
-      if (httpRequest.getHeader("Content-MD5").isPresent)
-        Some(httpRequest.getHeader("Content-MD5").get().value())
-      else None
+    val securityToken = extractHeaderOption("X-Amz-Security-Token")
+    val contentMD5: Option[String] = extractHeaderOption("Content-MD5")
 
     version match {
       case ver if ver == AWS_SIGN_V2 =>
