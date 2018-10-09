@@ -17,7 +17,7 @@ trait SignatureProviderAws extends LazyLogging with SignatureHelpers {
 
     // generate new signature
     if (!credentials.getAWSAccessKeyId.isEmpty) {
-      signS3Request(incomingRequest, credentials, awsHeaders.version, awsHeaders.requestDate.getOrElse(""))
+      signS3Request(incomingRequest, credentials, awsHeaders.version, awsHeaders.signedHeadersMap.get("X-Amz-Date").getOrElse(""))
       logger.debug("Signed Request:" + incomingRequest.getHeaders.toString)
     } else {
       logger.debug("Unable to create AWS signature to verify incoming request")

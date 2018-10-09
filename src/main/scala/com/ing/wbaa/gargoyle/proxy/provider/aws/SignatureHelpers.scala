@@ -57,8 +57,8 @@ trait SignatureHelpers extends LazyLogging {
               .grouped(2)
               .map { case Array(k, v) =>
                 (k, List(cleanURLEncoding(v)).asJava)
-              }.toMap.asJava
-          }.toList.head
+              }
+          }.toList.flatten.toMap.asJava
 
         case _ => Map[String, java.util.List[String]]().empty.asJava
       }
@@ -120,46 +120,50 @@ trait SignatureHelpers extends LazyLogging {
       .map(_ group 1).getOrElse("")
 
   def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues = {
-
     def extractHeaderOption(header: String): Option[String] =
       if (httpRequest.getHeader(header).isPresent)
         Some(httpRequest.getHeader(header).get().value())
       else None
 
+    def fixHeaderCapitals(header: String): String = {
+      header.split("-").map { h =>
+        h(0).toUpper + h.substring(1).toLowerCase
+      }.mkString("-")
+    }
+
     val authorization: Option[String] = extractHeaderOption("authorization")
+
     val version =
-      authorization.map(auth => if (auth.contains("AWS4")) {
-        AWS_SIGN_V4
-      } else {
-        AWS_SIGN_V2
-      }).getOrElse("")
+      authorization.map(auth => if (auth.contains("AWS4")) { AWS_SIGN_V4 } else { AWS_SIGN_V2 }).getOrElse("")
+
     val signature = authorization.map(auth => getSignatureFromAuthorization(auth))
     val accessKey = authorization.map(auth => getCredentialFromAuthorization(auth))
-    // signed headers is the same for both versions
-    val signedHeaders = authorization.map(auth => getSignedHeaders(auth))
-    val securityToken = extractHeaderOption("X-Amz-Security-Token")
-    val contentMD5: Option[String] = extractHeaderOption("Content-MD5")
 
     version match {
       case ver if ver == AWS_SIGN_V2 =>
-        val requestDate =
-          if (httpRequest.getHeader("Date").isPresent)
-            Some(httpRequest.getHeader("Date").get().value())
-          else None
+        val requestDate = extractHeaderOption("Date")
+        val securityToken = extractHeaderOption("X-Amz-Security-Token")
+        val contentMD5 = extractHeaderOption("Content-MD5")
 
-        AWSHeaderValues(accessKey, signedHeaders, signature, None, requestDate, securityToken, version, contentMD5)
+        AWSHeaderValues(accessKey, Map.empty, signature, requestDate, securityToken, AWS_SIGN_V2, contentMD5)
 
       case ver if ver == AWS_SIGN_V4 =>
-        val contentSHA256 =
-          if (httpRequest.getHeader("X-Amz-Content-SHA256").isPresent)
-            Some(httpRequest.getHeader("X-Amz-Content-SHA256").get().value())
-          else None
-        val requestDate =
-          if (httpRequest.getHeader("X-Amz-Date").isPresent)
-            Some(httpRequest.getHeader("X-Amz-Date").get().value())
-          else None
+        val signedHeadersMap = authorization.map(auth => getSignedHeaders(auth)).getOrElse("")
+          .split(";")
+          .toList
+          .map { header =>
+            if (header == "content-type") {
+              (fixHeaderCapitals(header), httpRequest.entity.contentType.mediaType.value)
+            } else if (header == "amz-sdk-invocation-id" || header == "amz-sdk-retry") {
+              (header, extractHeaderOption(header).getOrElse(""))
+            } else if (header == "x-amz-content-sha256") {
+              ("X-Amz-Content-SHA256", extractHeaderOption(header).getOrElse(""))
+            } else {
+              (fixHeaderCapitals(header), extractHeaderOption(header).getOrElse(""))
+            }
+          }.toMap
 
-        AWSHeaderValues(accessKey, signedHeaders, signature, contentSHA256, requestDate, securityToken, version, contentMD5)
+        AWSHeaderValues(accessKey, signedHeadersMap, signature, None, None, version, None)
     }
   }
 
@@ -223,14 +227,14 @@ trait SignatureHelpers extends LazyLogging {
 
   // add headers from original request before sign
   def addHeadersToRequest(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit = {
-    request.addHeader("X-Amz-Security-Token", awsHeaders.securityToken.getOrElse(""))
-
-    awsHeaders.contentSHA256.foreach(contentSHA256 => request.addHeader("X-Amz-Content-SHA256", contentSHA256))
-    awsHeaders.contentMD5.foreach(contentMD5 => request.addHeader("Content-MD5", contentMD5))
-
+    // v4
+    awsHeaders.signedHeadersMap.foreach(p => request.addHeader(p._1, p._2))
+    // v2
     if (awsHeaders.version == AWS_SIGN_V2) {
       request.addHeader("Content-Type", mediaType)
       awsHeaders.requestDate.foreach(date => request.addHeader("Date", date))
+      awsHeaders.securityToken.foreach(token => request.addHeader("X-Amz-Security-Token", token))
+      awsHeaders.contentMD5.foreach(contentMD5 => request.addHeader("Content-MD5", contentMD5))
     }
   }
 
