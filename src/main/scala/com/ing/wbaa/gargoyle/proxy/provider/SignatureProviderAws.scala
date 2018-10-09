@@ -263,12 +263,12 @@ trait SignatureProviderAws extends LazyLogging {
     // add headers from original request before sign
     incomingRequest.addHeader("X-Amz-Security-Token", awsHeaders.securityToken.getOrElse(""))
 
-    awsHeaders.contentSHA256.map(contentSHA256 => incomingRequest.addHeader("X-Amz-Content-SHA256", contentSHA256))
-    awsHeaders.contentMD5.map(contentMD5 => incomingRequest.addHeader("Content-MD5", contentMD5))
+    awsHeaders.contentSHA256.foreach(contentSHA256 => incomingRequest.addHeader("X-Amz-Content-SHA256", contentSHA256))
+    awsHeaders.contentMD5.foreach(contentMD5 => incomingRequest.addHeader("Content-MD5", contentMD5))
 
     if (awsHeaders.version == AWS_SIGN_V2) {
       incomingRequest.addHeader("Content-Type", httpRequest.entity.contentType.mediaType.value)
-      awsHeaders.requestDate.map(date => incomingRequest.addHeader("Date", date))
+      awsHeaders.requestDate.foreach(date => incomingRequest.addHeader("Date", date))
     }
 
     // generate new signature
@@ -286,7 +286,7 @@ trait SignatureProviderAws extends LazyLogging {
 
     newSignature match {
       case Some(proxySignature) =>
-        logger.debug(s"New Signature ${proxySignature} Original Signature: ${awsHeaders.signature.getOrElse("")}")
+        logger.debug(s"New Signature $proxySignature Original Signature: ${awsHeaders.signature.getOrElse("")}")
         awsHeaders.signature.getOrElse("") == proxySignature
       case _ => false
     }
