@@ -171,6 +171,8 @@ trait SignatureHelpers extends LazyLogging {
       case "POST"   => HttpMethodName.POST
       case "PUT"    => HttpMethodName.PUT
       case "DELETE" => HttpMethodName.DELETE
+      case "HEAD"   => HttpMethodName.HEAD
+      case _        => throw new Exception("Method not supported, request signature verification failed")
     })
 
     request.setResourcePath(httpRequest.uri.path.toString())
