@@ -21,8 +21,8 @@ trait OAuth2TokenRequest {
 
   protected[this] implicit def executionContext: ExecutionContext
 
-  private[this] def gargoyleKeycloakTokenUrl: String =
-    testSystem.settings.config.getString("gargoyle.sts.keycloak.token.url")
+  private[this] def airlockKeycloakTokenUrl: String =
+    testSystem.settings.config.getString("airlock.sts.keycloak.token.url")
 
   import spray.json._
   import DefaultJsonProtocol._
@@ -31,7 +31,7 @@ trait OAuth2TokenRequest {
 
   private[this] def getTokenResponse(formData: Map[String, String]): Future[HttpResponse] = {
     Http().singleRequest(HttpRequest(
-      uri = Uri(gargoyleKeycloakTokenUrl),
+      uri = Uri(airlockKeycloakTokenUrl),
       method = HttpMethods.POST,
       entity = akka.http.scaladsl.model.FormData(formData).toEntity(HttpCharsets.`UTF-8`)))
   }
