@@ -57,15 +57,15 @@ services:
 
   # TODO: replace with new images, see below:
 
-#  airlock-dev-apache-ranger-postgres:
+#  postgres-server:
 #    image: nielsdenissen/airlock-dev-apache-ranger-postgres:0.0.7
 #
-#  airlock-dev-apache-ranger:
+#  ranger-admin:
 #    image: nielsdenissen/airlock-dev-apache-ranger:0.0.7
 #    stdin_open: true
 #    tty: true
 #    depends_on:
-#      - "airlock-dev-apache-ranger-postgres"
+#      - "postgres-server"
 #      - "ceph"
 #    ports:
 #      - "6080:6080"
