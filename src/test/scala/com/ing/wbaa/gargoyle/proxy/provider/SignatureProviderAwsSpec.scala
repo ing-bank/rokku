@@ -100,6 +100,16 @@ class SignatureProviderAwsSpec extends WordSpec with DiagrammedAssertions with S
       assert(extractRequestParameters(request, "v4") == expectedResult)
     }
 
+    "extractRequestParameters from RawQueryString with multiple key value pairs and Int" in {
+      val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket", Nil, "list-type=2&prefix=&encoding-type=url")
+      val expectedResult = Map(
+        "list-type" -> List[String]("2").asJava,
+        "prefix" -> List[String]("").asJava,
+        "encoding-type" -> List[String]("url").asJava).asJava
+
+      assert(extractRequestParameters(request, "v4") == expectedResult)
+    }
+
     "getSignatureFromAuthorization v2 from authorization header" in {
       val authorization = """AWS 4N4hgHnBjBCn4TLOd22UtNZUyB7bZ9LE:FdqS+d5LG0g/Pkkw9jRtgl/Ovy0="""
       assert(getSignatureFromAuthorization(authorization) == "FdqS+d5LG0g/Pkkw9jRtgl/Ovy0=")

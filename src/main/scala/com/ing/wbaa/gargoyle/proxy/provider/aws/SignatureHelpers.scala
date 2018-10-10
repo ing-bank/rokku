@@ -51,8 +51,9 @@ trait SignatureHelpers extends LazyLogging {
           queryString.split("&").map { paramAndValue =>
             paramAndValue.split("=")
               .grouped(2)
-              .map { case Array(k, v) =>
-                (k, List(cleanURLEncoding(v)).asJava)
+              .map {
+                case Array(k, v) => (k, List(cleanURLEncoding(v)).asJava)
+                case Array(k)    => (k, List("").asJava)
               }
           }.toList.flatten.toMap.asJava
 
