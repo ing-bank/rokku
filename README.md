@@ -60,11 +60,11 @@ before diving in here. That will introduce you to the various components used.
 
 1. Authorise with keycloak to request a `keycloak token`:
 
-        curl -s 
-             -d 'client_id=sts-gargoyle' 
-             -d 'username=testuser' 
-             -d 'password=password' 
-             -d 'grant_type=password' 
+        curl -s \
+             -d 'client_id=sts-gargoyle' \
+             -d 'username=testuser' \
+             -d 'password=password' \
+             -d 'grant_type=password' \
              'http://localhost:8080/auth/realms/auth-gargoyle/protocol/openid-connect/token'
 
     Search for the field `access_token` which contains your token.
