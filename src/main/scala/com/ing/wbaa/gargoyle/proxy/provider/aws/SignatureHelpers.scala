@@ -10,6 +10,7 @@ import com.amazonaws.http.HttpMethodName
 import com.amazonaws.util.DateUtils
 import com.ing.wbaa.gargoyle.proxy.data.AWSHeaderValues
 import com.typesafe.scalalogging.LazyLogging
+import scala.collection.JavaConverters._
 
 trait SignatureHelpers extends LazyLogging {
 
@@ -18,16 +19,11 @@ trait SignatureHelpers extends LazyLogging {
 
   // we need to decode unsafe ASCII characters from hex. Some AWS parameters are encoded while reaching proxy
   def cleanURLEncoding(param: String): String =
-    if (param.contains("%7E")) {
-      // uploadId parameter case
-      param.replace("%7E", "~")
-    } else {
-      param
-    }
+    // uploadId parameter case
+    param.replace("%7E", "~")
 
   // java Map[String, util.List[String]] is need by AWS4Signer
   def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {
-    import scala.collection.JavaConverters._
 
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
 
@@ -69,8 +65,6 @@ trait SignatureHelpers extends LazyLogging {
 
   // V2 is not using = after subresource
   def buildV2QueryParams(params: util.Set[String]): String = {
-    import scala.collection.JavaConverters._
-
     // list of allowed AWS subresource parameters
     val signParameters = List(
       "acl", "torrent", "logging", "location", "policy", "requestPayment", "versioning",
@@ -202,8 +196,6 @@ trait SignatureHelpers extends LazyLogging {
     version match {
       case AWS_SIGN_V2 =>
         val resourcePath = {
-          import scala.collection.JavaConverters._
-
           // this is case where we need to append subresource to resourcePath
           // original S3Signer expects key=value params pair to parse
           if (requestParams.size() > 0 && requestParams.asScala.head.isEmpty) {
