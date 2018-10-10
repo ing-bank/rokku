@@ -43,7 +43,7 @@ services:
     - "keycloak"
 
   keycloak:
-    image: kr7ysztof/keycloak-it:0.0.1
+    image: nielsdenissen/airlock-dev-keycloak:0.0.2
     environment:
     - KEYCLOAK_USER=admin
     - KEYCLOAK_PASSWORD=admin
@@ -82,14 +82,6 @@ services:
 #    - "12345:12345"
 #    depends_on:
 #    - "keycloak"
-#
-#  keycloak:
-#    image: nielsdenissen/airlock-dev-keycloak:0.0.2
-#    environment:
-#      - KEYCLOAK_USER=admin
-#      - KEYCLOAK_PASSWORD=admin
-#    ports:
-#      - "8080:8080"
 #
 #  atlas:
 #    image: nielsdenissen/airlock-dev-apache-atlas:0.0.2
