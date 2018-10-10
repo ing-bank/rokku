@@ -17,41 +17,81 @@ services:
       - 5000:5000
     command: demo
 
-  airlock-dev-apache-ranger-postgres:
-    image: nielsdenissen/airlock-dev-apache-ranger-postgres:0.0.7
+  postgres-server:
+    image: nielsdenissen/ranger-postgres:0.0.4
 
-  airlock-dev-apache-ranger:
-    image: nielsdenissen/airlock-dev-apache-ranger:0.0.7
+  ranger-admin:
+    image: nielsdenissen/ranger-admin:0.0.4
     stdin_open: true
     tty: true
     depends_on:
-      - "airlock-dev-apache-ranger-postgres"
-      - "ceph"
+    - "postgres-server"
     ports:
-      - "6080:6080"
+    - "6080:6080"
 
-  airlock-sts:
-    image: nielsdenissen/airlock-sts:latest
+  gargoyle-sts:
+    image: kr7ysztof/gargoyle-sts:0.0.7
     environment:
-      - STS_HOST=0.0.0.0
-      - STS_PORT=12345
-      - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
-      - KEYCLOAK_URL=http://keycloak:8080
-      - KEYCLOAK_CHECK_REALM_URL=false
+    - STS_HOST=0.0.0.0
+    - STS_PORT=12345
+    - GARGOYLE_KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
+    - GARGOYLE_KEYCLOAK_URL=http://keycloak:8080
+    - GARGOYLE_STS_KEYCLOAK_CHECK_REALM_URL=false
     ports:
-      - "12345:12345"
+    - "12345:12345"
     depends_on:
-      - "keycloak"
+    - "keycloak"
 
   keycloak:
-    image: nielsdenissen/airlock-dev-keycloak:0.0.2
+    image: kr7ysztof/keycloak-it:0.0.1
     environment:
-      - KEYCLOAK_USER=admin
-      - KEYCLOAK_PASSWORD=admin
+    - KEYCLOAK_USER=admin
+    - KEYCLOAK_PASSWORD=admin
     ports:
-      - "8080:8080"
+    - "8080:8080"
 
   atlas:
-    image: nielsdenissen/airlock-dev-apache-atlas:0.0.2
+    image: arempter/gargoyle-atlas:0.0.1
     ports:
-      - "21000:21000"
+    - "21000:21000"
+
+  # TODO: replace with new images, see below:
+
+#  airlock-dev-apache-ranger-postgres:
+#    image: nielsdenissen/airlock-dev-apache-ranger-postgres:0.0.7
+#
+#  airlock-dev-apache-ranger:
+#    image: nielsdenissen/airlock-dev-apache-ranger:0.0.7
+#    stdin_open: true
+#    tty: true
+#    depends_on:
+#      - "airlock-dev-apache-ranger-postgres"
+#      - "ceph"
+#    ports:
+#      - "6080:6080"
+#
+#  airlock-sts:
+#    image: nielsdenissen/airlock-sts:???
+#    environment:
+#    - STS_HOST=0.0.0.0
+#    - STS_PORT=12345
+#    - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
+#    - KEYCLOAK_URL=http://keycloak:8080
+#    - KEYCLOAK_CHECK_REALM_URL=false
+#    ports:
+#    - "12345:12345"
+#    depends_on:
+#    - "keycloak"
+#
+#  keycloak:
+#    image: nielsdenissen/airlock-dev-keycloak:0.0.2
+#    environment:
+#      - KEYCLOAK_USER=admin
+#      - KEYCLOAK_PASSWORD=admin
+#    ports:
+#      - "8080:8080"
+#
+#  atlas:
+#    image: nielsdenissen/airlock-dev-apache-atlas:0.0.2
+#    ports:
+#      - "21000:21000"

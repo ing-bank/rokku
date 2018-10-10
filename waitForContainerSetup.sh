@@ -11,10 +11,10 @@ function cephIsReady() {
   docker-compose logs ceph | grep "* Running on http://\[::\]:5000/"
 }
 function rangerAdminIsReady() {
-  docker-compose logs airlock-dev-apache-ranger | grep "Policy created"
+  docker-compose logs ranger-admin | grep "Policy created"
 }
 function airlockStsIsReady() {
-  docker-compose logs airlock-sts | grep "Sts service started listening:"
+  docker-compose logs gargoyle-sts | grep "Sts service started listening:"
 }
 function keycloakIsReady() {
   docker-compose logs keycloak | grep "Admin console listening"
