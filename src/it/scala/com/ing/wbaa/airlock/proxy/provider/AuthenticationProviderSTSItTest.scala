@@ -26,7 +26,7 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAsser
     "grant_type" -> "password",
     "username" -> "userone",
     "password" -> "password",
-    "client_id" -> "sts-airlock"
+    "client_id" -> "sts-gargoyle"
   )
 
   def withAwsCredentialsValidInSTS(testCode: AwsRequestCredential => Future[Assertion]): Future[Assertion] = {
