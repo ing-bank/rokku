@@ -2,7 +2,7 @@ import com.typesafe.sbt.packager.docker
 import com.typesafe.sbt.packager.docker.ExecCmd
 import scalariform.formatter.preferences._
 
-name := "gargoyle-s3proxy"
+name := "airlock"
 version := "0.1"
 
 scalaVersion := "2.12.6"
@@ -61,9 +61,9 @@ dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
 dockerAlias        := docker.DockerAlias(Some("docker.io"),
-                                         Some("arempter"),
-                                         "gargoyle-s3proxy",
-                                         Some(Option(System.getenv("TRAVIS_BRANCH")).getOrElse("latest")))
+                                         Some("nielsdenissen"),
+                                         "airlock",
+                                         Option(System.getenv("DOCKER_TAG")))
 
 scalariformPreferences := scalariformPreferences.value
     .setPreference(AlignSingleLineCaseStatements, true)
@@ -74,7 +74,7 @@ scalariformPreferences := scalariformPreferences.value
     .setPreference(SingleCasePatternOnNewline, false)
 
 // hack for ranger conf dir - should contain files like ranger-s3-security.xml etc.
-scriptClasspath in bashScriptDefines ~= (cp => cp :+ ":/etc/gargoyle")
+scriptClasspath in bashScriptDefines ~= (cp => cp :+ ":/etc/airlock")
 
 //Coverage settings
 Compile / coverageMinimum := 70
