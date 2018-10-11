@@ -18,9 +18,14 @@ trait SignatureHelpers extends LazyLogging {
   final val AWS_SIGN_V4 = "v4"
 
   // we need to decode unsafe ASCII characters from hex. Some AWS parameters are encoded while reaching proxy
-  def cleanURLEncoding(param: String): String =
+  def cleanURLEncoding(param: String): String = {
     // uploadId parameter case
-    param.replace("%7E", "~")
+    param match {
+      case p if p.nonEmpty && p.contains("%7E") => p.replace("%7E", "~")
+      case p if p.nonEmpty && p.contains("%2F") => p.replace("%2F", "/")
+      case p                                    => p
+    }
+  }
 
   // java Map[String, util.List[String]] is need by AWS4Signer
   def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {

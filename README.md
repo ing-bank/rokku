@@ -222,7 +222,7 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
 
        [profile airlock]
        output = json
-       region = localhost
+       region = us-east-1
        s3 =
            endpoint_url = http://localhost:8987/
        s3api =
@@ -232,12 +232,14 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
 
        [profile radosgw]
        output = json
-       region = localhost
+       region = us-east-1
        s3 =
            endpoint_url = http://localhost:8010/
        s3api =
            endpoint_url = http://localhost:8010/
        EOF
+
+### Note: for now, we default to us-east-1 AWS region for signature verification
 
 4. Configure the default profile and reactivate the virtual environment:
 

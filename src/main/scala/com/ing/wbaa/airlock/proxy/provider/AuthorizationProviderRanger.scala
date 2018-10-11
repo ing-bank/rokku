@@ -65,7 +65,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
         isAuthorisedByRanger(bucket)
 
       // list-objects in the bucket operation
-      case S3Request(_, Some(bucket), None, accessType) if accessType == Read =>
+      case S3Request(_, Some(bucket), None, accessType) if accessType == Read || accessType == Head =>
         isAuthorisedByRanger(bucket)
 
       // create / delete bucket opetation
