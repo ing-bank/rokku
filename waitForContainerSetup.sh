@@ -13,13 +13,13 @@ function cephIsReady() {
 function rangerAdminIsReady() {
   docker-compose logs ranger-admin | grep "Policy created"
 }
-function gargoyleStsIsReady() {
-  docker-compose logs gargoyle-sts | grep "INFO com.ing.wbaa.gargoyle.sts.Server\$\$anon\$1 - Sts service started listening:"
+function airlockStsIsReady() {
+  docker-compose logs gargoyle-sts | grep "Sts service started listening:"
 }
-function gargoyleKeycloakIsReady() {
+function keycloakIsReady() {
   docker-compose logs keycloak | grep "Admin console listening"
 }
-function gargoyleAtlasIsReady() {
+function atlasIsReady() {
   docker-compose logs atlas | grep "Done setting up Atlas types"
 }
 
@@ -40,9 +40,9 @@ function waitUntilServiceIsReady() {
   fi
 }
 
-waitUntilServiceIsReady gargoyleStsIsReady "Gargoyle STS"
+waitUntilServiceIsReady airlockStsIsReady "Airlock STS"
 waitUntilServiceIsReady cephIsReady "Ceph"
 waitUntilServiceIsReady rangerAdminIsReady "Ranger Admin"
-waitUntilServiceIsReady gargoyleKeycloakIsReady "Keycloack"
-waitUntilServiceIsReady gargoyleAtlasIsReady "Atlas"
+waitUntilServiceIsReady keycloakIsReady "Keycloack"
+waitUntilServiceIsReady atlasIsReady "Atlas"
 

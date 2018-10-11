@@ -1,15 +1,14 @@
-[![Build Status](https://travis-ci.org/arempter/gargoyle-s3proxy.svg?branch=master)](https://travis-ci.org/arempter/gargoyle-s3proxy)
-[![codecov.io](http://codecov.io/github/arempter/gargoyle-s3proxy/coverage.svg?branch=master)](https://codecov.io/gh/arempter/gargoyle-s3proxy?branch=master)
-[![](https://images.microbadger.com/badges/image/arempter/gargoyle-s3proxy:master.svg)](https://microbadger.com/images/arempter/gargoyle-s3proxy:master)
-[![](https://images.microbadger.com/badges/version/arempter/gargoyle-s3proxy:master.svg)](https://microbadger.com/images/arempter/gargoyle-s3proxy:master)
+[![Build Status](https://travis-ci.org/ing-bank/airlock.svg?branch=master)](https://travis-ci.org/ing-bank/airlock)
+[![codecov.io](http://codecov.io/github/ing-bank/airlock/coverage.svg?branch=master)](https://codecov.io/gh/ing-bank/airlock?branch=master)
+[![](https://images.microbadger.com/badges/image/ing-bank/airlock:latest.svg)](https://microbadger.com/images/ing-bank/airlock:latest)
 
-# Gargoyle S3Proxy
+# Airlock
 
-gargoyle-s3proxy acts as a security layer between s3 user (eg. application using aws sdk) and s3 backend (eg. ceph RadosGW).
+Airlock acts as a security layer between s3 user (eg. application using aws sdk) and s3 backend (eg. ceph RadosGW).
 
 ## What do you need
 
-To get started with Gargoyle you only need a few applications set up:
+To get started with Airlock you only need a few applications set up:
 
 - Docker
 - AWS CLI
@@ -26,7 +25,7 @@ We've added a small description on how to setup the AWS CLI [here](#setting-up-a
     There are 2 places you can put it:
     
     1. `REPO_ROOTDIR/src/main/resources/ranger-s3-security.xml`
-    2. `/etc/gargoyle/ranger-s3-security.xml`
+    2. `/etc/airlock/ranger-s3-security.xml`
     
     An example of this file can be found [here](./src/it/resources/ranger-s3-security.xml). 
     No modification to this is needed if you run this project with the accompanying docker containers.
@@ -37,10 +36,10 @@ We've added a small description on how to setup the AWS CLI [here](#setting-up-a
 
 > for windows docker runs on different it so you need to:
 > set environmental variables:
-> * GARGOYLE_STS_HOST
-> * GARGOYLE_STORAGE_S3_HOST
-> * GARGOYLE_KEYCLOAK_TOKEN_URL
-> * change GARGOYLE_KEYCLOAK_URL in the docker-compose.yml
+> * AIRLOCK_STS_HOST
+> * AIRLOCK_STORAGE_S3_HOST
+> * AIRLOCK_KEYCLOAK_TOKEN_URL
+> * change AIRLOCK_KEYCLOAK_URL in the docker-compose.yml
 > * change the ranger.plugin.s3.policy.rest.url in ranger-s3-security.xml
 
 
@@ -48,24 +47,24 @@ We've added a small description on how to setup the AWS CLI [here](#setting-up-a
 
 When proxy is started as docker image, the ranger-s3-security.xml file can be added in the following way:
 
-        docker run -d -v /host/dir/with/xmls:/etc/gargoyle -p 8010:8010 gragoyle-s3proxy
+        docker run -d -v /host/dir/with/xmls:/etc/airlock -p 8010:8010 airlock
 
 ## Getting Started
 
 > This guide assumes you're using the default docker containers provided, see: [How to run](#how-to-run)
 
 Now you've got everything running, you may wonder: what now? This section we'll describe a basic flow on how to use 
-Gargoyle to perform operations in S3. You may refer to the [What is Gargoyle?](./docs/What_is_gargoyle.md) document
+Airlock to perform operations in S3. You may refer to the [What is Airlock?](./docs/What_is_airlock.md) document
 before diving in here. That will introduce you to the various components used.
 
 1. Authorise with keycloak to request a `keycloak token`:
 
-        curl -s 
-             -d 'client_id=sts-gargoyle' 
-             -d 'username=testuser' 
-             -d 'password=password' 
-             -d 'grant_type=password' 
-             'http://localhost:8080/auth/realms/auth-gargoyle/protocol/openid-connect/token'
+        curl -s \
+             -d 'client_id=sts-airlock' \
+             -d 'username=testuser' \
+             -d 'password=password' \
+             -d 'grant_type=password' \
+             'http://localhost:8080/auth/realms/auth-airlock/protocol/openid-connect/token'
 
     Search for the field `access_token` which contains your token.
     
@@ -88,13 +87,13 @@ before diving in here. That will introduce you to the various components used.
     > NOTE: This session expires at the expiration date specified by the STS service. You'll need to repeat these steps
     > everytime your session expires.
  
-4. Technically you're now able to use the aws cli to perform any commands through Gargoyle
-   to S3. Gargoyle automatically creates the user on Ceph for you. One thing it cannot do though, is make this user an 
+4. Technically you're now able to use the aws cli to perform any commands through Airlock
+   to S3. Airlock automatically creates the user on Ceph for you. One thing it cannot do though, is make this user an 
    admin/system user. Because of this, users on Ceph are not allowed to perform actions on other users' buckets.
    
    Since Ranger is in place to handle authorisation, all users on Ceph can be allowed to do everything.
    
-   In order to allow a user on Ceph to access other buckets, we currently rely on them to be `system` users. Gargoyle
+   In order to allow a user on Ceph to access other buckets, we currently rely on them to be `system` users. Airlock
    will automatically create the user on Ceph for you, but setting them to be `system` users still needs to be done
    manually using the following steps:
    
@@ -138,12 +137,12 @@ before diving in here. That will introduce you to the various components used.
 
 Dependencies:
 * [Keycloak](https://www.keycloak.org/) for MFA authentication of users.
-* [STS Service](https://github.com/kr7ysztof/gargoyle-sts) to provide authentication and short term access to resources on S3.
+* [STS Service](https://github.com/ing-bank/airlock-sts) to provide authentication and short term access to resources on S3.
 * [Ranger](https://ranger.apache.org/) to manage authorisation to resources on S3.
-The Apache Ranger docker images are created from this repo: https://github.com/nielsdenissen/ranger-for-gargoyle.git
+The Apache Ranger docker images are created from this repo: https://github.com/ing-bank/airlock-dev-apache-ranger.git
 * S3 Backend (Current setup contains Ceph image with RadosGW)
 
-A more in-depth discussion of the architecture and interaction of various components can be found here: [What is Gargoyle?](./docs/What_is_gargoyle.md)
+A more in-depth discussion of the architecture and interaction of various components can be found here: [What is Airlock?](docs/What_is_airlock.md)
 
 
 ## Docker Ceph settings
@@ -164,14 +163,14 @@ Currently it is possible to create lineage based on incoming request to proxy se
 default (preview feature). To enable lineage shipment to Atlas, following setting has to be added to application.conf:
 
 ```
-gargoyle {
+airlock {
      atlas {
         enabled = true
      }
 }
 ``` 
 
-As alternative environment value `GARGOYLE_ATLAS_ENABLED` should be set to true. 
+As alternative environment value `AIRLOCK_ATLAS_ENABLED` should be set to true. 
 
 Lineage is done according following model
  
@@ -183,25 +182,25 @@ admin user and password
 
 ## Setting Up AWS CLI
 
-It is possible to set up the AWS command-line tools for working with Ceph RadosGW and Gargoyle. Following are instructions
+It is possible to set up the AWS command-line tools for working with Ceph RadosGW and Airlock. Following are instructions
 to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com/).
 
 1. Create an environment for this work:
 
     a. **virtualenv_wrapper**
 
-       % mkvirtualenv -p python3 gargoyle
+       % mkvirtualenv -p python3 airlock
        
     b. **Anaconda**
 
-       % conda create -n gargoyle python=3
-       % source activate gargoyle
+       % conda create -n airlock python=3
+       % source activate airlock
 
 2. Install the AWS command-line tools and the endpoint plugin:
 
        % pip install awscli awscli-plugin-endpoint
 
-3. Configure profiles and credentials for working with Gargoyle or the RadosGW directly (more info can be found in the
+3. Configure profiles and credentials for working with Airlock or the RadosGW directly (more info can be found in the
 [aws documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html)):
 
        % mkdir -p ~/.aws
@@ -211,7 +210,7 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
        aws_access_key_id = accesskey
        aws_secret_access_key = secretkey
 
-       [gargoyle]
+       [airlock]
        aws_access_key_id = YOUR_ACCESSKEY
        aws_secret_access_key = YOUR_SECRETKEY
        aws_session_token = YOUR_SESSIONTOKEN
@@ -221,7 +220,7 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
        [plugins]
        endpoint = awscli_plugin_endpoint
 
-       [profile gargoyle]
+       [profile airlock]
        output = json
        region = localhost
        s3 =
@@ -244,33 +243,33 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
 
     a. **virtualenv_wrapper**
     
-       % cat >> ${WORKON_HOME:-$HOME/.virtualenvs}/gargoyle/bin/postactivate << EOF
-       AWS_DEFAULT_PROFILE=gargoyle
+       % cat >> ${WORKON_HOME:-$HOME/.virtualenvs}/airlock/bin/postactivate << EOF
+       AWS_DEFAULT_PROFILE=airlock
        export AWS_DEFAULT_PROFILE
        EOF
        
-       % cat >> ${WORKON_HOME:-$HOME/.virtualenvs}/gargoyle/bin/predeactivate << EOF
+       % cat >> ${WORKON_HOME:-$HOME/.virtualenvs}/airlock/bin/predeactivate << EOF
        unset AWS_DEFAULT_PROFILE
        EOF
        
        % deactivate
        
-       % workon gargoyle
+       % workon airlock
 
     b. **Anaconda**
     
-       % cat >> /YOUR_CONDA_HOME/envs/gargoyle/etc/conda/deactivate.d/aws.sh << EOF
-       AWS_DEFAULT_PROFILE=gargoyle
+       % cat >> /YOUR_CONDA_HOME/envs/airlock/etc/conda/deactivate.d/aws.sh << EOF
+       AWS_DEFAULT_PROFILE=airlock
        export AWS_DEFAULT_PROFILE
        EOF
        
-       % cat >> /YOUR_CONDA_HOME/envs/gargoyle/etc/conda/activate.d/aws.sh << EOF
+       % cat >> /YOUR_CONDA_HOME/envs/airlock/etc/conda/activate.d/aws.sh << EOF
        unset AWS_DEFAULT_PROFILE
        EOF
        
        % source deactivate
        
-       % source activate gargoyle
+       % source activate airlock
 
 By default S3 and STS commands will now be issued against the proxy service. For example:
 
