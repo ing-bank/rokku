@@ -105,6 +105,19 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
           }
         }
 
+        "head on bucket object" in withS3SdkToMockProxy(awsSignerType) { sdk =>
+          withBucket(sdk) { testBucket =>
+            withFile(1024 * 1024) { filename =>
+              val testKeyFile = "keyPutFileByFile"
+
+              sdk.putObject(testBucket, testKeyFile, new File(filename))
+
+              assert(sdk.doesObjectExist(testBucket, testKeyFile))
+            }
+          }
+        }
+
+
         "put, get and delete an object from a bucket" in withS3SdkToMockProxy(awsSignerType) { sdk =>
           withBucket(sdk) { testBucket =>
             withFile(1024 * 1024) { filename =>
