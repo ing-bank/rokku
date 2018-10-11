@@ -43,7 +43,7 @@ services:
     - "keycloak"
 
   keycloak:
-    image: nielsdenissen/airlock-dev-keycloak:0.0.2
+    image: kr7ysztof/keycloak-it:0.0.1
     environment:
     - KEYCLOAK_USER=admin
     - KEYCLOAK_PASSWORD=admin
@@ -69,6 +69,14 @@ services:
 #      - "ceph"
 #    ports:
 #      - "6080:6080"
+#
+#  keycloak:
+#    image: nielsdenissen/airlock-dev-keycloak:0.0.2
+#    environment:
+#    - KEYCLOAK_USER=admin
+#    - KEYCLOAK_PASSWORD=admin
+#    ports:
+#    - "8080:8080"
 #
 #  airlock-sts:
 #    image: nielsdenissen/airlock-sts:???
