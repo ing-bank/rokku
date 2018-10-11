@@ -38,10 +38,13 @@ services:
     - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
     - KEYCLOAK_URL=http://keycloak:8080
     - KEYCLOAK_CHECK_REALM_URL=false
+    - MARIADB_HOST=mariadb
+    - MARIADB_PORT=3306
     ports:
     - "12345:12345"
     depends_on:
     - "keycloak"
+    - "mariadb"
 
   keycloak:
     image: nielsdenissen/airlock-dev-keycloak:0.0.2
@@ -55,3 +58,10 @@ services:
     image: nielsdenissen/airlock-dev-apache-atlas:0.0.2
     ports:
     - "21000:21000"
+
+  mariadb:
+    image: nielsdenissen/airlock-dev-mariadb:0.0.1
+    environment:
+    - MYSQL_ROOT_PASSWORD=admin
+    ports:
+    - 3307:3306

@@ -22,6 +22,9 @@ function keycloakIsReady() {
 function atlasIsReady() {
   docker-compose logs atlas | grep "Done setting up Atlas types"
 }
+function mariadbIsReady() {
+  docker-compose logs mariadb | grep "Version: '10.3.9-MariaDB-1:10.3.9+maria~bionic'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  mariadb.org binary distribution"
+}
 
 function waitUntilServiceIsReady() {
   attempt=1
@@ -44,5 +47,6 @@ waitUntilServiceIsReady airlockStsIsReady "Airlock STS"
 waitUntilServiceIsReady cephIsReady "Ceph"
 waitUntilServiceIsReady rangerAdminIsReady "Ranger Admin"
 waitUntilServiceIsReady keycloakIsReady "Keycloack"
+waitUntilServiceIsReady mariadbIsReady "MariaDB"
 waitUntilServiceIsReady atlasIsReady "Atlas"
 
