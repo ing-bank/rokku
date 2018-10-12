@@ -14,13 +14,16 @@ function rangerAdminIsReady() {
   docker-compose logs ranger-admin | grep "Policy created"
 }
 function airlockStsIsReady() {
-  docker-compose logs gargoyle-sts | grep "Sts service started listening:"
+  docker-compose logs airlock-sts | grep "Sts service started listening:"
 }
 function keycloakIsReady() {
   docker-compose logs keycloak | grep "Admin console listening"
 }
 function atlasIsReady() {
   docker-compose logs atlas | grep "Done setting up Atlas types"
+}
+function mariadbIsReady() {
+  docker-compose logs mariadb | grep "Version: '10.3.9-MariaDB-1:10.3.9+maria~bionic'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  mariadb.org binary distribution"
 }
 
 function waitUntilServiceIsReady() {
@@ -44,5 +47,6 @@ waitUntilServiceIsReady airlockStsIsReady "Airlock STS"
 waitUntilServiceIsReady cephIsReady "Ceph"
 waitUntilServiceIsReady rangerAdminIsReady "Ranger Admin"
 waitUntilServiceIsReady keycloakIsReady "Keycloack"
+waitUntilServiceIsReady mariadbIsReady "MariaDB"
 waitUntilServiceIsReady atlasIsReady "Atlas"
 

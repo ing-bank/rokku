@@ -18,32 +18,36 @@ services:
     command: demo
 
   postgres-server:
-    image: nielsdenissen/ranger-postgres:0.0.4
+    image: nielsdenissen/airlock-dev-apache-ranger-postgres:0.0.7
 
   ranger-admin:
-    image: nielsdenissen/ranger-admin:0.0.4
+    image: nielsdenissen/airlock-dev-apache-ranger:0.0.7
     stdin_open: true
     tty: true
     depends_on:
     - "postgres-server"
+    - "ceph"
     ports:
     - "6080:6080"
 
-  gargoyle-sts:
-    image: kr7ysztof/gargoyle-sts:0.0.7
+  airlock-sts:
+    image: nielsdenissen/airlock-sts:0.0.10
     environment:
     - STS_HOST=0.0.0.0
     - STS_PORT=12345
-    - GARGOYLE_KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
-    - GARGOYLE_KEYCLOAK_URL=http://keycloak:8080
-    - GARGOYLE_STS_KEYCLOAK_CHECK_REALM_URL=false
+    - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
+    - KEYCLOAK_URL=http://keycloak:8080
+    - KEYCLOAK_CHECK_REALM_URL=false
+    - MARIADB_HOST=mariadb
+    - MARIADB_PORT=3306
     ports:
     - "12345:12345"
     depends_on:
     - "keycloak"
+    - "mariadb"
 
   keycloak:
-    image: kr7ysztof/keycloak-it:0.0.1
+    image: nielsdenissen/airlock-dev-keycloak:0.0.2
     environment:
     - KEYCLOAK_USER=admin
     - KEYCLOAK_PASSWORD=admin
@@ -51,47 +55,13 @@ services:
     - "8080:8080"
 
   atlas:
-    image: arempter/gargoyle-atlas:0.0.1
+    image: nielsdenissen/airlock-dev-apache-atlas:0.0.2
     ports:
     - "21000:21000"
 
-  # TODO: replace with new images, see below:
-
-#  postgres-server:
-#    image: nielsdenissen/airlock-dev-apache-ranger-postgres:0.0.7
-#
-#  ranger-admin:
-#    image: nielsdenissen/airlock-dev-apache-ranger:0.0.7
-#    stdin_open: true
-#    tty: true
-#    depends_on:
-#      - "postgres-server"
-#      - "ceph"
-#    ports:
-#      - "6080:6080"
-#
-#  keycloak:
-#    image: nielsdenissen/airlock-dev-keycloak:0.0.2
-#    environment:
-#    - KEYCLOAK_USER=admin
-#    - KEYCLOAK_PASSWORD=admin
-#    ports:
-#    - "8080:8080"
-#
-#  airlock-sts:
-#    image: nielsdenissen/airlock-sts:???
-#    environment:
-#    - STS_HOST=0.0.0.0
-#    - STS_PORT=12345
-#    - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
-#    - KEYCLOAK_URL=http://keycloak:8080
-#    - KEYCLOAK_CHECK_REALM_URL=false
-#    ports:
-#    - "12345:12345"
-#    depends_on:
-#    - "keycloak"
-#
-#  atlas:
-#    image: nielsdenissen/airlock-dev-apache-atlas:0.0.2
-#    ports:
-#      - "21000:21000"
+  mariadb:
+    image: nielsdenissen/airlock-dev-mariadb:0.0.1
+    environment:
+    - MYSQL_ROOT_PASSWORD=admin
+    ports:
+    - 3307:3306
