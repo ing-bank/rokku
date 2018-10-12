@@ -31,7 +31,7 @@ services:
     - "6080:6080"
 
   airlock-sts:
-    image: nielsdenissen/airlock-sts:0.0.9
+    image: nielsdenissen/airlock-sts:0.0.10
     environment:
     - STS_HOST=0.0.0.0
     - STS_PORT=12345
