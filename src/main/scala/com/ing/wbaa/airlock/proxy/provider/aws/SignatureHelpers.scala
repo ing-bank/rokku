@@ -30,6 +30,16 @@ trait SignatureHelpers extends LazyLogging {
   // java Map[String, util.List[String]] is need by AWS4Signer
   def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {
 
+    def splitQueryToJavaMap(queryString: String): util.Map[String, util.List[String]] =
+      queryString.split("&").map { paramAndValue =>
+        paramAndValue.split("=")
+          .grouped(2)
+          .map {
+            case Array(k, v) => (k, List(cleanURLEncoding(v)).asJava)
+            case Array(k)    => (k, List("").asJava)
+          }
+      }.toList.flatten.toMap.asJava
+
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
 
     if (rawQueryString.length > 1) {
@@ -44,23 +54,10 @@ trait SignatureHelpers extends LazyLogging {
           Map(queryString -> List.empty[String].asJava).asJava
 
         // single param=value
-        case queryString if queryString.contains("=") && !queryString.contains("&") =>
-          queryString.split("=")
-            .grouped(2)
-            .map { case Array(k, v) =>
-              Map(k -> List(cleanURLEncoding(v)).asJava).asJava
-            }.toList.head
+        case queryString if queryString.contains("=") && !queryString.contains("&") => splitQueryToJavaMap(queryString)
 
         // multiple param=value
-        case queryString if queryString.contains("&") =>
-          queryString.split("&").map { paramAndValue =>
-            paramAndValue.split("=")
-              .grouped(2)
-              .map {
-                case Array(k, v) => (k, List(cleanURLEncoding(v)).asJava)
-                case Array(k)    => (k, List("").asJava)
-              }
-          }.toList.flatten.toMap.asJava
+        case queryString if queryString.contains("&") => splitQueryToJavaMap(queryString)
 
         case _ => Map[String, java.util.List[String]]().empty.asJava
       }
