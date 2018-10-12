@@ -43,7 +43,7 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     "grant_type" -> "password",
     "username" -> "userone",
     "password" -> "password",
-    "client_id" -> "sts-gargoyle"
+    "client_id" -> "sts-airlock"
   )
 
   /**
