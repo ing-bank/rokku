@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/ing-bank/airlock.svg?branch=master)](https://travis-ci.org/ing-bank/airlock)
 [![codecov.io](http://codecov.io/github/ing-bank/airlock/coverage.svg?branch=master)](https://codecov.io/gh/ing-bank/airlock?branch=master)
-[![](https://images.microbadger.com/badges/image/ing-bank/airlock:latest.svg)](https://microbadger.com/images/ing-bank/airlock:latest)
+[![](https://images.microbadger.com/badges/image/nielsdenissen/airlock:latest.svg)](https://microbadger.com/images/nielsdenissen/airlock:latest)
 
 # Airlock
 
