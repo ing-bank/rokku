@@ -18,12 +18,27 @@ trait SignatureHelpers extends LazyLogging {
   final val AWS_SIGN_V4 = "v4"
 
   // we need to decode unsafe ASCII characters from hex. Some AWS parameters are encoded while reaching proxy
-  def cleanURLEncoding(param: String): String =
+  def cleanURLEncoding(param: String): String = {
     // uploadId parameter case
-    param.replace("%7E", "~")
+    param match {
+      case p if p.nonEmpty && p.contains("%7E") => p.replace("%7E", "~")
+      case p if p.nonEmpty && p.contains("%2F") => p.replace("%2F", "/")
+      case p                                    => p
+    }
+  }
 
   // java Map[String, util.List[String]] is need by AWS4Signer
   def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {
+
+    def splitQueryToJavaMap(queryString: String): util.Map[String, util.List[String]] =
+      queryString.split("&").map { paramAndValue =>
+        paramAndValue.split("=")
+          .grouped(2)
+          .map {
+            case Array(k, v) => (k, List(cleanURLEncoding(v)).asJava)
+            case Array(k)    => (k, List("").asJava)
+          }
+      }.toList.flatten.toMap.asJava
 
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
 
@@ -39,22 +54,10 @@ trait SignatureHelpers extends LazyLogging {
           Map(queryString -> List.empty[String].asJava).asJava
 
         // single param=value
-        case queryString if queryString.contains("=") && !queryString.contains("&") =>
-          queryString.split("=")
-            .grouped(2)
-            .map { case Array(k, v) =>
-              Map(k -> List(cleanURLEncoding(v)).asJava).asJava
-            }.toList.head
+        case queryString if queryString.contains("=") && !queryString.contains("&") => splitQueryToJavaMap(queryString)
 
         // multiple param=value
-        case queryString if queryString.contains("&") =>
-          queryString.split("&").map { paramAndValue =>
-            paramAndValue.split("=")
-              .grouped(2)
-              .map { case Array(k, v) =>
-                (k, List(cleanURLEncoding(v)).asJava)
-              }
-          }.toList.flatten.toMap.asJava
+        case queryString if queryString.contains("&") => splitQueryToJavaMap(queryString)
 
         case _ => Map[String, java.util.List[String]]().empty.asJava
       }
@@ -171,6 +174,8 @@ trait SignatureHelpers extends LazyLogging {
       case "POST"   => HttpMethodName.POST
       case "PUT"    => HttpMethodName.PUT
       case "DELETE" => HttpMethodName.DELETE
+      case "HEAD"   => HttpMethodName.HEAD
+      case _        => throw new Exception("Method not supported, request signature verification failed")
     })
 
     request.setResourcePath(httpRequest.uri.path.toString())
