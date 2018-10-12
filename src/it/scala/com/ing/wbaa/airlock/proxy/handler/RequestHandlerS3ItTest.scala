@@ -144,21 +144,21 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
         }
 
         // TODO: Fix proxy for copyObject function
-        //        "check if object can be copied" in {
-        //          sdk.putObject(bucketInCeph, "keyCopyOrg", new File("file1mb.test"))
-        //          sdk.copyObject(bucketInCeph, "keyCopyOrg", "newbucket", "keyCopyDest")
-        //
-        //          val keys1 = getKeysInBucket(bucketInCeph)
-        //          assert(!keys1.contains("keyCopyOrg"))
-        //          val keys2 = getKeysInBucket("newbucket")
-        //          assert(keys2.contains("keyCopyDest"))
-        //        }
-
-        // TODO: Fix proxy for doesObjectExists function
-        //        "check if object exists in bucket" in {
-        //          sdk.putObject(bucketInCeph, "keyCheckObjectExists", "content")
-        //          assert(sdk.doesObjectExist(bucketInCeph, "key"))
-        //        }
+//        "check if object can be copied" in withS3SdkToMockProxy(awsSignerType) { sdk =>
+//          withBucket(sdk) { testBucket =>
+//            withBucket(sdk) { tragetBucket =>
+//              withFile(1024 * 1024) { filename =>
+//                sdk.putObject(testBucket, "keyCopyOrg", new File(filename))
+//                sdk.copyObject(testBucket, "keyCopyOrg", tragetBucket, "keyCopyDest")
+//
+//                val keys1 = getKeysInBucket(sdk, testBucket)
+//                assert(!keys1.contains("keyCopyOrg"))
+//                val keys2 = getKeysInBucket(sdk, "newbucket")
+//                assert(keys2.contains("keyCopyDest"))
+//              }
+//            }
+//          }
+//      }
 
         "put a 1MB file in a bucket (multi part upload)" in withS3SdkToMockProxy(awsSignerType) { sdk =>
           withBucket(sdk) { testBucket =>

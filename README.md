@@ -239,7 +239,7 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
            endpoint_url = http://localhost:8010/
        EOF
 
-### Note: for now, we default to us-east-1 AWS region for signature verification
+> Note: for now, we default to us-east-1 AWS region for signature verification
 
 4. Configure the default profile and reactivate the virtual environment:
 
