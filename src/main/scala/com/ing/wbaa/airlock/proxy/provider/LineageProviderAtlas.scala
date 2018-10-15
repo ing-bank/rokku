@@ -125,7 +125,7 @@ trait LineageProviderAtlas extends LazyLogging with RestClient {
     if (bucket != "notDef" && bucketObject != "emptyObject") {
       logger.debug(s"Creating lineage for request ${method.value} file ${bucketObject} in ${bucket} at ${timestamp}")
       method match {
-        case HttpMethods.GET =>
+        case HttpMethods.GET | HttpMethods.HEAD =>
           logger.debug(s"Creating Read lineage for request to ${method.value} file ${bucketObject} to ${bucket} at ${timestamp}")
           postEnities(userName, host, bucket, bucketObject, "read", contentType, timestamp)
         case HttpMethods.POST | HttpMethods.PUT =>
