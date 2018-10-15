@@ -6,8 +6,9 @@ import com.typesafe.config.Config
 class RangerSettings(config: Config) extends Extension {
   val serviceType: String = config.getString("airlock.ranger.service_type")
   val appId: String = config.getString("airlock.ranger.app_id")
-  val listBucketsEnabled = config.getBoolean("airlock.ranger.allow-list-buckets")
-  val createBucketsEnabled = config.getBoolean("airlock.ranger.allow-create-buckets")
+  val listBucketsEnabled: Boolean = config.getBoolean("airlock.ranger.allow-list-buckets")
+  val createBucketsEnabled: Boolean = config.getBoolean("airlock.ranger.allow-create-buckets")
+  val userDomainPostfix: String = config.getString("airlock.ranger.user-domain-postfix")
 }
 
 object RangerSettings extends ExtensionId[RangerSettings] with ExtensionIdProvider {
