@@ -31,7 +31,7 @@ trait ProxyService extends LazyLogging {
   protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean
 
   // Authorization methods
-  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
+  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User, remoteAddress: RemoteAddress): Boolean
 
   // Atlas Lineage
   protected[this] def atlasSettings: AtlasSettings
@@ -50,7 +50,7 @@ trait ProxyService extends LazyLogging {
                 if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
                   logger.debug(s"Request authenticated: $httpRequest")
 
-                  if (isUserAuthorizedForRequest(s3Request, userSTS)) {
+                  if (isUserAuthorizedForRequest(s3Request, userSTS, remoteAddress)) {
                     logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
                     complete(executeRequest(httpRequest, remoteAddress, userSTS).map { request =>
                       if (atlasSettings.atlasEnabled && (request.status == StatusCodes.OK || request.status == StatusCodes.NoContent))

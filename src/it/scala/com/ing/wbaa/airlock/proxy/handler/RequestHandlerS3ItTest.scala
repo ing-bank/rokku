@@ -3,7 +3,7 @@ package com.ing.wbaa.airlock.proxy.handler
 import java.io.File
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
 import akka.http.scaladsl.model.Uri.{Authority, Host}
 import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.airlock.proxy.AirlockS3Proxy
@@ -39,7 +39,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
     val proxy: AirlockS3Proxy = new AirlockS3Proxy with RequestHandlerS3 with SignatureProviderAws {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = airlockHttpSettings
-      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
+      override def isUserAuthorizedForRequest(request: S3Request, user: User, remoteAddress: RemoteAddress): Boolean = true
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
       override val atlasSettings: AtlasSettings = new AtlasSettings(system.settings.config)
 

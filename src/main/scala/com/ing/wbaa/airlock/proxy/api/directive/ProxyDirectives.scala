@@ -9,11 +9,13 @@ object ProxyDirectives extends LazyLogging {
 
   import akka.http.scaladsl.server.Directives._
 
+  private[this] val AUTHORIZATION_HTTP_HEADER_NAME = "authorization"
+
   /**
    * Extract data from the Authorization header of S3
    */
   private[this] def extractAuthorizationS3(httpHeader: HttpHeader): Option[AwsAccessKey] =
-    if (httpHeader.is("authorization")) {
+    if (httpHeader.is(AUTHORIZATION_HTTP_HEADER_NAME)) {
       val signerType = httpHeader.value().split(" ").headOption
       logger.debug(s"Signertype used: $signerType")
 
@@ -41,6 +43,7 @@ object ProxyDirectives extends LazyLogging {
       }
     } else None
 
+  //TODO: Put Remote IP Address in the S3 Request, call it IP Origin
   val extracts3Request: Directive1[S3Request] =
     extractRequest tflatMap { case Tuple1(httpRequest) =>
       optionalHeaderValueByName("x-amz-security-token") tflatMap {
