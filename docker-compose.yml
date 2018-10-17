@@ -18,10 +18,11 @@ services:
     command: demo
 
   postgres-server:
-    image: nielsdenissen/airlock-dev-apache-ranger-postgres:0.0.7
+    image: nielsdenissen/airlock-dev-apache-ranger-postgres:0.0.8
 
   ranger-admin:
-    image: nielsdenissen/airlock-dev-apache-ranger:0.0.7
+    image: nielsdenissen/airlock-dev-apache-ranger:0.0.8
+
     stdin_open: true
     tty: true
     depends_on:

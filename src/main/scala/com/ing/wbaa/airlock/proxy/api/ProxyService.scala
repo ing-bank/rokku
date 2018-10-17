@@ -22,7 +22,7 @@ trait ProxyService extends LazyLogging {
   protected[this] implicit def executionContext: ExecutionContext
 
   // Request Handler methods
-  protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse]
+  protected[this] def executeRequest(request: HttpRequest, clientIPAddress: RemoteAddress, userSTS: User): Future[HttpResponse]
 
   // Authentication methods
   protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]]
@@ -31,7 +31,7 @@ trait ProxyService extends LazyLogging {
   protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean
 
   // Authorization methods
-  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User, remoteAddress: RemoteAddress): Boolean
+  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress): Boolean
 
   // Atlas Lineage
   protected[this] def atlasSettings: AtlasSettings
@@ -39,7 +39,9 @@ trait ProxyService extends LazyLogging {
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
-      extractClientIP { remoteAddress =>
+      extractClientIP { clientIPAddress =>
+        logger.debug(s"Extracted Client IP: " +
+          s"${clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")}")
         extractRequest { httpRequest =>
           extracts3Request { s3Request =>
 
@@ -50,9 +52,9 @@ trait ProxyService extends LazyLogging {
                 if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
                   logger.debug(s"Request authenticated: $httpRequest")
 
-                  if (isUserAuthorizedForRequest(s3Request, userSTS, remoteAddress)) {
+                  if (isUserAuthorizedForRequest(s3Request, userSTS, clientIPAddress)) {
                     logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
-                    complete(executeRequest(httpRequest, remoteAddress, userSTS).map { request =>
+                    complete(executeRequest(httpRequest, clientIPAddress, userSTS).map { request =>
                       if (atlasSettings.atlasEnabled && (request.status == StatusCodes.OK || request.status == StatusCodes.NoContent))
                         // delete on AWS response 204
                         createLineageFromRequest(httpRequest, userSTS)

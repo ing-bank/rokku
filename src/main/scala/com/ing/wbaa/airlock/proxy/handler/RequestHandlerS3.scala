@@ -33,8 +33,8 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
    * If we get back a Forbidden code, we can try to check if there's new credentials for Ceph first.
    * If so, we can retry the request.
    */
-  protected[this] def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse] = {
-    val newRequest = translateRequest(request, clientAddress)
+  protected[this] def executeRequest(request: HttpRequest, clientIPAddress: RemoteAddress, userSTS: User): Future[HttpResponse] = {
+    val newRequest = translateRequest(request, clientIPAddress)
 
     fireRequestToS3(newRequest).flatMap { response =>
       if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest)
@@ -48,13 +48,13 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
    *   - Change authority to s3 host:port
    *
    * @param request incoming request on this server
-   * @param clientAddress originating client address
+   * @param clientIPAddress originating client address
    * @return translated request for s3
    */
-  protected[this] def translateRequest(request: HttpRequest, clientAddress: RemoteAddress): HttpRequest = {
+  protected[this] def translateRequest(request: HttpRequest, clientIPAddress: RemoteAddress): HttpRequest = {
     val headersIn: Seq[HttpHeader] =
       request.headers ++ List(
-        RawHeader("X-Forwarded-For", clientAddress.toOption.map(_.getHostAddress).getOrElse("unknown")),
+        RawHeader("X-Forwarded-For", clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")),
         RawHeader("X-Forwarded-Proto", request._5.value)
       )
 

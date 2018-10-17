@@ -98,6 +98,10 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
         assert(!apr.isUserAuthorizedForRequest(s3Request.copy(bucketObjectRoot = None, accessType = NoAccess), user, remoteAddress))
       }
 
+      "doesn't authorize when remoteIpAddress is in a DENY policy" in withAuthorizationProviderRanger() { apr =>
+        assert(!apr.isUserAuthorizedForRequest(s3Request, user, RemoteAddress(InetAddress.getByName("1.2.3.4"), Some(1234))))
+      }
+
     }
   }
 }
