@@ -22,10 +22,11 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     override implicit def executionContext: ExecutionContext = system.dispatcher
     implicit def materializer: Materializer = ActorMaterializer()
 
-    override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse] =
-      Future(HttpResponse(entity =
-        s"sendToS3: ${clientAddress.toOption.map(_.getHostName).getOrElse("unknown")}:${clientAddress.getPort()}"
-      ))
+    override def executeRequest(request: HttpRequest, userSTS: User): Future[HttpResponse] =
+      Future(HttpResponse(status = StatusCodes.OK))
+
+    override def translateRequest(request: HttpRequest, remoteAddressHeader: Option[String], xForwardedForHeader: Option[String]): HttpRequest =
+      HttpRequest(entity = "hello")
 
     override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(
       Some(User(UserName("okUser"), Some(UserAssumedGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
@@ -55,8 +56,6 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
   "A proxy service" should "Successfully execute a request" in {
     testRequest() ~> new ProxyServiceMock {}.proxyServiceRoute ~> check {
       assert(status == StatusCodes.OK)
-      val response = responseAs[String]
-      assert(response == "sendToS3: 6.7.8.9:1234")
     }
   }
 

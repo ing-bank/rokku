@@ -1,7 +1,5 @@
 package com.ing.wbaa.airlock.proxy.handler
 
-import java.net.{ InetAddress, InetSocketAddress }
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
@@ -35,12 +33,12 @@ class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with 
     "translate request" which {
       "add forward to uri and forward headers" in {
         val request = HttpRequest()
-        val remoteAddress = RemoteAddress(InetAddress.getByName("192.168.3.12"))
+        val result = translateRequest(request, Some("192.168.3.12:1234"), Some("12.23.34.45"))
 
-        val result = translateRequest(request, remoteAddress)
         val expected = request
           .withUri(request.uri.withAuthority("1.2.3.4", 1234))
-          .withHeaders(RawHeader("X-Forwarded-For", "192.168.3.12"), RawHeader("X-Forwarded-Proto", "HTTP/1.1"))
+          .withHeaders(RawHeader("X-Forwarded-For", "12.23.34.45, 192.168.3.12"), RawHeader("X-Forwarded-Proto", "HTTP/1.1"))
+
         assert(result == expected)
       }
     }
@@ -50,7 +48,6 @@ class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with 
         val initialNumFiredRequests = numFiredRequests
         executeRequest(
           HttpRequest(),
-          RemoteAddress(new InetSocketAddress(2000)),
           User(UserRawJson("u", None, "a", "s"))
         ).map(_ => assert(numFiredRequests - initialNumFiredRequests == 2))
       }

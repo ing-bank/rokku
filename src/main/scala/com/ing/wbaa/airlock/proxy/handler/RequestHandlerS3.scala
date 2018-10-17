@@ -20,10 +20,10 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
   protected[this] def storageS3Settings: StorageS3Settings
 
   protected[this] def fireRequestToS3(request: HttpRequest): Future[HttpResponse] = {
-    logger.debug(s"Newly generated request: $request")
+    logger.debug(s"Request to send to Ceph: $request")
     Http().singleRequest(request)
       .andThen {
-        case Success(r) => logger.debug(s"Recieved response from Ceph: $r")
+        case Success(r) => logger.debug(s"Recieved response from Ceph: ${r.status}")
       }
   }
 
@@ -33,11 +33,9 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
    * If we get back a Forbidden code, we can try to check if there's new credentials for Ceph first.
    * If so, we can retry the request.
    */
-  protected[this] def executeRequest(request: HttpRequest, clientIPAddress: RemoteAddress, userSTS: User): Future[HttpResponse] = {
-    val newRequest = translateRequest(request, clientIPAddress)
-
-    fireRequestToS3(newRequest).flatMap { response =>
-      if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest)
+  protected[this] def executeRequest(request: HttpRequest, userSTS: User): Future[HttpResponse] = {
+    fireRequestToS3(request).flatMap { response =>
+      if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(request)
       else Future.successful(response)
     }
   }
@@ -48,19 +46,23 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
    *   - Change authority to s3 host:port
    *
    * @param request incoming request on this server
-   * @param clientIPAddress originating client address
+   * @param remoteAddressHeader Remote-Address header from the httpRequest
+   * @param xForwardedForHeader X-Forwarded-For header from the httpRequest
    * @return translated request for s3
    */
-  protected[this] def translateRequest(request: HttpRequest, clientIPAddress: RemoteAddress): HttpRequest = {
-    val headersIn: Seq[HttpHeader] =
-      request.headers ++ List(
-        RawHeader("X-Forwarded-For", clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")),
-        RawHeader("X-Forwarded-Proto", request._5.value)
-      )
+  protected[this] def translateRequest(request: HttpRequest, remoteAddressHeader: Option[String], xForwardedForHeader: Option[String]): HttpRequest = {
+    val newHeaders: Seq[HttpHeader] =
+      request.headers
+        .filter(h =>
+          h.isNot("x-forwarded-for") && h.isNot("x-forwarded-proto")
+        ) ++ List(
+          RawHeader("X-Forwarded-For", xForwardedForHeader.getOrElse("") + ", " + remoteAddressHeader.map(_.split(":").head).getOrElse("unknown")),
+          RawHeader("X-Forwarded-Proto", request._5.value)
+        )
 
     request.copy(
       uri = request.uri.withAuthority(storageS3Settings.storageS3Authority),
-      headers = headersIn.toList
+      headers = newHeaders.toList
     )
   }
 }
