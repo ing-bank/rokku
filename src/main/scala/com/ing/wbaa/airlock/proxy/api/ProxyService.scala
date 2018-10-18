@@ -22,7 +22,6 @@ trait ProxyService extends LazyLogging {
   protected[this] implicit def executionContext: ExecutionContext
 
   // Request Handler methods
-  protected[this] def translateRequest(request: HttpRequest, remoteAddressHeader: Option[String], xForwardedForHeader: Option[String]): HttpRequest
   protected[this] def executeRequest(request: HttpRequest, userSTS: User): Future[HttpResponse]
 
   // Authentication methods
@@ -56,17 +55,14 @@ trait ProxyService extends LazyLogging {
                   if (isUserAuthorizedForRequest(s3Request, userSTS, clientIPAddress)) {
                     logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
 
-                    optionalHeaderValueByName("Remote-Address") { remoteAddressHeader =>
-                      optionalHeaderValueByName("X-Forwarded-For") { xForwardedForHeader =>
-                        val newHttpRequest = translateRequest(httpRequest, remoteAddressHeader, xForwardedForHeader)
-                        complete(executeRequest(newHttpRequest, userSTS).map { request =>
-                          if (atlasSettings.atlasEnabled && (request.status == StatusCodes.OK || request.status == StatusCodes.NoContent))
+                    updateHeadersForRequest { newHttpRequest =>
+                      val httpResponse = executeRequest(newHttpRequest, userSTS).andThen {
+                        case Success(response: HttpResponse) =>
+                          if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent))
                             // delete on AWS response 204
                             createLineageFromRequest(httpRequest, userSTS)
-
-                          request
-                        })
                       }
+                      complete(httpResponse)
                     }
 
                   } else {

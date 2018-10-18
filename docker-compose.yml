@@ -22,7 +22,6 @@ services:
 
   ranger-admin:
     image: nielsdenissen/airlock-dev-apache-ranger:0.0.8
-
     stdin_open: true
     tty: true
     depends_on:

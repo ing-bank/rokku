@@ -25,9 +25,6 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     override def executeRequest(request: HttpRequest, userSTS: User): Future[HttpResponse] =
       Future(HttpResponse(status = StatusCodes.OK))
 
-    override def translateRequest(request: HttpRequest, remoteAddressHeader: Option[String], xForwardedForHeader: Option[String]): HttpRequest =
-      HttpRequest(entity = "hello")
-
     override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(
       Some(User(UserName("okUser"), Some(UserAssumedGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
     )

@@ -2,7 +2,6 @@ package com.ing.wbaa.airlock.proxy.handler
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.{ ActorMaterializer, Materializer }
 import com.ing.wbaa.airlock.proxy.config.{ AtlasSettings, StorageS3Settings }
 import com.ing.wbaa.airlock.proxy.data.{ User, UserRawJson }
@@ -30,19 +29,6 @@ class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with 
   override def handleUserCreationRadosGw(userSTS: User): Boolean = true
 
   "Request Handler" should {
-    "translate request" which {
-      "add forward to uri and forward headers" in {
-        val request = HttpRequest()
-        val result = translateRequest(request, Some("192.168.3.12:1234"), Some("12.23.34.45"))
-
-        val expected = request
-          .withUri(request.uri.withAuthority("1.2.3.4", 1234))
-          .withHeaders(RawHeader("X-Forwarded-For", "12.23.34.45, 192.168.3.12"), RawHeader("X-Forwarded-Proto", "HTTP/1.1"))
-
-        assert(result == expected)
-      }
-    }
-
     "execute a request" that {
       "retries a request when forbidden and user needs to be created" in {
         val initialNumFiredRequests = numFiredRequests
