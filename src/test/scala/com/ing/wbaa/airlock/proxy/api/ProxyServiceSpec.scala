@@ -22,15 +22,13 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     override implicit def executionContext: ExecutionContext = system.dispatcher
     implicit def materializer: Materializer = ActorMaterializer()
 
-    override def executeRequest(request: HttpRequest, clientAddress: RemoteAddress, userSTS: User): Future[HttpResponse] =
-      Future(HttpResponse(entity =
-        s"sendToS3: ${clientAddress.toOption.map(_.getHostName).getOrElse("unknown")}:${clientAddress.getPort()}"
-      ))
+    override def executeRequest(request: HttpRequest, userSTS: User): Future[HttpResponse] =
+      Future(HttpResponse(status = StatusCodes.OK))
 
     override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(
       Some(User(UserName("okUser"), Some(UserAssumedGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
     )
-    override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
+    override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress): Boolean = true
 
     override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
 
@@ -55,8 +53,6 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
   "A proxy service" should "Successfully execute a request" in {
     testRequest() ~> new ProxyServiceMock {}.proxyServiceRoute ~> check {
       assert(status == StatusCodes.OK)
-      val response = responseAs[String]
-      assert(response == "sendToS3: 6.7.8.9:1234")
     }
   }
 
@@ -87,7 +83,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
   it should "return a rejection when user is not authorized" in {
     testRequest() ~> new ProxyServiceMock {
-      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = false
+      override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(rejection == AuthorizationFailedRejection)
     }
