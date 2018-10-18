@@ -43,6 +43,6 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
     logger.debug(s"Request to send to Ceph: $request")
     Http()
       .singleRequest(request)
-      .andThen { case Success(r) => logger.debug(s"Recieved response from Ceph: ${r.status}") }
+      .andThen { case Success(r) => logger.debug(s"Received response from Ceph: ${r.status}") }
   }
 }

@@ -11,6 +11,9 @@ object ProxyDirectives extends LazyLogging {
   import akka.http.scaladsl.server.Directives._
 
   private[this] val AUTHORIZATION_HTTP_HEADER_NAME = "authorization"
+  private[this] val X_FORWARDED_FOR_HEADER = "X-Forwarded-For"
+  private[this] val X_FORWARDED_PROTO_HEADER = "X-Forwarded-Proto"
+  private[this] val REMOTE_ADDRESS_HEADER = "Remote-Address"
 
   /**
    * Extract data from the Authorization header of S3
@@ -64,24 +67,26 @@ object ProxyDirectives extends LazyLogging {
     }
 
   /**
-   * Updates the forward headers of a request.
+   * Updates the forward headers for a request.
+   * Since we're proxy requests through Airlock to S3, we need to add the remote address to the forward headers.
    */
   val updateHeadersForRequest: Directive1[HttpRequest] =
     extractRequest tflatMap { case Tuple1(httpRequest) =>
-      optionalHeaderValueByName("Remote-Address") tflatMap { case Tuple1(remoteAddressHeader) =>
-        optionalHeaderValueByName("X-Forwarded-For") tmap { case Tuple1(xForwardedForHeader) =>
+      optionalHeaderValueByName(REMOTE_ADDRESS_HEADER) tflatMap { case Tuple1(remoteAddressHeader) =>
+        optionalHeaderValueByName(X_FORWARDED_FOR_HEADER) tmap { case Tuple1(xForwardedForHeader) =>
+
           val prependForwardedFor = xForwardedForHeader match {
-            case Some(ffh)       => s"$ffh, "
-            case None            => ""
+            case Some(forwardHeader)       => s"$forwardHeader, "
+            case None                      => ""
           }
 
           val newHeaders: Seq[HttpHeader] =
             httpRequest.headers
               .filter(h =>
-                h.isNot("x-forwarded-for") && h.isNot("x-forwarded-proto")
+                h.isNot(X_FORWARDED_FOR_HEADER.toLowerCase) && h.isNot(X_FORWARDED_PROTO_HEADER.toLowerCase)
               ) ++ List(
-                RawHeader("X-Forwarded-For", prependForwardedFor + remoteAddressHeader.map(_.split(":").head).getOrElse("unknown")),
-                RawHeader("X-Forwarded-Proto", httpRequest._5.value)
+                RawHeader(X_FORWARDED_FOR_HEADER, prependForwardedFor + remoteAddressHeader.map(_.split(":").head).getOrElse("unknown")),
+                RawHeader(X_FORWARDED_PROTO_HEADER, httpRequest._5.value)
               )
 
           httpRequest.withHeaders(newHeaders.toList)
