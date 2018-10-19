@@ -75,6 +75,8 @@ trait LineageProviderAtlas extends LazyLogging with RestClient {
         List(guidRef(outputGuid, outputType))))))
   }
 
+
+  // move to LineageHelpers and split to postEntity
   private def postEnities(userSTS: String, host: String, bucket: String, bucketObject: String, method: String, contentType: ContentType, timestamp: Long): Future[LineagePostGuidResponse] = {
     for {
       serverGuid <- postData(serverEntities(userSTS, host).toJson)
@@ -108,6 +110,16 @@ trait LineageProviderAtlas extends LazyLogging with RestClient {
       _ <- deleteEntity(entityGuid)
 
     } yield LineagePostGuidResponse("", "", entityGuid, "")
+
+  // bucket name as partitioning
+
+  // for all filter only on wanted subresource
+  // get object
+  // put object
+  // put object - copy
+  // post object (complete multipart)
+  // delete on abort multipart
+  // delete object
 
   def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse] = {
 
