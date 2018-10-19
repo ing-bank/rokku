@@ -49,7 +49,6 @@ trait LineageProviderAtlas extends LazyLogging with RestClient {
       userSTS,
       FileAttributes(bucketObject, bucketObject, bucketObject, contentType.mediaType.value,
         guidRef(bucketGuid, "Bucket"),
-        guidRef(serverGuid, "Server"),
         List(guidRef(inputGuid, inputType)),
         List(guidRef(outputGuid, outputType)),
         Seq(Classification("customer_PII"))))))
