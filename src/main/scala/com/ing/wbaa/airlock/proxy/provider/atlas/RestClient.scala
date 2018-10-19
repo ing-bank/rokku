@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.headers.{ Authorization, BasicHttpCredentials }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import com.ing.wbaa.airlock.proxy.config.AtlasSettings
+import com.ing.wbaa.airlock.proxy.data.LineageGuidResponse
 import com.ing.wbaa.airlock.proxy.provider.atlas.Model.{ CreateResponse, EntityId, EntitySearchResult, UpdateResponse }
 import com.ing.wbaa.airlock.proxy.provider.atlas.RestClient.RestClientException
 import com.typesafe.scalalogging.LazyLogging
@@ -14,7 +15,7 @@ import spray.json.{ JsValue, _ }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-trait RestClient extends AtlasModelJsonSupport with LazyLogging {
+trait RestClient extends ModelJsonSupport with LazyLogging {
 
   protected[this] implicit def system: ActorSystem
   protected[this] implicit def executionContext: ExecutionContext
@@ -90,7 +91,7 @@ trait RestClient extends AtlasModelJsonSupport with LazyLogging {
    * @param json
    * @return Guid of changed or added entity
    */
-  def postData(json: JsValue): Future[String] = {
+  def postData(json: JsValue): Future[LineageGuidResponse] = {
     http.singleRequest(HttpRequest(
       HttpMethods.POST,
       atlasApiUriV2 + bulkEntity,
@@ -101,9 +102,11 @@ trait RestClient extends AtlasModelJsonSupport with LazyLogging {
         case response if response.status == StatusCodes.OK =>
           Unmarshal(response.entity).to[String].map { jsonString =>
             if (jsonString.contains("CREATE")) {
-              jsonString.parseJson.convertTo[CreateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
+              LineageGuidResponse(
+                jsonString.parseJson.convertTo[CreateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head)
             } else {
-              jsonString.parseJson.convertTo[UpdateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head
+              LineageGuidResponse(
+                jsonString.parseJson.convertTo[UpdateResponse].guidAssignments.convertTo[Map[String, String]].values.toList.head)
             }
           }
         case response =>

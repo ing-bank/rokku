@@ -29,7 +29,7 @@ trait ModelJsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val readsIngestion = jsonFormat3(Ingestion)
   implicit val readsIngestionEntities = jsonFormat1(Entities[Ingestion])
   // File
-  implicit val readsFileAttributes = jsonFormat8(FileAttributes)
+  implicit val readsFileAttributes = jsonFormat6(FileAttributes)
   implicit val readsFile = jsonFormat3(IngestedFile)
   implicit val readsFileEntities = jsonFormat1(Entities[IngestedFile])
 
