@@ -47,10 +47,11 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
         fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS)
 
       createLineageResult.map { result =>
-            assert( result.serverGuid.length > 0 )
-            assert( result.bucketGuid.length > 0 )
-            assert( result.fileGuid.length > 0 )
-            assert( result.processGuid.length > 0 )
+          val postResult = result.asInstanceOf[LineagePostGuidResponse]
+            assert( postResult.serverGuid.length > 0 )
+            assert( postResult.bucketGuid.length > 0 )
+            assert( postResult.fileGuid.length > 0 )
+            assert( postResult.processGuid.length > 0 )
         }
     }
 
@@ -60,10 +61,11 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
         fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS)
 
       createLineageResult.map { result =>
-            assert( result.serverGuid.length > 0 )
-            assert( result.bucketGuid.length > 0 )
-            assert( result.fileGuid.length > 0 )
-            assert( result.processGuid.length > 0 )
+        val postResult = result.asInstanceOf[LineagePostGuidResponse]
+            assert( postResult.serverGuid.length > 0 )
+            assert( postResult.bucketGuid.length > 0 )
+            assert( postResult.fileGuid.length > 0 )
+            assert( postResult.processGuid.length > 0 )
         }
     }
 
@@ -73,10 +75,8 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
         fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS)
 
       createLineageResult.map { result =>
-            assert( result.serverGuid.length == 0 )
-            assert( result.bucketGuid.length == 0 )
-            assert( result.fileGuid.length > 0 )
-            assert( result.processGuid.length == 0 )
+        val postResult = result.asInstanceOf[LineageGuidResponse]
+            assert( postResult.entityGUID.length > 0 )
       }
     }
 

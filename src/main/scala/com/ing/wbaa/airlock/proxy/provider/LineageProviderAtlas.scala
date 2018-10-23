@@ -19,35 +19,50 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
 
   protected[this] implicit def atlasSettings: AtlasSettings
 
-  // for all filter only on wanted subresource
-
-  // put object - copy
-  // post object (complete multipart)
-  // delete on abort multipart
-
-  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse] = {
+  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineageResponse] = {
 
     val timestamp = System.currentTimeMillis()
     val userName = userSTS.userName.value
     val lh = getLineageHeaders(httpRequest)
+    val host = lh.host.getOrElse("unknown")
 
+    def readOrWriteLineage(method: String, bucket: String): Future[LineagePostGuidResponse] = {
+      logger.debug(s"Creating $method lineage for request to ${lh.method.value} file ${lh.bucketObject} to $bucket at $timestamp")
+      postEnities(userName, host, bucket, lh.bucketObject, method, lh.contentType, lh.clientType, timestamp)
+    }
+
+    def delLineage(method: String): Future[LineageGuidResponse] = {
+      logger.debug(s"Creating Delete lineage for request to ${lh.method} file ${lh.bucketObject} to ${lh.bucket} at $timestamp")
+      deleteEntities("DataFile", lh.bucketObject)
+    }
+
+    // we only report lineage for object operations. We do not track bucket create / delete etc.
     if (lh.bucket.length > 1 && lh.bucketObject != "emptyObject") {
-      logger.debug(s"Creating lineage for request ${lh.method.value} file ${lh.bucketObject} in ${lh.bucket} at ${timestamp}")
       lh.method match {
         // get object
-        case HttpMethods.GET =>
-          logger.debug(s"Creating Read lineage for request to ${lh.method.value} file ${lh.bucketObject} to ${lh.bucket} at ${timestamp}")
-          postEnities(userName, lh.host, lh.bucket, lh.bucketObject, "read", lh.contentType, lh.clientType, timestamp)
+        case HttpMethods.GET if lh.queryParams.isEmpty || lh.queryParams.contains("encoding-type") =>
+          readOrWriteLineage("read", lh.bucket)
 
         // put object
-        case HttpMethods.POST | HttpMethods.PUT =>
-          logger.debug(s"Creating Write lineage for request to ${lh.method.value} file ${lh.bucketObject} to ${lh.bucket} at ${timestamp}")
-          postEnities(userName, lh.host, lh.bucket, lh.bucketObject, "write", lh.contentType, lh.clientType, timestamp)
+        case HttpMethods.PUT if lh.queryParams.isEmpty && lh.copySource.isEmpty => readOrWriteLineage("write", lh.bucket)
+
+        // put object - copy
+        // if contains header x-amz-copy-source
+        case HttpMethods.PUT if lh.copySource.getOrElse("").length > 0 =>
+          readOrWriteLineage("read", lh.copySource.get)
+          readOrWriteLineage("write", lh.bucket)
+
+        // post object (complete multipart)
+        // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
+        case HttpMethods.POST if lh.queryParams.getOrElse("").contains("uploadId") => readOrWriteLineage("write", lh.bucket)
 
         // delete object
-        case HttpMethods.DELETE =>
-          logger.debug(s"Creating Delete lineage for request to ${lh.method} file ${lh.bucketObject} to ${lh.bucket} at ${timestamp}")
-          deleteEntities("DataFile", lh.bucketObject)
+        case HttpMethods.DELETE if lh.queryParams.isEmpty => delLineage("delete")
+
+        // delete on abort multipart
+        // DELETE /ObjectName?uploadId=UploadId
+        case HttpMethods.DELETE if lh.queryParams.getOrElse("").contains("uploadId") => delLineage("delete")
+
         case _ => Future.failed(LineageProviderAtlasException("Create lineage failed"))
       }
     } else {
