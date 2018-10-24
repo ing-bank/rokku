@@ -1,7 +1,7 @@
 package com.ing.wbaa.airlock.proxy.provider.atlas
 
-import akka.http.scaladsl.model.{ContentType, HttpRequest}
-import com.ing.wbaa.airlock.proxy.data.{LineageGuidResponse, LineageHeaders, LineagePostGuidResponse}
+import akka.http.scaladsl.model.{ ContentType, HttpRequest }
+import com.ing.wbaa.airlock.proxy.data.{ LineageGuidResponse, LineageHeaders, LineagePostGuidResponse }
 import com.ing.wbaa.airlock.proxy.provider.atlas.Model._
 import com.typesafe.scalalogging.LazyLogging
 
@@ -24,11 +24,11 @@ trait LineageHelpers extends LazyLogging with RestClient {
       Seq(Classification(classification)))))
 
   private def fileEntities(
-                    bucketGuid: String,
-                    bucketObject: String,
-                    userSTS: String,
-                    contentType: ContentType,
-                    classification: String) = {
+      bucketGuid: String,
+      bucketObject: String,
+      userSTS: String,
+      contentType: ContentType,
+      classification: String) = {
     Entities(Seq(IngestedFile(
       "DataFile",
       userSTS,
@@ -38,15 +38,15 @@ trait LineageHelpers extends LazyLogging with RestClient {
   }
 
   private def processEntities(
-                       serverGuid: String,
-                       bucketGuid: String,
-                       fileGuid: String,
-                       userSTS: String,
-                       method: String,
-                       inputs: List[guidRef],
-                       outputs: List[guidRef],
-                       clientType: String,
-                       timestamp: Long) = {
+      serverGuid: String,
+      bucketGuid: String,
+      fileGuid: String,
+      userSTS: String,
+      method: String,
+      inputs: List[guidRef],
+      outputs: List[guidRef],
+      clientType: String,
+      timestamp: Long) = {
     Entities(Seq(Ingestion(
       "airlock_client",
       userSTS,
@@ -88,20 +88,20 @@ trait LineageHelpers extends LazyLogging with RestClient {
   // We need to come up with process of tracking file delete
   def deleteEntities(typeName: String, entityName: String): Future[LineageGuidResponse] =
     for {
-      entityGuid <- getEntityGUID(typeName, entityName)
-      _ <- deleteEntity(entityGuid)
+      entityGuidResponse <- getEntityGUID(typeName, entityName)
+      _ <- deleteEntity(entityGuidResponse.entityGUID)
 
-    } yield LineageGuidResponse(entityGuid)
+    } yield entityGuidResponse
 
-  def postEnities(userSTS: String,
-                  host: String,
-                  bucket: String,
-                  bucketObject: String,
-                  method: String,
-                  contentType: ContentType,
-                  clientType: String,
-                  timestamp: Long,
-                 ): Future[LineagePostGuidResponse] = {
+  def postEnities(
+      userSTS: String,
+      host: String,
+      bucket: String,
+      bucketObject: String,
+      method: String,
+      contentType: ContentType,
+      clientType: String,
+      timestamp: Long): Future[LineagePostGuidResponse] = {
 
     def processIn(inputGUID: String, inputType: String) = List(guidRef(inputGUID, inputType))
     def processOut(outputGUID: String, outputType: String) = List(guidRef(outputGUID, outputType))

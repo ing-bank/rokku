@@ -26,12 +26,12 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
     val host = lh.host.getOrElse("unknown")
 
     def readOrWriteLineage(method: String, bucket: String): Future[LineagePostGuidResponse] = {
-      logger.debug(s"Creating $method lineage for request to ${lh.method.value} file ${lh.bucketObject} to $bucket at $timestamp")
+      logger.debug(s"Creating $method lineage for request to ${lh.method.value} file ${lh.bucketObject} at $bucket at $timestamp")
       postEnities(userName, host, bucket, lh.bucketObject, method, lh.contentType, lh.clientType, timestamp)
     }
 
     def delLineage(method: String): Future[LineageGuidResponse] = {
-      logger.debug(s"Creating Delete lineage for request to ${lh.method} file ${lh.bucketObject} to ${lh.bucket} at $timestamp")
+      logger.debug(s"Creating Delete lineage for request to ${lh.method} file ${lh.bucketObject} at ${lh.bucket} at $timestamp")
       deleteEntities("DataFile", lh.bucketObject)
     }
 

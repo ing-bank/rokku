@@ -38,7 +38,7 @@ trait RestClient extends ModelJsonSupport with LazyLogging {
    * @param value
    * @return Guid of entity
    */
-  def getEntityGUID(typeName: String, value: String): Future[String] = {
+  def getEntityGUID(typeName: String, value: String): Future[LineageGuidResponse] = {
     http.singleRequest(HttpRequest(
       HttpMethods.GET,
       atlasApiUriV1 + s"/entities?type=${typeName}&property=qualifiedName&value=${value}"
@@ -48,7 +48,7 @@ trait RestClient extends ModelJsonSupport with LazyLogging {
           Unmarshal(response.entity).to[String].map { jsonString =>
             val searchResult = jsonString.parseJson.convertTo[EntitySearchResult]
             logger.debug("Atlas RestClient: Extracted GUID: " + searchResult.definition.getFields("id").toList.head.convertTo[EntityId].id)
-            searchResult.definition.getFields("id").toList.head.convertTo[EntityId].id
+            LineageGuidResponse(searchResult.definition.getFields("id").toList.head.convertTo[EntityId].id)
           }
         case response =>
           logger.debug(s"Atlas getEntityGUID failed: ${response.status}")
@@ -65,14 +65,14 @@ trait RestClient extends ModelJsonSupport with LazyLogging {
    * @param guid
    * @return Guid of deleted entity
    */
-  def deleteEntity(guid: String): Future[String] = {
+  def deleteEntity(guid: String): Future[LineageGuidResponse] = {
     http.singleRequest(HttpRequest(
       HttpMethods.DELETE,
       atlasApiUriV2 + s"$entityGuid/$guid"
     ).withHeaders(authHeader))
       .flatMap {
         case response if response.status == StatusCodes.OK =>
-          val deleteResult = Unmarshal(response.entity).to[String]
+          val deleteResult = Unmarshal(response.entity).to[String].map(g => LineageGuidResponse(g))
           logger.debug(s"Atlas RestClient: Deleting Entity: $deleteResult")
           deleteResult
         case response =>
