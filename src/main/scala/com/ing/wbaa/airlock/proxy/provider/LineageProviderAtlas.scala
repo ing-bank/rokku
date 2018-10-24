@@ -24,43 +24,45 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
     val userName = userSTS.userName.value
     val lh = getLineageHeaders(httpRequest)
     val host = lh.host.getOrElse("unknown")
+    val client = lh.clientType.getOrElse("generic")
+    val bucketObject = lh.bucketObject.getOrElse("emptyObject")
 
-    def readOrWriteLineage(method: String, bucket: String): Future[LineagePostGuidResponse] = {
+    def readOrWriteLineage(method: AccessType, bucket: String): Future[LineagePostGuidResponse] = {
       logger.debug(s"Creating $method lineage for request to ${lh.method.value} file ${lh.bucketObject} at $bucket at $timestamp")
-      postEnities(userName, host, bucket, lh.bucketObject, method, lh.contentType, lh.clientType, timestamp)
+      postEnities(userName, host, bucket, bucketObject, method, lh.contentType, client, timestamp)
     }
 
-    def delLineage(method: String): Future[LineageGuidResponse] = {
+    def delLineage: Future[LineageGuidResponse] = {
       logger.debug(s"Creating Delete lineage for request to ${lh.method} file ${lh.bucketObject} at ${lh.bucket} at $timestamp")
-      deleteEntities("DataFile", lh.bucketObject)
+      deleteEntities("DataFile", bucketObject)
     }
 
     // we only report lineage for object operations. We do not track bucket create / delete etc.
-    if (lh.bucket.length > 1 && lh.bucketObject != "emptyObject") {
+    if (lh.bucket.length > 1 && bucketObject != "emptyObject") {
       lh.method match {
         // get object
         case HttpMethods.GET if lh.queryParams.isEmpty || lh.queryParams.contains("encoding-type") =>
-          readOrWriteLineage("read", lh.bucket)
+          readOrWriteLineage(Read, lh.bucket)
 
         // put object
-        case HttpMethods.PUT if lh.queryParams.isEmpty && lh.copySource.isEmpty => readOrWriteLineage("write", lh.bucket)
+        case HttpMethods.PUT if lh.queryParams.isEmpty && lh.copySource.isEmpty => readOrWriteLineage(Write, lh.bucket)
 
         // put object - copy
         // if contains header x-amz-copy-source
         case HttpMethods.PUT if lh.copySource.getOrElse("").length > 0 =>
-          readOrWriteLineage("read", lh.copySource.get)
-          readOrWriteLineage("write", lh.bucket)
+          readOrWriteLineage(Read, lh.copySource.get)
+          readOrWriteLineage(Write, lh.bucket)
 
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
-        case HttpMethods.POST if lh.queryParams.getOrElse("").contains("uploadId") => readOrWriteLineage("write", lh.bucket)
+        case HttpMethods.POST if lh.queryParams.contains("uploadId") => readOrWriteLineage(Write, lh.bucket)
 
         // delete object
-        case HttpMethods.DELETE if lh.queryParams.isEmpty => delLineage("delete")
+        case HttpMethods.DELETE if lh.queryParams.isEmpty => delLineage
 
         // delete on abort multipart
         // DELETE /ObjectName?uploadId=UploadId
-        case HttpMethods.DELETE if lh.queryParams.getOrElse("").contains("uploadId") => delLineage("delete")
+        case HttpMethods.DELETE if lh.queryParams.contains("uploadId") => delLineage
 
         case _ => Future.failed(LineageProviderAtlasException("Create lineage failed"))
       }

@@ -1,7 +1,8 @@
 package com.ing.wbaa.airlock.proxy.provider.atlas
 
 import akka.http.scaladsl.model.{ ContentType, HttpRequest }
-import com.ing.wbaa.airlock.proxy.data.{ LineageGuidResponse, LineageHeaders, LineagePostGuidResponse }
+import com.ing.wbaa.airlock.proxy.data._
+import com.ing.wbaa.airlock.proxy.provider.LineageProviderAtlas.LineageProviderAtlasException
 import com.ing.wbaa.airlock.proxy.provider.atlas.Model._
 import com.typesafe.scalalogging.LazyLogging
 
@@ -56,10 +57,10 @@ trait LineageHelpers extends LazyLogging with RestClient {
         outputs))))
   }
 
-  private def extractClient(userAgent: String): String =
+  private def extractClient(userAgent: String): Option[String] =
     """(\S+)/\S+""".r
       .findFirstMatchIn(userAgent)
-      .map(_ group 1).getOrElse("generic")
+      .map(_ group 1)
 
   private def extractHeaderOption(httpRequest: HttpRequest, header: String): Option[String] =
     if (httpRequest.getHeader(header).isPresent)
@@ -73,10 +74,10 @@ trait LineageHelpers extends LazyLogging with RestClient {
     LineageHeaders(
       extractHeaderOption(httpRequest, "Remote-Address"),
       path.take(path.length - 1).mkString("/"),
-      bucketObject = path.lastOption.getOrElse("emptyObject"),
+      path.lastOption,
       httpRequest.method,
       httpRequest.entity.contentType,
-      extractClient(extractHeaderOption(httpRequest, "User-Agent").getOrElse("generic")),
+      extractHeaderOption(httpRequest, "User-Agent").flatMap(extractClient),
       httpRequest.uri.rawQueryString,
       extractHeaderOption(httpRequest, "x-amz-copy-source")
     )
@@ -98,7 +99,7 @@ trait LineageHelpers extends LazyLogging with RestClient {
       host: String,
       bucket: String,
       bucketObject: String,
-      method: String,
+      method: AccessType,
       contentType: ContentType,
       clientType: String,
       timestamp: Long): Future[LineagePostGuidResponse] = {
@@ -111,18 +112,19 @@ trait LineageHelpers extends LazyLogging with RestClient {
       bucketGuid <- postData(bucketEntities(userSTS, bucket, "customer_PII").toJson).map(r => r.entityGUID)
       fileGuid <- postData(fileEntities(bucketGuid, bucketObject, userSTS, contentType, "customer_PII").toJson).map(r => r.entityGUID)
       processGuid <- method match {
-        case access if access == "read" =>
+        case Read =>
           postData(
             processEntities(
-              serverGuid, bucketGuid, fileGuid, userSTS, method, processIn(bucketGuid, "Bucket"), processOut(fileGuid, "DataFile"), clientType, timestamp
+              serverGuid, bucketGuid, fileGuid, userSTS, method.rangerName, processIn(bucketGuid, "Bucket"), processOut(fileGuid, "DataFile"), clientType, timestamp
             ).toJson)
             .map(r => r.entityGUID)
-        case access if access == "write" =>
+        case Write =>
           postData(
             processEntities(
-              serverGuid, bucketGuid, fileGuid, userSTS, method, processIn(fileGuid, "DataFile"), processOut(bucketGuid, "Bucket"), clientType, timestamp
+              serverGuid, bucketGuid, fileGuid, userSTS, method.rangerName, processIn(fileGuid, "DataFile"), processOut(bucketGuid, "Bucket"), clientType, timestamp
             ).toJson)
             .map(r => r.entityGUID)
+        case _ => Future.failed(LineageProviderAtlasException("Lineage method not supported"))
       }
     } yield LineagePostGuidResponse(serverGuid, bucketGuid, fileGuid, processGuid)
   }

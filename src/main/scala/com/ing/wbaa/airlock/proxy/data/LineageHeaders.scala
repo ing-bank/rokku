@@ -5,9 +5,9 @@ import akka.http.scaladsl.model.{ ContentType, HttpMethod }
 case class LineageHeaders(
     host: Option[String],
     bucket: String,
-    bucketObject: String,
+    bucketObject: Option[String],
     method: HttpMethod,
     contentType: ContentType,
-    clientType: String,
+    clientType: Option[String],
     queryParams: Option[String],
     copySource: Option[String])
