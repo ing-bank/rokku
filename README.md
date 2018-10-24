@@ -30,7 +30,7 @@ We've added a small description on how to setup the AWS CLI [here](#setting-up-a
     An example of this file can be found [here](./src/it/resources/ranger-s3-security.xml). 
     No modification to this is needed if you run this project with the accompanying docker containers.
 
-3. When all is runnning we can start the proxy:
+3. When all is running, we can start the proxy:
 
         sbt run
 
@@ -132,15 +132,26 @@ before diving in here. That will introduce you to the various components used.
         aws s3api get-object --bucket demobucket --key SOME_FILE SOME_TARGET_FILE
 
 
+## Verified AWS clients
+
+We've currently verified that the following set of AWS clients work with Airlock:
+
+- CLI (`s3` and `s3api`) using region `us-east-1`
+- Java SDK (using signerType: `S3SignerType`)
+
+Other options may work but haven't been checked yet by us. There are known limitiations for other signer types within the Java SDK.
+
 ## Architecture
 ![alt text](./docs/img/architecture.png)
 
 Dependencies:
 * [Keycloak](https://www.keycloak.org/) for MFA authentication of users.
 * [STS Service](https://github.com/ing-bank/airlock-sts) to provide authentication and short term access to resources on S3.
+* STS persistence storage to maintain the user and session tokens issued. Current implementation uses [MariaDB](https://mariadb.org).
+Information regarding the tables database and the tables to be created in MariaDB can be found [here](https://github.com/ing-bank/airlock-dev-mariadb/blob/master/database/airlockdb.sql). 
 * [Ranger](https://ranger.apache.org/) to manage authorisation to resources on S3.
 The Apache Ranger docker images are created from this repo: https://github.com/ing-bank/airlock-dev-apache-ranger.git
-* S3 Backend (Current setup contains Ceph image with RadosGW)
+* S3 Backend (Current setup contains Ceph image with RadosGW).
 
 A more in-depth discussion of the architecture and interaction of various components can be found here: [What is Airlock?](docs/What_is_airlock.md)
 
