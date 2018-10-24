@@ -132,6 +132,15 @@ before diving in here. That will introduce you to the various components used.
         aws s3api get-object --bucket demobucket --key SOME_FILE SOME_TARGET_FILE
 
 
+## Verified AWS clients
+
+We've currently verified that the following set of AWS clients work with Airlock:
+
+- CLI (`s3` and `s3api`) using region `us-east-1`
+- Java SDK (using signerType: `S3SignerType`)
+
+Other options may work but haven't been checked yet by us. There are known limitiations for other signer types within the Java SDK.
+
 ## Architecture
 ![alt text](./docs/img/architecture.png)
 
