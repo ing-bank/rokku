@@ -114,14 +114,14 @@ trait LineageHelpers extends LazyLogging with RestClient {
         case access if access == "read" =>
           postData(
             processEntities(
-              serverGuid, bucketGuid, fileGuid, userSTS, method, processIn(bucketGuid, "Bucket"), processOut(fileGuid, "DataFile"), clientType, timestamp)
-              .toJson)
+              serverGuid, bucketGuid, fileGuid, userSTS, method, processIn(bucketGuid, "Bucket"), processOut(fileGuid, "DataFile"), clientType, timestamp
+            ).toJson)
             .map(r => r.entityGUID)
         case access if access == "write" =>
           postData(
             processEntities(
-              serverGuid, bucketGuid, fileGuid, userSTS, method, processIn(fileGuid, "DataFile"), processOut(bucketGuid, "Bucket"), clientType, timestamp)
-              .toJson)
+              serverGuid, bucketGuid, fileGuid, userSTS, method, processIn(fileGuid, "DataFile"), processOut(bucketGuid, "Bucket"), clientType, timestamp
+            ).toJson)
             .map(r => r.entityGUID)
       }
     } yield LineagePostGuidResponse(serverGuid, bucketGuid, fileGuid, processGuid)

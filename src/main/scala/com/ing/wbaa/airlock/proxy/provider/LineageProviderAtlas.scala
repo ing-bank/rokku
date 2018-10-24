@@ -16,7 +16,6 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
   protected[this] implicit def system: ActorSystem
   protected[this] implicit def executionContext: ExecutionContext
   protected[this] implicit def materializer: Materializer
-
   protected[this] implicit def atlasSettings: AtlasSettings
 
   def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineageResponse] = {
@@ -70,7 +69,10 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
     }
   }
 }
+
 object LineageProviderAtlas {
+
   final case class LineageProviderAtlasException(private val message: String, private val cause: Throwable = None.orNull)
     extends Exception(message, cause)
+
 }
