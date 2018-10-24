@@ -21,16 +21,6 @@ object Model extends ModelJsonSupport {
   // dependency shortcut
   case class guidRef(guid: String, typeName: String)
 
-  // input objects
-  trait Inputs {
-    def inputs: List[guidRef]
-  }
-
-  // output objects
-  trait Outputs {
-    def outputs: List[guidRef]
-  }
-
   // Infra entity - server
   case class ServerAttributes(
       qualifiedName: String,
@@ -66,7 +56,7 @@ object Model extends ModelJsonSupport {
       run_as: String,
       Server: guidRef,
       inputs: List[guidRef],
-      outputs: List[guidRef]) extends Asset with Referenceable with Inputs with Outputs
+      outputs: List[guidRef]) extends Asset with Referenceable
 
   case class Ingestion(
       typeName: String,

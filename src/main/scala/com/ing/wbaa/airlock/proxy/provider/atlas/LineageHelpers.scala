@@ -59,7 +59,7 @@ trait LineageHelpers extends LazyLogging with RestClient {
   private def extractClient(userAgent: String): String =
     """(\S+)/\S+""".r
       .findFirstMatchIn(userAgent)
-      .map(_ group 1).getOrElse("")
+      .map(_ group 1).getOrElse("generic")
 
   private def extractHeaderOption(httpRequest: HttpRequest, header: String): Option[String] =
     if (httpRequest.getHeader(header).isPresent)
@@ -67,20 +67,19 @@ trait LineageHelpers extends LazyLogging with RestClient {
     else
       None
 
-  // createLineageFromRequest is used in RequestHandlerS3 where there is no notion of S3Request. It seems easier to
-  // repeat httpRequest parsing here for needed values
   def getLineageHeaders(httpRequest: HttpRequest): LineageHeaders = {
-    val host = extractHeaderOption(httpRequest, "Remote-Address")
     val path = httpRequest.uri.path.toString().split("/")
-    val bucket = path.take(path.length - 1).mkString("/")
-    val bucketObject = path.lastOption.getOrElse("emptyObject")
-    val method = httpRequest.method
-    val contentType = httpRequest.entity.contentType
-    val clientType =  extractClient(extractHeaderOption(httpRequest, "User-Agent").getOrElse("generic"))
-    val queryParams = httpRequest.uri.rawQueryString
-    val copySource = extractHeaderOption(httpRequest, "x-amz-copy-source")
 
-    LineageHeaders(host, bucket, bucketObject, method, contentType, clientType, queryParams, copySource)
+    LineageHeaders(
+      extractHeaderOption(httpRequest, "Remote-Address"),
+      path.take(path.length - 1).mkString("/"),
+      bucketObject = path.lastOption.getOrElse("emptyObject"),
+      httpRequest.method,
+      httpRequest.entity.contentType,
+      extractClient(extractHeaderOption(httpRequest, "User-Agent").getOrElse("generic")),
+      httpRequest.uri.rawQueryString,
+      extractHeaderOption(httpRequest, "x-amz-copy-source")
+    )
   }
 
   // file entity delete
@@ -105,7 +104,6 @@ trait LineageHelpers extends LazyLogging with RestClient {
                  ): Future[LineagePostGuidResponse] = {
 
     def processIn(inputGUID: String, inputType: String) = List(guidRef(inputGUID, inputType))
-
     def processOut(outputGUID: String, outputType: String) = List(guidRef(outputGUID, outputType))
 
     for {
@@ -128,5 +126,4 @@ trait LineageHelpers extends LazyLogging with RestClient {
       }
     } yield LineagePostGuidResponse(serverGuid, bucketGuid, fileGuid, processGuid)
   }
-
 }
