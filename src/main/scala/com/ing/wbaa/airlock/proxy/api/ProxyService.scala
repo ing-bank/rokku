@@ -35,7 +35,7 @@ trait ProxyService extends LazyLogging {
 
   // Atlas Lineage
   protected[this] def atlasSettings: AtlasSettings
-  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse]
+  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineageResponse]
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {

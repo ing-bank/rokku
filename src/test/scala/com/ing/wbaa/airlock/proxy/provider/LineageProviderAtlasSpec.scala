@@ -1,10 +1,10 @@
 package com.ing.wbaa.airlock.proxy.provider
 
-import com.ing.wbaa.airlock.proxy.provider.atlas.AtlasModelJsonSupport
+import com.ing.wbaa.airlock.proxy.provider.atlas.ModelJsonSupport
 import com.ing.wbaa.airlock.proxy.provider.atlas.Model.{ Bucket, BucketAttributes, Classification, CreateResponse, Entities, FileAttributes, IngestedFile, Ingestion, IngestionAttributes, Server, ServerAttributes, UpdateResponse, guidRef }
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
-class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with AtlasModelJsonSupport {
+class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with ModelJsonSupport {
   import spray.json._
 
   val timestamp = System.currentTimeMillis()
@@ -43,14 +43,11 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with A
           "fakeUser",
           FileAttributes("fakeObject", "fakeObject", "fakeObject", "application/octet-stream",
             guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "Bucket"),
-            guidRef("4af9ec97-b320-4e3b-9363-5763fa63b03b", "Server"),
-            List(guidRef("4af9ec97-b320-4e3b-9363-5763fa63b03b", "Server")),
-            List(guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "Bucket")),
             Seq(Classification("customer_PII"))))))
           .toJson
           .toString()
       val jsonEntities =
-        """{"entities":[{"typeName":"DataFile","createdBy":"fakeUser","attributes":{"format":"application/octet-stream","name":"fakeObject","Server":{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"Server"},"file_name":"fakeObject","outputs":[{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"Bucket"}],"classifications":[{"typeName":"customer_PII"}],"inputs":[{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"Server"}],"qualifiedName":"fakeObject","bucket":{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"Bucket"}}}]}"""
+        """{"entities":[{"typeName":"DataFile","createdBy":"fakeUser","attributes":{"format":"application/octet-stream","name":"fakeObject","file_name":"fakeObject","classifications":[{"typeName":"customer_PII"}],"qualifiedName":"fakeObject","bucket":{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"Bucket"}}}]}"""
 
       assert(testFileEntities == jsonEntities)
     }
@@ -64,14 +61,11 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with A
           "fakeUser",
           FileAttributes("fakeObject", "fakeObject", "fakeObject", "none/none",
             guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "Bucket"),
-            guidRef("4af9ec97-b320-4e3b-9363-5763fa63b03b", "Server"),
-            List(guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "Bucket")),
-            List(guidRef("4af9ec97-b320-4e3b-9363-5763fa63b03b", "Server")),
             Seq(Classification("customer_PII"))))))
           .toJson
           .toString()
       val jsonEntities =
-        s"""{"entities":[{"typeName":"DataFile","createdBy":"fakeUser","attributes":{"format":"none/none","name":"fakeObject","Server":{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"Server"},"file_name":"fakeObject","outputs":[{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"Server"}],"classifications":[{"typeName":"customer_PII"}],"inputs":[{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"Bucket"}],"qualifiedName":"fakeObject","bucket":{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"Bucket"}}}]}"""
+        s"""{"entities":[{"typeName":"DataFile","createdBy":"fakeUser","attributes":{"format":"none/none","name":"fakeObject","file_name":"fakeObject","classifications":[{"typeName":"customer_PII"}],"qualifiedName":"fakeObject","bucket":{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"Bucket"}}}]}"""
 
       assert(testFileEntities == jsonEntities)
     }
