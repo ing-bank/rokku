@@ -20,7 +20,7 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
 
   def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineageResponse] = {
 
-    val timestamp = System.currentTimeMillis()
+    def timestamp = System.currentTimeMillis()
     val userName = userSTS.userName.value
     val lh = getLineageHeaders(httpRequest)
     val host = lh.host.getOrElse("unknown")
