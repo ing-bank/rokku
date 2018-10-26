@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.{ ContentType, HttpMethod }
 case class LineageHeaders(
     host: Option[String],
     bucket: String,
+    pseduoDir: Option[String],
     bucketObject: Option[String],
     method: HttpMethod,
     contentType: ContentType,
