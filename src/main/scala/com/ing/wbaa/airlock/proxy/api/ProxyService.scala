@@ -63,7 +63,7 @@ trait ProxyService extends LazyLogging {
       }
     }
 
-  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, userSTS: User): Route = {
+  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Route = {
     updateHeadersForRequest { newHttpRequest =>
       val httpResponse = executeRequest(newHttpRequest, userSTS).andThen {
         case Success(response: HttpResponse) =>
@@ -82,7 +82,7 @@ trait ProxyService extends LazyLogging {
       if (isUserAuthorizedForRequest(s3Request, userSTS, clientIPAddress)) {
         logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
 
-        processAuthorizedRequest(httpRequest, userSTS)
+        processAuthorizedRequest(httpRequest, s3Request, userSTS)
 
       } else {
         logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")

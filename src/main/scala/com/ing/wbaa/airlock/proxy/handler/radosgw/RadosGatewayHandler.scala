@@ -5,6 +5,7 @@ import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
 import com.ing.wbaa.airlock.proxy.data.{ AwsAccessKey, AwsSecretKey, User, UserName }
 import com.typesafe.scalalogging.LazyLogging
 import org.twonote.rgwadmin4j.{ RgwAdmin, RgwAdminBuilder }
+import scala.collection.JavaConverters._
 
 import scala.util.{ Failure, Success, Try }
 
@@ -15,6 +16,7 @@ trait RadosGatewayHandler extends LazyLogging {
   protected[this] def storageS3Settings: StorageS3Settings
 
   private[this] case class CredentialsOnCeph(awsAccessKey: AwsAccessKey, awsSecretKey: AwsSecretKey)
+
   private[this] case class UserOnCeph(userName: UserName, credentials: List[CredentialsOnCeph])
 
   private[this] lazy val rgwAdmin: RgwAdmin = new RgwAdminBuilder()
@@ -24,7 +26,6 @@ trait RadosGatewayHandler extends LazyLogging {
     .build
 
   private[this] def createCredentialsOnCeph(userName: UserName, awsAccessKey: AwsAccessKey, awsSecretKey: AwsSecretKey): Boolean = {
-    import scala.collection.JavaConverters._
 
     Try {
       rgwAdmin.createUser(
@@ -69,7 +70,6 @@ trait RadosGatewayHandler extends LazyLogging {
   }
 
   private[this] def getUserOnCeph(userName: UserName): Option[UserOnCeph] = {
-    import scala.collection.JavaConverters._
 
     Try(rgwAdmin.getUserInfo(userName.value)).toOption.flatMap(cuo =>
       if (cuo.isPresent) {
@@ -88,11 +88,11 @@ trait RadosGatewayHandler extends LazyLogging {
    * Checks how to handle the current inconsistent situation, these optional cases apply:
    *
    * 1. The user with accesskey/secretkey pair doesn't exist yet on S3
-   *    solution: with the User information retrieved from the STS service we can create them
+   * solution: with the User information retrieved from the STS service we can create them
    * 2. The user exists, but his accesskey/secretkey pair changed
-   *    solution: update accesskey/secretkey
+   * solution: update accesskey/secretkey
    * 3. Any other reason (e.g. invalid accesskey/secretkey used for this user)
-   *    left as is
+   * left as is
    *
    * @param userSTS User as retrieved from STS
    * @return True if a change was done on RadosGw
@@ -127,5 +127,13 @@ trait RadosGatewayHandler extends LazyLogging {
           updateCredentialsOnCeph(userSTS.userName, cephAccessKey, userSTS.accessKey, userSTS.secretKey)
         }
     }
+  }
+
+  /**
+   * List all buckets - no matters who is the owner
+   * @return - list of all buckets
+   */
+  protected[this] def listAllBuckets: Seq[String] = {
+    rgwAdmin.listBucket("").asScala
   }
 }

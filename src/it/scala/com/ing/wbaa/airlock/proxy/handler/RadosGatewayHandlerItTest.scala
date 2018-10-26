@@ -12,6 +12,7 @@ import scala.util.Random
 class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with RadosGatewayHandler {
 
   override protected[this] implicit def system: ActorSystem = ActorSystem("test-system")
+
   override protected[this] def storageS3Settings: StorageS3Settings = StorageS3Settings(system)
 
   private[this] val rgwAdmin: RgwAdmin = new RgwAdminBuilder()
@@ -93,6 +94,10 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
         val isUpdated = handleUserCreationRadosGw(u)
         assert(!isUpdated)
       }
+    }
+
+    "list all buckets" in {
+      assert(listAllBuckets.head == "demobucket")
     }
   }
 }
