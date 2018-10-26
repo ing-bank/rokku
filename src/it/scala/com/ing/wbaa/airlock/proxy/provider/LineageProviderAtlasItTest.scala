@@ -50,6 +50,7 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
           val postResult = result.asInstanceOf[LineagePostGuidResponse]
             assert( postResult.serverGuid.length > 0 )
             assert( postResult.bucketGuid.length > 0 )
+            assert( postResult.pseudoDir.length > 0 )
             assert( postResult.fileGuid.length > 0 )
             assert( postResult.processGuid.length > 0 )
         }
@@ -64,6 +65,7 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
         val postResult = result.asInstanceOf[LineagePostGuidResponse]
             assert( postResult.serverGuid.length > 0 )
             assert( postResult.bucketGuid.length > 0 )
+            assert( postResult.pseudoDir.length > 0 )
             assert( postResult.fileGuid.length > 0 )
             assert( postResult.processGuid.length > 0 )
         }

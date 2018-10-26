@@ -38,44 +38,50 @@ object Model extends ModelJsonSupport {
   // Infra entity - bucket
   case class BucketAttributes(
       qualifiedName: String,
-      name: String,
-      bucket_name: String)
+      name: String)
     extends Asset with Referenceable
 
   case class Bucket(
       typeName: String,
-      createdBy: String,
       attributes: BucketAttributes,
       classifications: Seq[Classification]) extends AtlasEntity
 
+  case class PseudoDirAttributes(
+      qualifiedName: String,
+      name: String,
+      objectPrefix: String,
+      bucket: guidRef) extends Asset with Referenceable
+
+  case class PseudoDir(
+      typeName: String,
+      attributes: PseudoDirAttributes) extends AtlasEntity
+
   // Ingestion Process
-  case class IngestionAttributes(
+  case class ClientProcessAttributes(
       qualifiedName: String,
       name: String,
       operation: String,
       run_as: String,
-      Server: guidRef,
+      server: guidRef,
       inputs: List[guidRef],
       outputs: List[guidRef]) extends Asset with Referenceable
 
-  case class Ingestion(
+  case class ClientProcess(
       typeName: String,
       createdBy: String,
-      attributes: IngestionAttributes) extends AtlasEntity
+      attributes: ClientProcessAttributes) extends AtlasEntity
 
   // Ingestion File
-  case class FileAttributes(
+  case class BucketObjectAttributes(
       qualifiedName: String,
       name: String,
-      file_name: String,
-      format: String,
-      bucket: guidRef,
+      dataType: String,
+      pseudoDirectory: guidRef,
       classifications: Seq[Classification]) extends Asset with Referenceable
 
-  case class IngestedFile(
+  case class BucketObject(
       typeName: String,
-      createdBy: String,
-      attributes: FileAttributes) extends AtlasEntity
+      attributes: BucketObjectAttributes) extends AtlasEntity
 
   // Entities Sequence
   case class Entities[A <: AtlasEntity](entities: Seq[A])

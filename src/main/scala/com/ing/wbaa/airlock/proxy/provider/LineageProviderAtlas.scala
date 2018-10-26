@@ -20,21 +20,22 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
 
   def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineageResponse] = {
 
-    def timestamp = System.currentTimeMillis()
+    def timestamp: Long = System.currentTimeMillis()
     val userName = userSTS.userName.value
     val lh = getLineageHeaders(httpRequest)
     val host = lh.host.getOrElse("unknown")
     val client = lh.clientType.getOrElse("generic")
     val bucketObject = lh.bucketObject.getOrElse("emptyObject")
+    val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}_root")
 
     def readOrWriteLineage(method: AccessType, bucket: String): Future[LineagePostGuidResponse] = {
       logger.debug(s"Creating $method lineage for request to ${lh.method.value} file ${lh.bucketObject} at $bucket at $timestamp")
-      postEnities(userName, host, bucket, bucketObject, method, lh.contentType, client, timestamp)
+      postEnities(userName, host, bucket, bucketObject, method, lh.contentType, client, timestamp, pseudoDir)
     }
 
     def delLineage: Future[LineageGuidResponse] = {
       logger.debug(s"Creating Delete lineage for request to ${lh.method} file ${lh.bucketObject} at ${lh.bucket} at $timestamp")
-      deleteEntities("DataFile", bucketObject)
+      deleteEntities(AWS_S3_OBJECT_TYPE, bucketObject)
     }
 
     // we only report lineage for object operations. We do not track bucket create / delete etc.
@@ -55,14 +56,14 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
 
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
-        case HttpMethods.POST if lh.queryParams.contains("uploadId") => readOrWriteLineage(Write, lh.bucket)
+        case HttpMethods.POST if lh.queryParams.getOrElse("").contains("uploadId") => readOrWriteLineage(Write, lh.bucket)
 
         // delete object
         case HttpMethods.DELETE if lh.queryParams.isEmpty => delLineage
 
         // delete on abort multipart
         // DELETE /ObjectName?uploadId=UploadId
-        case HttpMethods.DELETE if lh.queryParams.contains("uploadId") => delLineage
+        case HttpMethods.DELETE if lh.queryParams.getOrElse("").contains("uploadId") => delLineage
 
         case _ => Future.failed(LineageProviderAtlasException("Create lineage failed"))
       }
