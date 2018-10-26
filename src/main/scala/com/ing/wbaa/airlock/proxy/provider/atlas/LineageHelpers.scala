@@ -137,7 +137,6 @@ trait LineageHelpers extends LazyLogging with RestClient {
             ).toJson)
             .map(r => r.entityGUID)
         case Write =>
-          println("process JS:" + processEntities(serverGuid, bucketGuid, objectGuid, userSTS, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(bucketGuid, AWS_S3_PSEUDO_DIR_TYPE), clientType, timestamp).toJson)
           postData(
             processEntities(
               serverGuid, bucketGuid, objectGuid, userSTS, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(bucketGuid, AWS_S3_PSEUDO_DIR_TYPE), clientType, timestamp
