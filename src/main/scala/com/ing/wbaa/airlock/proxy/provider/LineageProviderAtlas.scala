@@ -10,6 +10,7 @@ import com.ing.wbaa.airlock.proxy.provider.atlas.{ LineageHelpers, RestClient }
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success }
 
 trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpers {
 
@@ -51,8 +52,10 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
         // put object - copy
         // if contains header x-amz-copy-source
         case HttpMethods.PUT if lh.copySource.getOrElse("").length > 0 =>
-          readOrWriteLineage(Read, lh.copySource.get)
-          readOrWriteLineage(Write, lh.bucket)
+          readOrWriteLineage(Read, lh.copySource.get) andThen {
+            case Success(_)  => readOrWriteLineage(Write, lh.bucket)
+            case Failure(ex) => Future.failed(LineageProviderAtlasException("failed to create composed lineage for mv/cp operation" + ex.getCause))
+          }
 
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
