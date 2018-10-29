@@ -6,6 +6,16 @@
 
 Airlock acts as a security layer between s3 user (eg. application using aws sdk) and s3 backend (eg. ceph RadosGW).
 
+# Difference between the proxy and Ceph
+
+1. Ceph allows only list all your own buckets. We need to see all buckets by all users so the functionality is modified.
+
+But the functionality is separated in the class 
+[ProxyServiceWithListAllBuckets](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/api/ProxyServiceWithListAllBuckets.scala) 
+so if you want to have standard behaviour use 
+the [ProxyService](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/api/ProxyService.scala) 
+in [AirlockS3Proxy](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/AirlockS3Proxy.scala)
+
 ## What do you need
 
 To get started with Airlock you only need a few applications set up:
