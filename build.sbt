@@ -27,6 +27,7 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-http"              % akkaVersion,
     "com.typesafe.akka"            %% "akka-stream"            % akkaStreamVersion,
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaVersion,
+    "com.typesafe.akka"            %% "akka-http-xml"          % akkaVersion,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion,
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.437",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",

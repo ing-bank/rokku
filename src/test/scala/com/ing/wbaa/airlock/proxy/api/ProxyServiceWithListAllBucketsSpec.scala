@@ -55,8 +55,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
   "A proxy service" should "Successfully execute a request" in {
     testRequest() ~> new ProxyServiceMock {}.proxyServiceRoute ~> check {
       assert(status == StatusCodes.OK)
-      assert(responseAs[String] == "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-        "<ListAllMyBucketsResult>" +
+      assert(responseAs[String].replaceAll("\\s", "") == "<ListAllMyBucketsResult>" +
         "<Owner><ID>npa</ID><DisplayName>npa</DisplayName></Owner>" +
         "<Buckets>" + "" +
         "<Bucket><Name>bucket1</Name><CreationDate>2018-01-01T00:00:00.000Z</CreationDate></Bucket>" +
