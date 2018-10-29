@@ -15,23 +15,28 @@ import scala.util.{ Failure, Success }
 trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpers {
 
   protected[this] implicit def system: ActorSystem
+
   protected[this] implicit def executionContext: ExecutionContext
+
   protected[this] implicit def materializer: Materializer
+
   protected[this] implicit def atlasSettings: AtlasSettings
 
   def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineageResponse] = {
 
     def timestamp: Long = System.currentTimeMillis()
+
     val userName = userSTS.userName.value
     val lh = getLineageHeaders(httpRequest)
     val host = lh.host.getOrElse("unknown")
     val client = lh.clientType.getOrElse("generic")
     val bucketObject = lh.bucketObject.getOrElse("emptyObject")
-    val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}_root")
+    val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
 
-    def readOrWriteLineage(method: AccessType, bucket: String): Future[LineagePostGuidResponse] = {
-      logger.debug(s"Creating $method lineage for request to ${lh.method.value} file ${lh.bucketObject} at $bucket at $timestamp")
-      postEnities(userName, host, bucket, bucketObject, method, lh.contentType, client, timestamp, pseudoDir)
+    def readOrWriteLineage(method: AccessType, bucket: String, bucketObject: String, pseudoDirName: String = pseudoDir,
+        destBucket: Option[String] = None, destBucketDir: Option[String] = None): Future[LineagePostGuidResponse] = {
+      logger.debug(s"Creating $method lineage for request for file $bucketObject at $bucket at $timestamp")
+      postEnities(userName, host, bucket, bucketObject, method, lh.contentType, client, timestamp, pseudoDirName, destBucket, destBucketDir)
     }
 
     def delLineage: Future[LineageGuidResponse] = {
@@ -44,22 +49,32 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
       lh.method match {
         // get object
         case HttpMethods.GET if lh.queryParams.isEmpty || lh.queryParams.contains("encoding-type") =>
-          readOrWriteLineage(Read, lh.bucket)
+          readOrWriteLineage(Read, lh.bucket, bucketObject)
 
         // put object
-        case HttpMethods.PUT if lh.queryParams.isEmpty && lh.copySource.isEmpty => readOrWriteLineage(Write, lh.bucket)
+        case HttpMethods.PUT if lh.queryParams.isEmpty && lh.copySource.isEmpty => readOrWriteLineage(Write, lh.bucket, bucketObject)
 
         // put object - copy
         // if contains header x-amz-copy-source
         case HttpMethods.PUT if lh.copySource.getOrElse("").length > 0 =>
-          readOrWriteLineage(Read, lh.copySource.get) andThen {
-            case Success(_)  => readOrWriteLineage(Write, lh.bucket)
+          val bucketNameFromCopySrc = lh.copySource.get.split("/").head
+          val pseudoDirFromCopySrc = {
+            val pathArray = lh.copySource.get.split("/").dropRight(1)
+            if (pathArray.length > 2)
+              pathArray.mkString("/")
+            else
+              pathArray.mkString + "/"
+          }
+
+          println(s" sourceBucket: ${lh.bucket}, object: ${lh.copySource.get}, pseudoDir: $pseudoDirFromCopySrc tgtBucketObject: $bucketObject")
+          readOrWriteLineage(Read, bucketNameFromCopySrc, lh.copySource.get, pseudoDirFromCopySrc, Some(lh.bucket), Some(pseudoDir)) andThen {
+            case Success(_)  => readOrWriteLineage(Write, lh.bucket, bucketObject)
             case Failure(ex) => Future.failed(LineageProviderAtlasException("failed to create composed lineage for mv/cp operation" + ex.getCause))
           }
 
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
-        case HttpMethods.POST if lh.queryParams.getOrElse("").contains("uploadId") => readOrWriteLineage(Write, lh.bucket)
+        case HttpMethods.POST if lh.queryParams.getOrElse("").contains("uploadId") => readOrWriteLineage(Write, lh.bucket, bucketObject)
 
         // delete object
         case HttpMethods.DELETE if lh.queryParams.isEmpty => delLineage

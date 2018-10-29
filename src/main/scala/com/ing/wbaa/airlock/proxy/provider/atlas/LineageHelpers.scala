@@ -5,6 +5,7 @@ import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.provider.LineageProviderAtlas.LineageProviderAtlasException
 import com.ing.wbaa.airlock.proxy.provider.atlas.Model._
 import com.typesafe.scalalogging.LazyLogging
+import spray.json.JsValue
 
 import scala.concurrent.Future
 
@@ -82,15 +83,16 @@ trait LineageHelpers extends LazyLogging with RestClient {
     val path = httpRequest.uri.path.toString().split("/").filter(_.nonEmpty)
     val pseudoDir =
       if (path.length > 2)
-        Some(path.drop(1).dropRight(1).mkString("/"))
+        Some(path.dropRight(1).mkString("/"))
       else
         None
+    val bucketObjectFQN = if (path.length > 1) Some(path.mkString("/")) else None
 
     LineageHeaders(
       extractHeaderOption(httpRequest, "Remote-Address"),
       path.head,
       pseudoDir,
-      path.lastOption,
+      bucketObjectFQN,
       httpRequest.method,
       httpRequest.entity.contentType,
       extractHeaderOption(httpRequest, "User-Agent").flatMap(extractClient),
@@ -119,29 +121,70 @@ trait LineageHelpers extends LazyLogging with RestClient {
       contentType: ContentType,
       clientType: String,
       timestamp: Long,
-      pseudoDir: String): Future[LineagePostGuidResponse] = {
+      pseudoDir: String,
+      destBucket: Option[String],
+      destPseudoDir: Option[String]): Future[LineagePostGuidResponse] = {
 
     def processIn(inputGUID: String, inputType: String) = List(guidRef(inputGUID, inputType))
     def processOut(outputGUID: String, outputType: String) = List(guidRef(outputGUID, outputType))
+    def LineageGuidFuture(method: AccessType, entity: String, entityType: String, entities: JsValue): Future[LineageGuidResponse] =
+      method match {
+        case Read =>
+          logger.debug(s"read entity: $entity entities: $entities")
+          for {
+            guid <- getEntityGUID(entityType, entity)
+            newGuid <- if (guid.entityGUID.isEmpty) {
+              logger.debug(s"creating new entity $entity")
+              postData(entities)
+            } else Future(guid)
+          } yield (newGuid)
+        case Write =>
+          logger.debug(s"write entity: $entity entities: $entities")
+          postData(entities)
+        case _ => Future.failed(LineageProviderAtlasException("Lineage method not supported"))
+      }
 
     for {
-      serverGuid <- postData(serverEntities(userSTS, host, AIRLOCK_STAGING_NODE).toJson).map(r => r.entityGUID)
-      bucketGuid <- postData(bucketEntities(bucket, AIRLOCK_PII).toJson).map(r => r.entityGUID)
-      pseudoDirGuid <- postData(pseudoDirEntities(bucketGuid, pseudoDir).toJson).map(r => r.entityGUID)
-      objectGuid <- postData(bucketObjectEntities(pseudoDirGuid, bucketObject, contentType, AIRLOCK_PII).toJson).map(r => r.entityGUID)
+      serverGuid <- postData(serverEntities(userSTS, host, AIRLOCK_STAGING_NODE).toJson).map(_.entityGUID)
+      bucketGuid <- LineageGuidFuture(method, bucket, AWS_S3_BUCKET_TYPE, bucketEntities(bucket, AIRLOCK_PII).toJson).map(_.entityGUID)
+      pseudoDirGuid <- LineageGuidFuture(method, pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(bucketGuid, pseudoDir).toJson).map(_.entityGUID)
+      objectGuid <- LineageGuidFuture(method, bucketObject, AWS_S3_OBJECT_TYPE, bucketObjectEntities(pseudoDirGuid, bucketObject, contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
+      destBucketGuid <- destBucket match {
+        case Some(destBucket) => LineageGuidFuture(method, destBucket, AWS_S3_BUCKET_TYPE, bucketEntities(destBucket, AIRLOCK_PII).toJson).map(_.entityGUID)
+        case _                => Future("")
+      }
+      destPseudoDirGuid <- destPseudoDir match {
+        case Some(destPseudoDir) => LineageGuidFuture(method, destPseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(destBucketGuid, destPseudoDir).toJson).map(_.entityGUID)
+        case _                   => Future("")
+      }
       processGuid <- method match {
-        case Read =>
+        // read out has no destinationBucket
+        // read within system should have destinationBucket
+        case Read if destPseudoDir.getOrElse("").length > 1 =>
+          logger.debug(s"creating read lineage to from $pseudoDir to $destPseudoDir")
           postData(
             processEntities(
-              serverGuid, bucketGuid, objectGuid, userSTS, method.rangerName, processIn(bucketGuid, AWS_S3_PSEUDO_DIR_TYPE), processOut(objectGuid, AWS_S3_OBJECT_TYPE), clientType, timestamp
+              serverGuid, bucketGuid, objectGuid, userSTS, method.rangerName,
+              processIn(objectGuid, AWS_S3_OBJECT_TYPE),
+              processOut(destPseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE),
+              clientType, timestamp
             ).toJson)
             .map(r => r.entityGUID)
+
+        case Read if destPseudoDir.isEmpty =>
+          postData(
+            processEntities(
+              serverGuid, bucketGuid, objectGuid, userSTS, method.rangerName, processIn(pseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE), processOut(objectGuid, AWS_S3_OBJECT_TYPE), clientType, timestamp
+            ).toJson)
+            .map(r => r.entityGUID)
+
         case Write =>
           postData(
             processEntities(
-              serverGuid, bucketGuid, objectGuid, userSTS, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(bucketGuid, AWS_S3_PSEUDO_DIR_TYPE), clientType, timestamp
+              serverGuid, bucketGuid, objectGuid, userSTS, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(pseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE), clientType, timestamp
             ).toJson)
             .map(r => r.entityGUID)
+
         case _ => Future.failed(LineageProviderAtlasException("Lineage method not supported"))
       }
     } yield LineagePostGuidResponse(serverGuid, bucketGuid, pseudoDirGuid, objectGuid, processGuid)
