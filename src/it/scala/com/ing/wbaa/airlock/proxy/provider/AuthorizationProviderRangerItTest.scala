@@ -51,8 +51,8 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
         assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucketObjectRoot = Some("object")), user, clientIPAddress))
       }
 
-      "doesn't authorize for requests without bucket" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None), user, clientIPAddress))
+      "authorize for requests without bucket" in withAuthorizationProviderRanger() { apr =>
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None), user, clientIPAddress))
       }
 
       "doesn't authorize for requests that are not supposed to be (Write)" in withAuthorizationProviderRanger() { apr =>
@@ -72,8 +72,8 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
         assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userAssumedGroup = Some(UserAssumedGroup("unauthorized"))), clientIPAddress))
       }
 
-      "doesn't authorize allow-list-buckets with default settings" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None, bucketObjectRoot = None, accessType = Read), user, clientIPAddress))
+      "authorize allow-list-buckets with default settings" in withAuthorizationProviderRanger() { apr =>
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None, bucketObjectRoot = None, accessType = Read), user, clientIPAddress))
       }
 
       "does authorize allow-list-buckets set to true" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {

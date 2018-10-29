@@ -19,6 +19,7 @@ trait ProxyService extends LazyLogging {
   import akka.http.scaladsl.server.Directives._
 
   protected[this] implicit def system: ActorSystem
+
   protected[this] implicit def executionContext: ExecutionContext
 
   // Request Handler methods
@@ -35,6 +36,7 @@ trait ProxyService extends LazyLogging {
 
   // Atlas Lineage
   protected[this] def atlasSettings: AtlasSettings
+
   protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineageResponse]
 
   val proxyServiceRoute: Route =
@@ -44,41 +46,14 @@ trait ProxyService extends LazyLogging {
           s"${clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")}")
         extractRequest { httpRequest =>
           extracts3Request { s3Request =>
-
             onComplete(areCredentialsActive(s3Request.credential)) {
               case Success(Some(userSTS: User)) =>
                 logger.debug(s"Credentials active for request, user retrieved: $userSTS")
-
-                if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
-                  logger.debug(s"Request authenticated: $httpRequest")
-
-                  if (isUserAuthorizedForRequest(s3Request, userSTS, clientIPAddress)) {
-                    logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
-
-                    updateHeadersForRequest { newHttpRequest =>
-                      val httpResponse = executeRequest(newHttpRequest, userSTS).andThen {
-                        case Success(response: HttpResponse) =>
-                          if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent))
-                            // delete on AWS response 204
-                            createLineageFromRequest(httpRequest, userSTS)
-                      }
-                      complete(httpResponse)
-                    }
-
-                  } else {
-                    logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")
-                    reject(AuthorizationFailedRejection)
-                  }
-                } else {
-                  logger.warn(s"Request not authenticated: $httpRequest")
-                  complete(StatusCodes.Forbidden)
-                }
-
+                processRequestForValidUser(clientIPAddress, httpRequest, s3Request, userSTS)
               case Success(None) =>
                 val msg = s"Request not authenticated: $s3Request"
                 logger.warn(msg)
                 complete((StatusCodes.Forbidden, msg))
-
               case Failure(exception) =>
                 logger.error(s"An error occurred checking authentication with STS service", exception)
                 complete(StatusCodes.InternalServerError)
@@ -87,4 +62,35 @@ trait ProxyService extends LazyLogging {
         }
       }
     }
+
+  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Route = {
+    updateHeadersForRequest { newHttpRequest =>
+      val httpResponse = executeRequest(newHttpRequest, userSTS).andThen {
+        case Success(response: HttpResponse) =>
+          if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent))
+            // delete on AWS response 204
+            createLineageFromRequest(httpRequest, userSTS)
+      }
+      complete(httpResponse)
+    }
+  }
+
+  private def processRequestForValidUser(clientIPAddress: RemoteAddress, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User) = {
+    if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
+      logger.debug(s"Request authenticated: $httpRequest")
+
+      if (isUserAuthorizedForRequest(s3Request, userSTS, clientIPAddress)) {
+        logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
+
+        processAuthorizedRequest(httpRequest, s3Request, userSTS)
+
+      } else {
+        logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")
+        reject(AuthorizationFailedRejection)
+      }
+    } else {
+      logger.warn(s"Request not authenticated: $httpRequest")
+      complete(StatusCodes.Forbidden)
+    }
+  }
 }

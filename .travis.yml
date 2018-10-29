@@ -6,7 +6,7 @@ services:
 language: scala
 
 scala:
-- 2.12.6
+- 2.12.7
 
 env:
   global:

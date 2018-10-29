@@ -3,9 +3,9 @@ import com.typesafe.sbt.packager.docker.ExecCmd
 import scalariform.formatter.preferences._
 
 name := "airlock"
-version := "0.1"
+version := "0.1.1"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.7"
 
 scalacOptions += "-unchecked"
 scalacOptions += "-deprecation"
@@ -18,8 +18,8 @@ scalacOptions += "-Xfatal-warnings"
 // Experimental: improved update resolution.
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
-val akkaVersion       = "10.1.3"
-val akkaStreamVersion = "2.5.14"
+val akkaVersion       = "10.1.5"
+val akkaStreamVersion = "2.5.17"
 
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
@@ -27,13 +27,14 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-http"              % akkaVersion,
     "com.typesafe.akka"            %% "akka-stream"            % akkaStreamVersion,
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaVersion,
+    "com.typesafe.akka"            %% "akka-http-xml"          % akkaVersion,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion,
-    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.372",
+    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.437",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0",
     "io.github.twonote"            % "radosgw-admin4j"         % "1.0.2",
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
-    "com.amazonaws"                % "aws-java-sdk-sts"        % "1.11.372"        % IntegrationTest
+    "com.amazonaws"                % "aws-java-sdk-sts"        % "1.11.437"        % IntegrationTest
 )
 
 // Fix logging dependencies:

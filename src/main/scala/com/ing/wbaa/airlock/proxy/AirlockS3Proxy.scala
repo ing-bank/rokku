@@ -5,14 +5,14 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
-import com.ing.wbaa.airlock.proxy.api.{ HealthService, ProxyService }
+import com.ing.wbaa.airlock.proxy.api.{ HealthService, ProxyServiceWithListAllBuckets }
 import com.ing.wbaa.airlock.proxy.config.HttpSettings
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-trait AirlockS3Proxy extends LazyLogging with ProxyService {
+trait AirlockS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets {
 
   protected[this] implicit def system: ActorSystem
   protected[this] implicit lazy val materializer: ActorMaterializer = ActorMaterializer()(system)
