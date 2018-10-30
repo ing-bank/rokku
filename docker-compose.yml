@@ -55,7 +55,7 @@ services:
     - "8080:8080"
 
   atlas:
-    image: nielsdenissen/airlock-dev-apache-atlas:atlas-1.1.0
+    image: nielsdenissen/airlock-dev-apache-atlas:0.0.5
     ports:
     - "21000:21000"
 
