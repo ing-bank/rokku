@@ -1,7 +1,7 @@
 package com.ing.wbaa.airlock.proxy.provider
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ HttpMethods, HttpRequest }
+import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, RemoteAddress }
 import akka.stream.Materializer
 import com.ing.wbaa.airlock.proxy.config.AtlasSettings
 import com.ing.wbaa.airlock.proxy.data._
@@ -10,78 +10,42 @@ import com.ing.wbaa.airlock.proxy.provider.atlas.{ LineageHelpers, RestClient }
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
 
 trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpers {
 
   protected[this] implicit def system: ActorSystem
-
   protected[this] implicit def executionContext: ExecutionContext
-
   protected[this] implicit def materializer: Materializer
-
   protected[this] implicit def atlasSettings: AtlasSettings
 
-  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineageResponse] = {
-
-    def timestamp: Long = System.currentTimeMillis()
-
-    val userName = userSTS.userName.value
-    val lh = getLineageHeaders(httpRequest)
-    val host = lh.host.getOrElse("unknown")
-    val client = lh.clientType.getOrElse("generic")
-    val bucketObject = lh.bucketObject.getOrElse("emptyObject")
-    val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
-
-    def readOrWriteLineage(method: AccessType, bucket: String, bucketObject: String, pseudoDirName: String = pseudoDir,
-        destBucket: Option[String] = None, destBucketDir: Option[String] = None): Future[LineagePostGuidResponse] = {
-      logger.debug(s"Creating $method lineage for request for file $bucketObject at $bucket at $timestamp")
-      postEnities(userName, host, bucket, bucketObject, method, lh.contentType, client, timestamp, pseudoDirName, destBucket, destBucketDir)
-    }
-
-    def delLineage: Future[LineageGuidResponse] = {
-      logger.debug(s"Creating Delete lineage for request to ${lh.method} file ${lh.bucketObject} at ${lh.bucket} at $timestamp")
-      deleteEntities(AWS_S3_OBJECT_TYPE, bucketObject)
-    }
+  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineageResponse] = {
+    val lineageHeaders = getLineageHeaders(httpRequest)
+    val bucketObject = lineageHeaders.bucketObject.getOrElse("emptyObject")
 
     // we only report lineage for object operations. We do not track bucket create / delete etc.
-    if (lh.bucket.length > 1 && bucketObject != "emptyObject") {
-      lh.method match {
+    if (lineageHeaders.bucket.length > 1 && bucketObject != "emptyObject") {
+      lineageHeaders.method match {
         // get object
-        case HttpMethods.GET if lh.queryParams.isEmpty || lh.queryParams.contains("encoding-type") =>
-          readOrWriteLineage(Read, lh.bucket, bucketObject)
+        case HttpMethods.GET if lineageHeaders.queryParams.isEmpty || lineageHeaders.queryParams.contains("encoding-type") =>
+          readOrWriteLineage(lineageHeaders, userSTS, Read, clientIPAddress)
 
         // put object
-        case HttpMethods.PUT if lh.queryParams.isEmpty && lh.copySource.isEmpty => readOrWriteLineage(Write, lh.bucket, bucketObject)
+        case HttpMethods.PUT if lineageHeaders.queryParams.isEmpty && lineageHeaders.copySource.isEmpty => readOrWriteLineage(lineageHeaders, userSTS, Write, clientIPAddress)
 
         // put object - copy
         // if contains header x-amz-copy-source
-        case HttpMethods.PUT if lh.copySource.getOrElse("").length > 0 =>
-          val bucketNameFromCopySrc = lh.copySource.get.split("/").head
-          val pseudoDirFromCopySrc = {
-            val pathArray = lh.copySource.get.split("/").dropRight(1)
-            if (pathArray.length > 2)
-              pathArray.mkString("/")
-            else
-              pathArray.mkString + "/"
-          }
-
-          println(s" sourceBucket: ${lh.bucket}, object: ${lh.copySource.get}, pseudoDir: $pseudoDirFromCopySrc tgtBucketObject: $bucketObject")
-          readOrWriteLineage(Read, bucketNameFromCopySrc, lh.copySource.get, pseudoDirFromCopySrc, Some(lh.bucket), Some(pseudoDir)) andThen {
-            case Success(_)  => readOrWriteLineage(Write, lh.bucket, bucketObject)
-            case Failure(ex) => Future.failed(LineageProviderAtlasException("failed to create composed lineage for mv/cp operation" + ex.getCause))
-          }
+        case HttpMethods.PUT if lineageHeaders.copySource.getOrElse("").length > 0 => lineageForCopyOperation(lineageHeaders, userSTS, Write, clientIPAddress)
 
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
-        case HttpMethods.POST if lh.queryParams.getOrElse("").contains("uploadId") => readOrWriteLineage(Write, lh.bucket, bucketObject)
+        case HttpMethods.POST if lineageHeaders.queryParams.getOrElse("").contains("uploadId") => readOrWriteLineage(lineageHeaders, userSTS, Write, clientIPAddress)
 
         // delete object
-        case HttpMethods.DELETE if lh.queryParams.isEmpty => delLineage
+        case HttpMethods.DELETE if lineageHeaders.queryParams.isEmpty => deleteLineage(lineageHeaders)
 
         // delete on abort multipart
         // DELETE /ObjectName?uploadId=UploadId
-        case HttpMethods.DELETE if lh.queryParams.getOrElse("").contains("uploadId") => delLineage
+        case HttpMethods.DELETE if lineageHeaders.queryParams.getOrElse("").contains("uploadId") => deleteLineage(lineageHeaders)
 
         case _ => Future.failed(LineageProviderAtlasException("Create lineage failed"))
       }

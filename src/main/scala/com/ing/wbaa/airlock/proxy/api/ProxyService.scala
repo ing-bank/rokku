@@ -35,7 +35,7 @@ trait ProxyService extends LazyLogging {
 
   // Atlas Lineage
   protected[this] def atlasSettings: AtlasSettings
-  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineageResponse]
+  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineageResponse]
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
@@ -60,7 +60,7 @@ trait ProxyService extends LazyLogging {
                         case Success(response: HttpResponse) =>
                           if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent))
                             // delete on AWS response 204
-                            createLineageFromRequest(httpRequest, userSTS)
+                            createLineageFromRequest(httpRequest, userSTS, clientIPAddress)
                       }
                       complete(httpResponse)
                     }

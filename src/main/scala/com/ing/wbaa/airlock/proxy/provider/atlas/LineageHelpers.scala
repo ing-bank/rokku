@@ -1,6 +1,6 @@
 package com.ing.wbaa.airlock.proxy.provider.atlas
 
-import akka.http.scaladsl.model.{ ContentType, HttpRequest }
+import akka.http.scaladsl.model.{ ContentType, HttpRequest, RemoteAddress }
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.provider.LineageProviderAtlas.LineageProviderAtlasException
 import com.ing.wbaa.airlock.proxy.provider.atlas.Model._
@@ -17,6 +17,8 @@ trait LineageHelpers extends LazyLogging with RestClient {
   val AIRLOCK_SERVER_TYPE = "server"
   val AIRLOCK_PII = "customer_PII"
   val AIRLOCK_STAGING_NODE = "staging_node"
+
+  private def timestamp: Long = System.currentTimeMillis()
 
   private def serverEntities(userSTS: String, host: String, classification: String) =
     Entities(Seq(Server(
@@ -68,6 +70,10 @@ trait LineageHelpers extends LazyLogging with RestClient {
         outputs))))
   }
 
+  private def processIn(inputGUID: String, inputType: String) = List(guidRef(inputGUID, inputType))
+
+  private def processOut(outputGUID: String, outputType: String) = List(guidRef(outputGUID, outputType))
+
   private def extractClient(userAgent: String): Option[String] =
     """(\S+)/\S+""".r
       .findFirstMatchIn(userAgent)
@@ -105,88 +111,90 @@ trait LineageHelpers extends LazyLogging with RestClient {
   // for now it is just deleting file entity and no related objects like eg. aws_cli_script, which uploaded or downloaded
   // file to bucket. Once we delete aws_cli_script object we will lose track of whats has been deleted
   // We need to come up with process of tracking file delete
-  def deleteEntities(typeName: String, entityName: String): Future[LineageGuidResponse] =
+  def deleteLineage(lh: LineageHeaders): Future[LineageGuidResponse] = {
+    logger.debug(s"Creating Delete lineage for request to ${lh.method} file ${lh.bucketObject} at ${lh.bucket} at $timestamp")
     for {
-      entityGuidResponse <- getEntityGUID(typeName, entityName)
+      entityGuidResponse <- getEntityGUID(AWS_S3_OBJECT_TYPE, lh.bucketObject.get)
       _ <- deleteEntity(entityGuidResponse.entityGUID)
 
     } yield entityGuidResponse
+  }
 
-  def postEnities(
-      userSTS: String,
-      host: String,
-      bucket: String,
-      bucketObject: String,
-      method: AccessType,
-      contentType: ContentType,
-      clientType: String,
-      timestamp: Long,
-      pseudoDir: String,
-      destBucket: Option[String],
-      destPseudoDir: Option[String]): Future[LineagePostGuidResponse] = {
-
-    def processIn(inputGUID: String, inputType: String) = List(guidRef(inputGUID, inputType))
-    def processOut(outputGUID: String, outputType: String) = List(guidRef(outputGUID, outputType))
-    def LineageGuidFuture(method: AccessType, entity: String, entityType: String, entities: JsValue): Future[LineageGuidResponse] =
-      method match {
-        case Read =>
-          logger.debug(s"read entity: $entity entities: $entities")
-          for {
-            guid <- getEntityGUID(entityType, entity)
-            newGuid <- if (guid.entityGUID.isEmpty) {
-              logger.debug(s"creating new entity $entity")
-              postData(entities)
-            } else Future(guid)
-          } yield (newGuid)
-        case Write =>
-          logger.debug(s"write entity: $entity entities: $entities")
-          postData(entities)
-        case _ => Future.failed(LineageProviderAtlasException("Lineage method not supported"))
-      }
-
+  private def lineageGuidFuture(entity: String, entityType: String, entities: JsValue): Future[LineageGuidResponse] =
     for {
-      serverGuid <- postData(serverEntities(userSTS, host, AIRLOCK_STAGING_NODE).toJson).map(_.entityGUID)
-      bucketGuid <- LineageGuidFuture(method, bucket, AWS_S3_BUCKET_TYPE, bucketEntities(bucket, AIRLOCK_PII).toJson).map(_.entityGUID)
-      pseudoDirGuid <- LineageGuidFuture(method, pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(bucketGuid, pseudoDir).toJson).map(_.entityGUID)
-      objectGuid <- LineageGuidFuture(method, bucketObject, AWS_S3_OBJECT_TYPE, bucketObjectEntities(pseudoDirGuid, bucketObject, contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
-      destBucketGuid <- destBucket match {
-        case Some(destBucket) => LineageGuidFuture(method, destBucket, AWS_S3_BUCKET_TYPE, bucketEntities(destBucket, AIRLOCK_PII).toJson).map(_.entityGUID)
-        case _                => Future("")
-      }
-      destPseudoDirGuid <- destPseudoDir match {
-        case Some(destPseudoDir) => LineageGuidFuture(method, destPseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(destBucketGuid, destPseudoDir).toJson).map(_.entityGUID)
-        case _                   => Future("")
-      }
-      processGuid <- method match {
-        // read out has no destinationBucket
-        // read within system should have destinationBucket
-        case Read if destPseudoDir.getOrElse("").length > 1 =>
-          logger.debug(s"creating read lineage to from $pseudoDir to $destPseudoDir")
-          postData(
-            processEntities(
-              serverGuid, bucketGuid, objectGuid, userSTS, method.rangerName,
-              processIn(objectGuid, AWS_S3_OBJECT_TYPE),
-              processOut(destPseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE),
-              clientType, timestamp
-            ).toJson)
-            .map(r => r.entityGUID)
+      guid <- getEntityGUID(entityType, entity)
+      newGuid <- if (guid.entityGUID.isEmpty) {
+        postData(entities)
+      } else Future(guid)
+    } yield (newGuid)
 
-        case Read if destPseudoDir.isEmpty =>
+  def readOrWriteLineage(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = {
+    val userName = userSTS.userName.value
+    val clientHost = clientIPAddress.getAddress().get().getHostAddress
+    val clientType = lh.clientType.getOrElse("generic")
+    val bucketObject = lh.bucketObject.getOrElse("emptyObject")
+    val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
+
+    logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
+    for {
+      serverGuid <- lineageGuidFuture(clientHost, AIRLOCK_SERVER_TYPE, serverEntities(userName, clientHost, AIRLOCK_STAGING_NODE).toJson).map(_.entityGUID)
+      bucketGuid <- lineageGuidFuture(lh.bucket, AWS_S3_BUCKET_TYPE, bucketEntities(lh.bucket, AIRLOCK_PII).toJson).map(_.entityGUID)
+      pseudoDirGuid <- lineageGuidFuture(pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(bucketGuid, pseudoDir).toJson).map(_.entityGUID)
+      objectGuid <- lineageGuidFuture(bucketObject, AWS_S3_OBJECT_TYPE, bucketObjectEntities(pseudoDirGuid, bucketObject, lh.contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
+      processGuid <- method match {
+        case Read =>
           postData(
             processEntities(
-              serverGuid, bucketGuid, objectGuid, userSTS, method.rangerName, processIn(pseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE), processOut(objectGuid, AWS_S3_OBJECT_TYPE), clientType, timestamp
+              serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(pseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE), processOut(objectGuid, AWS_S3_OBJECT_TYPE), clientType, timestamp
             ).toJson)
             .map(r => r.entityGUID)
 
         case Write =>
           postData(
             processEntities(
-              serverGuid, bucketGuid, objectGuid, userSTS, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(pseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE), clientType, timestamp
+              serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(pseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE), clientType, timestamp
             ).toJson)
             .map(r => r.entityGUID)
 
         case _ => Future.failed(LineageProviderAtlasException("Lineage method not supported"))
       }
     } yield LineagePostGuidResponse(serverGuid, bucketGuid, pseudoDirGuid, objectGuid, processGuid)
+  }
+
+  def lineageForCopyOperation(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = {
+    val userName = userSTS.userName.value
+    val clientHost = clientIPAddress.getAddress().get().getHostAddress
+    val clientType = lh.clientType.getOrElse("generic")
+    val bucketObject = lh.bucketObject.getOrElse("emptyObject")
+    val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
+    val objectNameFromCopySrc = lh.copySource.get
+    val bucketNameFromCopySrc = lh.copySource.get.split("/").head
+    val pseudoDirFromCopySrc = {
+      val pathArray = lh.copySource.get.split("/").dropRight(1)
+      if (pathArray.length > 2)
+        pathArray.mkString("/")
+      else
+        pathArray.mkString + "/"
+    }
+
+    for {
+      serverGuid <- lineageGuidFuture(clientHost, AIRLOCK_SERVER_TYPE, serverEntities(userName, clientHost, AIRLOCK_STAGING_NODE).toJson).map(_.entityGUID)
+      // source objects
+      srcBucketGuid <- lineageGuidFuture(bucketNameFromCopySrc, AWS_S3_BUCKET_TYPE, bucketEntities(bucketNameFromCopySrc, AIRLOCK_PII).toJson).map(_.entityGUID)
+      srcPseudoDirGuid <- lineageGuidFuture(pseudoDirFromCopySrc, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(srcBucketGuid, pseudoDirFromCopySrc).toJson).map(_.entityGUID)
+      srcObject <- lineageGuidFuture(objectNameFromCopySrc, AWS_S3_OBJECT_TYPE, bucketObjectEntities(srcPseudoDirGuid, objectNameFromCopySrc, lh.contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
+      // destination objects
+      destBucketGuid <- lineageGuidFuture(lh.bucket, AWS_S3_BUCKET_TYPE, bucketEntities(lh.bucket, AIRLOCK_PII).toJson).map(_.entityGUID)
+      destPseudoDirGuid <- lineageGuidFuture(pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(destBucketGuid, pseudoDir).toJson).map(_.entityGUID)
+      destObjectGuid <- lineageGuidFuture(bucketObject, AWS_S3_OBJECT_TYPE, bucketObjectEntities(destPseudoDirGuid, bucketObject, lh.contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
+      // process
+      processGuid <- postData(processEntities(
+        serverGuid, destBucketGuid, destObjectGuid, userName, method.rangerName,
+        processIn(srcObject, AWS_S3_OBJECT_TYPE),
+        processOut(destObjectGuid, AWS_S3_OBJECT_TYPE),
+        clientType, timestamp
+      ).toJson)
+        .map(r => r.entityGUID)
+    } yield LineagePostGuidResponse(serverGuid, destBucketGuid, destPseudoDirGuid, destObjectGuid, processGuid)
   }
 }
