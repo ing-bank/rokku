@@ -1,7 +1,7 @@
 package com.ing.wbaa.airlock.proxy.api
 
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
 import akka.http.scaladsl.server.Route
 import com.ing.wbaa.airlock.proxy.data.{ Read, S3Request, User }
 import akka.http.scaladsl.server.Directives._
@@ -17,12 +17,12 @@ trait ProxyServiceWithListAllBuckets extends ProxyService with ScalaXmlSupport {
 
   protected[this] def listAllBuckets: Seq[String]
 
-  override protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Route = {
+  override protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User, clientIPAddress: RemoteAddress): Route = {
     s3Request match {
       //only when list buckets is requested we show all buckets
       case S3Request(_, None, None, accessType) if accessType == Read =>
         complete(getListAllMyBucketsXml())
-      case _ => super.processAuthorizedRequest(httpRequest, s3Request, userSTS)
+      case _ => super.processAuthorizedRequest(httpRequest, s3Request, userSTS, clientIPAddress)
     }
   }
 

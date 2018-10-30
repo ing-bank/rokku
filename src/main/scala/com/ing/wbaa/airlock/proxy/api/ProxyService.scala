@@ -37,7 +37,7 @@ trait ProxyService extends LazyLogging {
   // Atlas Lineage
   protected[this] def atlasSettings: AtlasSettings
 
-  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineageResponse]
+  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineageResponse]
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
@@ -63,13 +63,13 @@ trait ProxyService extends LazyLogging {
       }
     }
 
-  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Route = {
+  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User, clientIPAddress: RemoteAddress): Route = {
     updateHeadersForRequest { newHttpRequest =>
       val httpResponse = executeRequest(newHttpRequest, userSTS).andThen {
         case Success(response: HttpResponse) =>
           if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent))
-          // delete on AWS response 204
-            createLineageFromRequest(httpRequest, userSTS)
+            // delete on AWS response 204
+            createLineageFromRequest(httpRequest, userSTS, clientIPAddress)
       }
       complete(httpResponse)
     }
@@ -82,7 +82,7 @@ trait ProxyService extends LazyLogging {
       if (isUserAuthorizedForRequest(s3Request, userSTS, clientIPAddress)) {
         logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
 
-        processAuthorizedRequest(httpRequest, s3Request, userSTS)
+        processAuthorizedRequest(httpRequest, s3Request, userSTS, clientIPAddress)
 
       } else {
         logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")

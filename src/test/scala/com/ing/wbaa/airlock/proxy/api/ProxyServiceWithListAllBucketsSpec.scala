@@ -32,7 +32,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
     override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
 
-    override def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse] = Future(LineagePostGuidResponse("", "", "", ""))
+    override def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = Future(LineagePostGuidResponse("", "", "", "", ""))
 
     override def atlasSettings: AtlasSettings = new AtlasSettings(system.settings.config)
 
