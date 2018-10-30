@@ -1,5 +1,7 @@
 package com.ing.wbaa.airlock.proxy.provider
 
+import java.net.InetAddress
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, Materializer}
@@ -26,6 +28,7 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
       case _ => HttpRequest(method, uri, Nil)
     }
   }
+  val remoteClientIP = RemoteAddress(InetAddress.getByName("127.0.0.1"))
 
   val userSTS = User(UserName("fakeUser"), None, AwsAccessKey("a"), AwsSecretKey("k"))
 
@@ -40,11 +43,12 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
       override protected[this] implicit def materializer: Materializer = ActorMaterializer()(system)
     })
 
+
   "LineageProviderAtlas" should {
     "create Write lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
 
       val createLineageResult  = apr.createLineageFromRequest(
-        fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS)
+        fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
 
       createLineageResult.map { result =>
           val postResult = result.asInstanceOf[LineagePostGuidResponse]
@@ -59,7 +63,7 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
     "create Read lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
 
       val createLineageResult  = apr.createLineageFromRequest(
-        fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS)
+        fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
 
       createLineageResult.map { result =>
         val postResult = result.asInstanceOf[LineagePostGuidResponse]
@@ -74,7 +78,7 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
     "create Delete lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
 
       val createLineageResult  = apr.createLineageFromRequest(
-        fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS)
+        fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
 
       createLineageResult.map { result =>
         val postResult = result.asInstanceOf[LineageGuidResponse]
@@ -90,7 +94,7 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
         authority = Uri.Authority(host = Uri.Host(atlasApiHost), port = atlasApiPort)
       )
     }) { apr =>
-      recoverToSucceededIf[RestClientException](apr.createLineageFromRequest(fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS))
+      recoverToSucceededIf[RestClientException](apr.createLineageFromRequest(fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS, remoteClientIP))
     }
   }
 }

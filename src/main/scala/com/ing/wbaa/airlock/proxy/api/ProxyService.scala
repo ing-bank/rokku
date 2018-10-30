@@ -68,7 +68,7 @@ trait ProxyService extends LazyLogging {
       val httpResponse = executeRequest(newHttpRequest, userSTS).andThen {
         case Success(response: HttpResponse) =>
           if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent))
-            // delete on AWS response 204
+          // delete on AWS response 204
             createLineageFromRequest(httpRequest, userSTS)
       }
       complete(httpResponse)
