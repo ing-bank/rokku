@@ -1,5 +1,6 @@
 package com.ing.wbaa.airlock.proxy.provider.aws
 
+import java.io.ByteArrayInputStream
 import java.net.URI
 import java.util
 
@@ -10,6 +11,7 @@ import com.amazonaws.http.HttpMethodName
 import com.amazonaws.util.DateUtils
 import com.ing.wbaa.airlock.proxy.data.AWSHeaderValues
 import com.typesafe.scalalogging.LazyLogging
+
 import scala.collection.JavaConverters._
 
 trait SignatureHelpers extends LazyLogging {
@@ -183,13 +185,31 @@ trait SignatureHelpers extends LazyLogging {
 
     val requestParameters = extractRequestParameters(httpRequest, version)
 
-    if (!requestParameters.isEmpty) {
-      logger.debug(s"Setting additional params for request $requestParameters")
+    httpRequest.method.value match {
+      case "POST" if !requestParameters.isEmpty =>
+        logger.debug(s"Setting additional params (as body) for request $requestParameters")
+        val requestParamsCombined =
+          if (requestParameters.size == 1) {
+            requestParameters.asScala.map { case (k, v) =>
+              s"$k=${v.asScala.head}"
+            }.mkString
+          } else {
+            requestParameters.asScala.map { case (k, v) =>
+              s"$k=${v.asScala.head}"
+            }.mkString("&")
+          }
+        request.setResourcePath(httpRequest.uri.path.toString())
+        request.setParameters(requestParameters)
+        request.setContent(new ByteArrayInputStream(requestParamsCombined.getBytes()))
 
-      request.setResourcePath(httpRequest.uri.path.toString())
-      request.setParameters(requestParameters)
-    } else {
-      request.setResourcePath(httpRequest.uri.path.toString())
+      case _ if !requestParameters.isEmpty =>
+        logger.debug(s"Setting additional params for request $requestParameters")
+
+        request.setResourcePath(httpRequest.uri.path.toString())
+        request.setParameters(requestParameters)
+
+      case _ =>
+        request.setResourcePath(httpRequest.uri.path.toString())
     }
     request
   }
