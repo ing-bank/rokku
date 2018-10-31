@@ -1,5 +1,6 @@
 package com.ing.wbaa.airlock.proxy.provider.aws
 
+import java.io.ByteArrayInputStream
 import java.net.URI
 import java.util
 
@@ -10,6 +11,7 @@ import com.amazonaws.http.HttpMethodName
 import com.amazonaws.util.DateUtils
 import com.ing.wbaa.airlock.proxy.data.AWSHeaderValues
 import com.typesafe.scalalogging.LazyLogging
+
 import scala.collection.JavaConverters._
 
 trait SignatureHelpers extends LazyLogging {
@@ -23,7 +25,7 @@ trait SignatureHelpers extends LazyLogging {
     param match {
       case p if p.nonEmpty && p.contains("%7E") => p.replace("%7E", "~")
       case p if p.nonEmpty && p.contains("%2F") => p.replace("%2F", "/")
-      case p                                    => p
+      case p => p
     }
   }
 
@@ -36,7 +38,7 @@ trait SignatureHelpers extends LazyLogging {
           .grouped(2)
           .map {
             case Array(k, v) => (k, List(cleanURLEncoding(v)).asJava)
-            case Array(k)    => (k, List("").asJava)
+            case Array(k) => (k, List("").asJava)
           }
       }.toList.flatten.toMap.asJava
 
@@ -131,7 +133,11 @@ trait SignatureHelpers extends LazyLogging {
     val authorization: Option[String] = extractHeaderOption("authorization")
 
     val version =
-      authorization.map(auth => if (auth.contains("AWS4")) { AWS_SIGN_V4 } else { AWS_SIGN_V2 }).getOrElse("")
+      authorization.map(auth => if (auth.contains("AWS4")) {
+        AWS_SIGN_V4
+      } else {
+        AWS_SIGN_V2
+      }).getOrElse("")
 
     val signature = authorization.map(auth => getSignatureFromAuthorization(auth))
     val accessKey = authorization.map(auth => getCredentialFromAuthorization(auth))
@@ -165,17 +171,17 @@ trait SignatureHelpers extends LazyLogging {
   }
 
   def getSignableRequest(
-      httpRequest: HttpRequest,
-      version: String,
-      request: DefaultRequest[_] = new DefaultRequest("s3")): DefaultRequest[_] = {
+                          httpRequest: HttpRequest,
+                          version: String,
+                          request: DefaultRequest[_] = new DefaultRequest("s3")): DefaultRequest[_] = {
 
     request.setHttpMethod(httpRequest.method.value match {
-      case "GET"    => HttpMethodName.GET
-      case "POST"   => HttpMethodName.POST
-      case "PUT"    => HttpMethodName.PUT
+      case "GET" => HttpMethodName.GET
+      case "POST" => HttpMethodName.POST
+      case "PUT" => HttpMethodName.PUT
       case "DELETE" => HttpMethodName.DELETE
-      case "HEAD"   => HttpMethodName.HEAD
-      case _        => throw new Exception("Method not supported, request signature verification failed")
+      case "HEAD" => HttpMethodName.HEAD
+      case _ => throw new Exception("Method not supported, request signature verification failed")
     })
 
     request.setResourcePath(httpRequest.uri.path.toString())
@@ -183,13 +189,26 @@ trait SignatureHelpers extends LazyLogging {
 
     val requestParameters = extractRequestParameters(httpRequest, version)
 
-    if (!requestParameters.isEmpty) {
-      logger.debug(s"Setting additional params for request $requestParameters")
+    httpRequest.method.value match {
+      case "POST" if !requestParameters.isEmpty =>
+        logger.debug(s"Setting additional params (as body) for request $requestParameters")
+        val requestParamsCombined =
+          requestParameters.asScala.map { case (k, v) =>
+            s"$k=${v.asScala.head}"
+          }.mkString("&")
 
-      request.setResourcePath(httpRequest.uri.path.toString())
-      request.setParameters(requestParameters)
-    } else {
-      request.setResourcePath(httpRequest.uri.path.toString())
+        request.setResourcePath(httpRequest.uri.path.toString())
+        request.setParameters(requestParameters)
+        request.setContent(new ByteArrayInputStream(requestParamsCombined.getBytes()))
+
+      case _ if !requestParameters.isEmpty =>
+        logger.debug(s"Setting additional params for request $requestParameters")
+
+        request.setResourcePath(httpRequest.uri.path.toString())
+        request.setParameters(requestParameters)
+
+      case _ =>
+        request.setResourcePath(httpRequest.uri.path.toString())
     }
     request
   }
