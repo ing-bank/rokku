@@ -79,6 +79,14 @@ class SignatureProviderAwsSpec extends WordSpec with DiagrammedAssertions with S
       assert(extractRequestParameters(request, "v4") == expectedResult)
     }
 
+    "extractRequestParameters from RawQueryString with single subresource and subpath (v4)" in {
+
+      val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket/object", Nil, "uploads")
+      val expectedResult = Map("uploads" -> List[String]("").asJava).asJava
+
+      assert(extractRequestParameters(request, "v4") == expectedResult)
+    }
+
     "extractRequestParameters from RawQueryString with single subresource (v2)" in {
       val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket", Nil, "acl")
       val expectedResult = Map("acl" -> List.empty[String].asJava).asJava
