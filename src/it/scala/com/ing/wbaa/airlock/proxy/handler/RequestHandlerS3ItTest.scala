@@ -46,7 +46,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] =
         Future(Some(User(UserRawJson("userId", Some("group"), "accesskey", "secretkey"))))
 
-      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User): Future[LineagePostGuidResponse] = Future.failed(LineageProviderAtlasException("Create lineage failed"))
+      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = Future.failed(LineageProviderAtlasException("Create lineage failed"))
     }
     proxy.startup.map { binding =>
       try testCode(getAmazonS3(

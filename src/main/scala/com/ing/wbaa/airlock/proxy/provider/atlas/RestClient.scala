@@ -50,6 +50,9 @@ trait RestClient extends ModelJsonSupport with LazyLogging {
             logger.debug("Atlas RestClient: Extracted GUID: " + searchResult.definition.getFields("id").toList.head.convertTo[EntityId].id)
             LineageGuidResponse(searchResult.definition.getFields("id").toList.head.convertTo[EntityId].id)
           }
+        case response if response.status == StatusCodes.NotFound =>
+          logger.debug("Atlas RestClient: Extracted GUID: entity not found")
+          Future(LineageGuidResponse(""))
         case response =>
           logger.debug(s"Atlas getEntityGUID failed: ${response.status}")
           Future.failed(RestClientException(s"Atlas getEntityGUID failed: ${response.status}"))

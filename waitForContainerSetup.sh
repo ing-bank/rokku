@@ -43,10 +43,11 @@ function waitUntilServiceIsReady() {
   fi
 }
 
+# atlas is heavy at startup, so moving to first place in sequence. It should be up by time it:test starts
+waitUntilServiceIsReady atlasIsReady "Atlas"
 waitUntilServiceIsReady airlockStsIsReady "Airlock STS"
 waitUntilServiceIsReady cephIsReady "Ceph"
 waitUntilServiceIsReady rangerAdminIsReady "Ranger Admin"
 waitUntilServiceIsReady keycloakIsReady "Keycloack"
 waitUntilServiceIsReady mariadbIsReady "MariaDB"
-waitUntilServiceIsReady atlasIsReady "Atlas"
 
