@@ -12,7 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-trait AirlockS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets {
+trait AirlockS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets with HealthService {
 
   protected[this] implicit def system: ActorSystem
   protected[this] implicit lazy val materializer: ActorMaterializer = ActorMaterializer()(system)
@@ -22,7 +22,7 @@ trait AirlockS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets {
   protected[this] implicit val executionContext: ExecutionContext = system.dispatcher
 
   // The routes we serve.
-  final val allRoutes = HealthService.route ~ proxyServiceRoute
+  final val allRoutes = healthRoute ~ proxyServiceRoute
 
   // Details about the server binding.
   lazy val startup: Future[Http.ServerBinding] =
