@@ -150,7 +150,7 @@ trait LineageHelpers extends LazyLogging with RestClient {
       objectGuid <- lineageGuidFuture(bucketObject, AWS_S3_OBJECT_TYPE, bucketObjectEntities(pseudoDirGuid, bucketObject, lh.contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
       fsPathGuid <- externalFsPath match {
         case Some(fsPath) => lineageGuidFuture(fsPath, HADOOP_FS_PATH, fsPathEntities(fsPath).toJson).map(_.entityGUID)
-        case None         => Future(LineageGuidResponse("")).map(_.entityGUID)
+        case None         => Future("")
       }
       processGuid <- method match {
         case Read =>
