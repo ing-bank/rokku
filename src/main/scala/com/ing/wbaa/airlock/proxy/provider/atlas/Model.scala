@@ -83,6 +83,16 @@ object Model extends ModelJsonSupport {
       typeName: String,
       attributes: BucketObjectAttributes) extends AtlasEntity
 
+  // fs path
+  case class FsPath(
+      typeName: String,
+      attributes: FsPathAttributes) extends AtlasEntity
+
+  case class FsPathAttributes(
+      qualifiedName: String,
+      name: String,
+      path: String) extends AtlasEntity
+
   // Entities Sequence
   case class Entities[A <: AtlasEntity](entities: Seq[A])
 

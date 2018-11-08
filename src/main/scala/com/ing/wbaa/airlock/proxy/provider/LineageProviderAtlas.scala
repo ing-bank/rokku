@@ -27,10 +27,13 @@ trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpe
       lineageHeaders.method match {
         // get object
         case HttpMethods.GET if lineageHeaders.queryParams.isEmpty || lineageHeaders.queryParams.contains("encoding-type") =>
-          readOrWriteLineage(lineageHeaders, userSTS, Read, clientIPAddress)
+          val externalObject = s"$EXTERNAL_OBJECT_OUT/${bucketObject.split("/").takeRight(1).mkString}"
+          readOrWriteLineage(lineageHeaders, userSTS, Read, clientIPAddress, Some(externalObject))
 
-        // put object
-        case HttpMethods.PUT if lineageHeaders.queryParams.isEmpty && lineageHeaders.copySource.isEmpty => readOrWriteLineage(lineageHeaders, userSTS, Write, clientIPAddress)
+        // put object from outside of ceph
+        case HttpMethods.PUT if lineageHeaders.queryParams.isEmpty && lineageHeaders.copySource.isEmpty =>
+          val externalObject = s"$EXTERNAL_OBJECT_IN/${bucketObject.split("/").takeRight(1).mkString}"
+          readOrWriteLineage(lineageHeaders, userSTS, Write, clientIPAddress, Some(externalObject))
 
         // put object - copy
         // if contains header x-amz-copy-source

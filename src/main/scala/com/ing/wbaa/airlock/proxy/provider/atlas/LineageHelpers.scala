@@ -13,10 +13,13 @@ trait LineageHelpers extends LazyLogging with RestClient {
   val AWS_S3_OBJECT_TYPE = "aws_s3_object"
   val AWS_S3_BUCKET_TYPE = "aws_s3_bucket"
   val AWS_S3_PSEUDO_DIR_TYPE = "aws_s3_pseudo_dir"
+  val HADOOP_FS_PATH = "fs_path"
   val AIRLOCK_CLIENT_TYPE = "airlock_client"
   val AIRLOCK_SERVER_TYPE = "server"
   val AIRLOCK_PII = "customer_PII"
   val AIRLOCK_STAGING_NODE = "staging_node"
+  val EXTERNAL_OBJECT_IN = "external_object_in"
+  val EXTERNAL_OBJECT_OUT = "external_object_out"
 
   private def timestamp: Long = System.currentTimeMillis()
 
@@ -69,6 +72,12 @@ trait LineageHelpers extends LazyLogging with RestClient {
         inputs,
         outputs))))
   }
+
+  private def fsPathEntities(path: String) =
+    Entities(Seq(FsPath(
+      HADOOP_FS_PATH,
+      FsPathAttributes(path, path, path)
+    )))
 
   private def processIn(inputGUID: String, inputType: String) = List(guidRef(inputGUID, inputType))
 
@@ -128,7 +137,7 @@ trait LineageHelpers extends LazyLogging with RestClient {
       } else Future(guid)
     } yield (newGuid)
 
-  def readOrWriteLineage(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = {
+  def readOrWriteLineage(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress, externalFsPath: Option[String] = None): Future[LineagePostGuidResponse] = {
     val userName = userSTS.userName.value
     val clientHost = clientIPAddress.getAddress().get().getHostAddress
     val clientType = lh.clientType.getOrElse("generic")
@@ -141,11 +150,22 @@ trait LineageHelpers extends LazyLogging with RestClient {
       bucketGuid <- lineageGuidFuture(lh.bucket, AWS_S3_BUCKET_TYPE, bucketEntities(lh.bucket, AIRLOCK_PII).toJson).map(_.entityGUID)
       pseudoDirGuid <- lineageGuidFuture(pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(bucketGuid, pseudoDir).toJson).map(_.entityGUID)
       objectGuid <- lineageGuidFuture(bucketObject, AWS_S3_OBJECT_TYPE, bucketObjectEntities(pseudoDirGuid, bucketObject, lh.contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
+      fsPathGuid <- externalFsPath match {
+        case Some(fsPath) => lineageGuidFuture(fsPath, HADOOP_FS_PATH, fsPathEntities(fsPath).toJson).map(_.entityGUID)
+        case None         => Future.successful("")
+      }
       processGuid <- method match {
         case Read =>
           postData(
             processEntities(
-              serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(pseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE), processOut(objectGuid, AWS_S3_OBJECT_TYPE), clientType, timestamp
+              serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(fsPathGuid, HADOOP_FS_PATH), clientType, timestamp
+            ).toJson)
+            .map(r => r.entityGUID)
+
+        case Write if fsPathGuid.length > 0 =>
+          postData(
+            processEntities(
+              serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(fsPathGuid, HADOOP_FS_PATH), processOut(objectGuid, AWS_S3_OBJECT_TYPE), clientType, timestamp
             ).toJson)
             .map(r => r.entityGUID)
 

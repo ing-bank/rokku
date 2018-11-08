@@ -38,5 +38,9 @@ trait ModelJsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val readsFileAttributes = jsonFormat5(BucketObjectAttributes)
   implicit val readsFile = jsonFormat2(BucketObject)
   implicit val readsFileEntities = jsonFormat1(Entities[BucketObject])
+  // FsPath
+  implicit val readsFsPathAttributes = jsonFormat3(FsPathAttributes)
+  implicit val readsFsPath = jsonFormat2(FsPath)
+  implicit val readsFsPathEntities = jsonFormat1(Entities[FsPath])
 
 }

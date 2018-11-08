@@ -1,7 +1,7 @@
 package com.ing.wbaa.airlock.proxy.provider
 
 import com.ing.wbaa.airlock.proxy.provider.atlas.ModelJsonSupport
-import com.ing.wbaa.airlock.proxy.provider.atlas.Model.{ Bucket, BucketAttributes, Classification, CreateResponse, Entities, BucketObjectAttributes, BucketObject, ClientProcess, ClientProcessAttributes, Server, ServerAttributes, UpdateResponse, guidRef }
+import com.ing.wbaa.airlock.proxy.provider.atlas.Model.{ Bucket, BucketAttributes, BucketObject, BucketObjectAttributes, Classification, ClientProcess, ClientProcessAttributes, CreateResponse, Entities, FsPath, FsPathAttributes, Server, ServerAttributes, UpdateResponse, guidRef }
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
 class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with ModelJsonSupport {
@@ -104,6 +104,21 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with M
         s"""{"entities":[{"typeName":"aws_cli_script","createdBy":"fakeUser","attributes":{"name":"aws_cli_${timestamp}","server":{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"server"},"outputs":[{"guid":"254f0c29-be7f-4dd6-a188-4cced02b0298","typeName":"aws_s3_object"}],"inputs":[{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"aws_s3_pseudo_dir"}],"operation":"read","qualifiedName":"aws_cli_${timestamp}","run_as":"fakeUser"}}]}"""
 
       assert(testBucketEntities == jsonEntities)
+    }
+  }
+
+  "Json fsPathEntities" should {
+    "match current schema" in {
+      val testFsPathEntities =
+        Entities(Seq(FsPath(
+          "fs_path",
+          FsPathAttributes("external_object/object1", "external_object/object1", "external_object/object1")
+        )))
+          .toJson
+          .toString()
+      val jsonEntities =
+        """{"entities":[{"typeName":"fs_path","attributes":{"qualifiedName":"external_object/object1","name":"external_object/object1","path":"external_object/object1"}}]}"""
+      assert(testFsPathEntities == jsonEntities)
     }
   }
 
