@@ -18,6 +18,8 @@ trait LineageHelpers extends LazyLogging with RestClient {
   val AIRLOCK_SERVER_TYPE = "server"
   val AIRLOCK_PII = "customer_PII"
   val AIRLOCK_STAGING_NODE = "staging_node"
+  val EXTERNAL_OBJECT_IN = "external_object_in"
+  val EXTERNAL_OBJECT_OUT = "external_object_out"
 
   private def timestamp: Long = System.currentTimeMillis()
 
@@ -150,7 +152,7 @@ trait LineageHelpers extends LazyLogging with RestClient {
       objectGuid <- lineageGuidFuture(bucketObject, AWS_S3_OBJECT_TYPE, bucketObjectEntities(pseudoDirGuid, bucketObject, lh.contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
       fsPathGuid <- externalFsPath match {
         case Some(fsPath) => lineageGuidFuture(fsPath, HADOOP_FS_PATH, fsPathEntities(fsPath).toJson).map(_.entityGUID)
-        case None         => Future("")
+        case None         => Future.successful("")
       }
       processGuid <- method match {
         case Read =>
