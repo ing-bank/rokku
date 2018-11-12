@@ -39,7 +39,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
     val proxy: AirlockS3Proxy = new AirlockS3Proxy with RequestHandlerS3 with SignatureProviderAws {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = airlockHttpSettings
-      override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress): Boolean = true
+      override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, forwardedForAddresses: Seq[RemoteAddress]): Boolean = true
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
       override val atlasSettings: AtlasSettings = new AtlasSettings(system.settings.config)
 

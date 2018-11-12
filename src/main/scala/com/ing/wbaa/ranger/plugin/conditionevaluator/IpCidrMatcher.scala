@@ -10,7 +10,7 @@ import scala.util.{ Failure, Success, Try }
 /**
  * This class will be called by Ranger upon a policy condition evaluation for IP ranges
  */
-class IpCidrMatcher extends RangerAbstractConditionEvaluator with LazyLogging {
+abstract class IpCidrMatcher extends RangerAbstractConditionEvaluator with LazyLogging {
 
   import scala.collection.JavaConverters._
 
@@ -60,8 +60,17 @@ class IpCidrMatcher extends RangerAbstractConditionEvaluator with LazyLogging {
     if (_allowAny) {
       logger.debug("RemoteIpAddress matched! (allowAny flag is true)")
       true
-    } else isRemoteAddressInCidrRange(request.getRemoteIPAddress)
+    } else {
+      val addresses = request.getRemoteIPAddress +: request.getForwardedAddresses.asScala.toList
+
+      addresses.foldLeft(zero) { (a, b) =>
+        combine(a, isRemoteAddressInCidrRange(b))
+      }
+    }
   }
+
+  protected val zero: Boolean
+  protected def combine(a: => Boolean, b: => Boolean): Boolean
 
   private def isRemoteAddressInCidrRange(remoteIpAddress: String): Boolean = {
     val remoteIpInCidr = cidrs

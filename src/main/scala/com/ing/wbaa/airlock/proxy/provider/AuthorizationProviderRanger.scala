@@ -40,7 +40,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
    *  Check authorization with Ranger. Operations like list-buckets or create, delete bucket must be
    *  enabled in configuration. They are disabled by default
    */
-  def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress): Boolean = {
+  def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, forwardedForAddresses: Seq[RemoteAddress]): Boolean = {
 
     def isAuthorisedByRanger(bucket: String): Boolean = {
       import scala.collection.JavaConverters._
@@ -58,6 +58,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
       // We're using the original client's IP address for verification in Ranger. Ranger seems to use the
       // RemoteIPAddress variable for this
       rangerRequest.setRemoteIPAddress(clientIPAddress.toOption.map(_.getHostAddress).orNull)
+      rangerRequest.setForwardedAddresses(forwardedForAddresses.map(_.toOption.map(_.getHostAddress).orNull).asJava)
 
       logger.debug(s"Checking ranger with request: $rangerRequest")
       Option(rangerPlugin.isAccessAllowed(rangerRequest)).exists(_.getIsAllowed)

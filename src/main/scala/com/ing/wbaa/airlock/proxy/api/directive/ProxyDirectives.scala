@@ -1,10 +1,14 @@
 package com.ing.wbaa.airlock.proxy.api.directive
 
+import java.net.InetAddress
+
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{ HttpHeader, HttpRequest }
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest, RemoteAddress}
 import akka.http.scaladsl.server.Directive1
 import com.ing.wbaa.airlock.proxy.data._
 import com.typesafe.scalalogging.LazyLogging
+
+import scala.util.Try
 
 object ProxyDirectives extends LazyLogging {
 
@@ -92,6 +96,24 @@ object ProxyDirectives extends LazyLogging {
           httpRequest.withHeaders(newHeaders.toList)
         }
       }
+    }
+
+  /**
+   * Extract the list of IPs in the X-Forwarded-For header.
+   */
+  val extractForwardedForIPs: Directive1[Seq[RemoteAddress]] =
+    optionalHeaderValueByName(X_FORWARDED_FOR_HEADER) flatMap {
+      case Some(ipSeq) =>
+        val addresses = ipSeq
+            .split(',')
+            .toSeq
+            .map(_.trim)
+            .map(ip => Try { RemoteAddress(InetAddress.getByName(ip), None) })
+            .map(_.getOrElse(RemoteAddress.Unknown))
+
+        provide(addresses)
+      case None =>
+        provide(Nil)
     }
 }
 

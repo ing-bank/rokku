@@ -1,23 +1,18 @@
 package com.ing.wbaa.ranger.plugin.conditionevaluator
 
-import org.apache.ranger.plugin.model.RangerPolicy.RangerPolicyItemCondition
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequest, RangerAccessRequestImpl }
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
-class IpCidrMatcherTest extends WordSpec with DiagrammedAssertions {
+abstract class IpCidrMatcherTest extends WordSpec with DiagrammedAssertions {
 
   import scala.collection.JavaConverters._
 
-  def newIpCidrMatcher(cidrs: List[String]): IpCidrMatcher = {
-    val testIpCidrClass = new IpCidrMatcher()
-    testIpCidrClass.setPolicyItemCondition(new RangerPolicyItemCondition("cidr", cidrs.asJava))
-    testIpCidrClass.init()
-    testIpCidrClass
-  }
+  def newIpCidrMatcher(cidrs: List[String]): IpCidrMatcher
 
-  def newRangerRequest(remoteIp: String): RangerAccessRequest = {
+  def newRangerRequest(remoteIp: String, forwardedForIps: List[String] = Nil): RangerAccessRequest = {
     val rari = new RangerAccessRequestImpl()
     rari.setRemoteIPAddress(remoteIp)
+    rari.setForwardedAddresses(forwardedForIps.asJava)
     rari
   }
 
@@ -29,11 +24,9 @@ class IpCidrMatcherTest extends WordSpec with DiagrammedAssertions {
       assert(newMatcher.isMatched(newRequest))
     }
 
-    "match all when conditions are null" in {
-      val newMatcher = new IpCidrMatcher()
-      newMatcher.setPolicyItemCondition(null)
-      newMatcher.init()
-      val newRequest = newRangerRequest("23.34.45.56")
+    "match when X-Forwarded-For IPs are in range" in {
+      val newMatcher = newIpCidrMatcher(List("1.1.0.0/16"))
+      val newRequest = newRangerRequest("1.1.1.1", List("1.1.1.1", "1.1.1.2", "1.1.2.1"))
       assert(newMatcher.isMatched(newRequest))
     }
 
@@ -49,7 +42,7 @@ class IpCidrMatcherTest extends WordSpec with DiagrammedAssertions {
       assert(newMatcher.isMatched(newRequest))
     }
 
-    "don't match when Ip not in CIDR range" in {
+    "not match when Ip not in CIDR range" in {
       val newMatcher = newIpCidrMatcher(List("1.2.3.4/32"))
       val newRequest = newRangerRequest("23.34.45.56")
       assert(!newMatcher.isMatched(newRequest))

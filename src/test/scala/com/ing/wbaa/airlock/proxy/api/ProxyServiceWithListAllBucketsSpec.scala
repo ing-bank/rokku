@@ -28,7 +28,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
     override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(
       Some(User(UserName("okUser"), Some(UserAssumedGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
     )
-    override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress): Boolean = true
+    override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, forwardedForAddresses: Seq[RemoteAddress]): Boolean = true
 
     override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
 
@@ -92,7 +92,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
   it should "return a rejection when user is not authorized" in {
     testRequest() ~> new ProxyServiceMock {
-      override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress): Boolean = false
+      override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, forwardedForAddresses: Seq[RemoteAddress]): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(rejection == AuthorizationFailedRejection)
     }

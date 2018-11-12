@@ -61,7 +61,7 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       override val stsSettings: StsSettings = StsSettings(testSystem)
       override val atlasSettings: AtlasSettings = new AtlasSettings(testSystem.settings.config)
 
-      override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress): Boolean = true
+      override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, forwardedForAddresses: Seq[RemoteAddress]): Boolean = true
     }
     proxy.startup.flatMap { binding =>
       val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
