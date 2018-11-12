@@ -113,7 +113,7 @@ before diving in here. That will introduce you to the various components used.
             
    2. Open a shell in the Ceph container:
    
-            docker exec -it YOUR_CEPH_CONTAINER_ID bash
+            docker exec -it airlock_ceph_1 bash
             
    3. Set the `testuser` to be a `system` user:
    
