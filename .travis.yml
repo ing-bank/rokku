@@ -22,6 +22,7 @@ before_script:
 - sbt ++$TRAVIS_SCALA_VERSION clean compile
 - echo "Wait for containers to be up and running"
 - bash waitForContainerSetup.sh
+- docker-compose exec ceph radosgw-admin user modify --uid ceph-admin --system
 
 script:
 - echo "Running pipeline for branch ${TRAVIS_BRANCH}"
