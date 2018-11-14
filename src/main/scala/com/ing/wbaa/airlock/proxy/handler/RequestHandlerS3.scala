@@ -3,6 +3,7 @@ package com.ing.wbaa.airlock.proxy.handler
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
 import com.ing.wbaa.airlock.proxy.data.User
 import com.ing.wbaa.airlock.proxy.handler.radosgw.RadosGatewayHandler
@@ -25,7 +26,10 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
    * If so, we can retry the request.
    */
   protected[this] def executeRequest(request: HttpRequest, userSTS: User): Future[HttpResponse] = {
-    val newRequest = request.withUri(request.uri.withAuthority(storageS3Settings.storageS3Authority))
+    val newRequest = request
+      .withUri(request.uri.withAuthority(storageS3Settings.storageS3Authority))
+      .withEntity(request.entity)
+      .addHeader(RawHeader("User-Agent", request.getHeader("User-Agent").get().value()))
 
     fireRequestToS3(newRequest).flatMap { response =>
       if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest)

@@ -25,7 +25,7 @@ trait SignatureHelpers extends LazyLogging {
     param match {
       case p if p.nonEmpty && p.contains("%7E") => p.replace("%7E", "~")
       case p if p.nonEmpty && p.contains("%2F") => p.replace("%2F", "/")
-      case p => p
+      case p                                    => p
     }
   }
 
@@ -38,7 +38,7 @@ trait SignatureHelpers extends LazyLogging {
           .grouped(2)
           .map {
             case Array(k, v) => (k, List(cleanURLEncoding(v)).asJava)
-            case Array(k) => (k, List("").asJava)
+            case Array(k)    => (k, List("").asJava)
           }
       }.toList.flatten.toMap.asJava
 
@@ -157,6 +157,9 @@ trait SignatureHelpers extends LazyLogging {
           .map { header =>
             if (header == "content-type") {
               (fixHeaderCapitals(header), httpRequest.entity.contentType.mediaType.value)
+            } else if (header == "content-length") {
+              val contentLength = httpRequest.entity.getContentLengthOption().orElse(0L)
+              (fixHeaderCapitals(header), contentLength.toString)
             } else if (header == "amz-sdk-invocation-id" || header == "amz-sdk-retry") {
               (header, extractHeaderOption(header).getOrElse(""))
             } else if (header == "x-amz-content-sha256") {
@@ -171,17 +174,17 @@ trait SignatureHelpers extends LazyLogging {
   }
 
   def getSignableRequest(
-                          httpRequest: HttpRequest,
-                          version: String,
-                          request: DefaultRequest[_] = new DefaultRequest("s3")): DefaultRequest[_] = {
+      httpRequest: HttpRequest,
+      version: String,
+      request: DefaultRequest[_] = new DefaultRequest("s3")): DefaultRequest[_] = {
 
     request.setHttpMethod(httpRequest.method.value match {
-      case "GET" => HttpMethodName.GET
-      case "POST" => HttpMethodName.POST
-      case "PUT" => HttpMethodName.PUT
+      case "GET"    => HttpMethodName.GET
+      case "POST"   => HttpMethodName.POST
+      case "PUT"    => HttpMethodName.PUT
       case "DELETE" => HttpMethodName.DELETE
-      case "HEAD" => HttpMethodName.HEAD
-      case _ => throw new Exception("Method not supported, request signature verification failed")
+      case "HEAD"   => HttpMethodName.HEAD
+      case _        => throw new Exception("Method not supported, request signature verification failed")
     })
 
     request.setResourcePath(httpRequest.uri.path.toString())
