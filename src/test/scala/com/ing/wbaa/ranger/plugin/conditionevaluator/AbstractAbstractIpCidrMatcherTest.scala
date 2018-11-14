@@ -3,11 +3,11 @@ package com.ing.wbaa.ranger.plugin.conditionevaluator
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequest, RangerAccessRequestImpl }
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
-abstract class IpCidrMatcherTest extends WordSpec with DiagrammedAssertions {
+abstract class AbstractAbstractIpCidrMatcherTest extends WordSpec with DiagrammedAssertions {
 
   import scala.collection.JavaConverters._
 
-  def newIpCidrMatcher(cidrs: List[String]): IpCidrMatcher
+  def newIpCidrMatcher(cidrs: List[String]): AbstractIpCidrMatcher
 
   def newRangerRequest(remoteIp: String, forwardedForIps: List[String] = Nil): RangerAccessRequest = {
     val rari = new RangerAccessRequestImpl()
@@ -52,6 +52,22 @@ abstract class IpCidrMatcherTest extends WordSpec with DiagrammedAssertions {
       val newMatcher = newIpCidrMatcher(List("1.2.3.4//32"))
       val newRequest = newRangerRequest("1.2.3.4")
       assert(!newMatcher.isMatched(newRequest))
+    }
+
+    "throw an exception when any IP is null" in {
+      val newMatcher = newIpCidrMatcher(List("1.2.3.4/32"))
+      val newRequest1 = newRangerRequest(null)
+      val newRequest2 = newRangerRequest("1.2.3.4", List("1.1.1.1", null))
+      assertThrows[Exception](newMatcher.isMatched(newRequest1))
+      assertThrows[Exception](newMatcher.isMatched(newRequest2))
+    }
+
+    "not throw an exception when an IP is null but matches all" in {
+      val newMatcher = newIpCidrMatcher(List())
+      val newRequest1 = newRangerRequest(null)
+      val newRequest2 = newRangerRequest("1.2.3.4", List("1.1.1.1", null))
+      assert(newMatcher.isMatched(newRequest1))
+      assert(newMatcher.isMatched(newRequest2))
     }
   }
 }

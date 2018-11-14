@@ -7,6 +7,8 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
 import org.apache.ranger.plugin.service.RangerBasePlugin
 
+import scala.util.{ Failure, Success, Try }
+
 /**
  * Interface for security provider implementations.
  */
@@ -40,7 +42,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
    *  Check authorization with Ranger. Operations like list-buckets or create, delete bucket must be
    *  enabled in configuration. They are disabled by default
    */
-  def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, forwardedForAddresses: Seq[RemoteAddress]): Boolean = {
+  def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = {
 
     def isAuthorisedByRanger(bucket: String): Boolean = {
       import scala.collection.JavaConverters._
@@ -56,12 +58,18 @@ trait AuthorizationProviderRanger extends LazyLogging {
         user.userAssumedGroup.map(_.value).toSet[String].asJava
       )
       // We're using the original client's IP address for verification in Ranger. Ranger seems to use the
-      // RemoteIPAddress variable for this
+      // RemoteIPAddress variable for this. For the header IPs we use the ForwardedAddresses: this is not
+      // completely true, but it works fairly enough.
       rangerRequest.setRemoteIPAddress(clientIPAddress.toOption.map(_.getHostAddress).orNull)
-      rangerRequest.setForwardedAddresses(forwardedForAddresses.map(_.toOption.map(_.getHostAddress).orNull).asJava)
+      rangerRequest.setForwardedAddresses(headerIPs.allIPs.map(_.toOption.map(_.getHostAddress).orNull).asJava)
 
       logger.debug(s"Checking ranger with request: $rangerRequest")
-      Option(rangerPlugin.isAccessAllowed(rangerRequest)).exists(_.getIsAllowed)
+      Try { rangerPlugin.isAccessAllowed(rangerRequest).getIsAllowed } match {
+        case Success(authorization) => authorization
+        case Failure(err) =>
+          logger.warn(s"Exception during authorization of the request: ${err}")
+          false
+      }
     }
 
     request match {

@@ -2,12 +2,12 @@ package com.ing.wbaa.ranger.plugin.conditionevaluator
 
 import org.apache.ranger.plugin.model.RangerPolicy.RangerPolicyItemCondition
 
-class AnyIpCidrMatcherTest extends IpCidrMatcherTest {
+class AnyIpCidrMatcherTest extends AbstractAbstractIpCidrMatcherTest {
   import scala.collection.JavaConverters._
 
-  def newIpCidrMatcher(cidrs: List[String]): IpCidrMatcher = {
+  def newIpCidrMatcher(cidrs: List[String]): AbstractIpCidrMatcher = {
     val testIpCidrClass = new AnyIpCidrMatcher()
-    testIpCidrClass.setPolicyItemCondition(new RangerPolicyItemCondition("cidr", cidrs.asJava))
+    testIpCidrClass.setPolicyItemCondition(new RangerPolicyItemCondition("cidrAnyUserIPs", cidrs.asJava))
     testIpCidrClass.init()
     testIpCidrClass
   }
@@ -27,8 +27,6 @@ class AnyIpCidrMatcherTest extends IpCidrMatcherTest {
       val newRequest = newRangerRequest("23.34.45.56")
       assert(newMatcher.isMatched(newRequest))
     }
-
-
 
   }
 

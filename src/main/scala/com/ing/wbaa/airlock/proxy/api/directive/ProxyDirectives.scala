@@ -3,11 +3,12 @@ package com.ing.wbaa.airlock.proxy.api.directive
 import java.net.InetAddress
 
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpHeader, HttpRequest, RemoteAddress}
+import akka.http.scaladsl.model.{ HttpHeader, HttpRequest, RemoteAddress }
 import akka.http.scaladsl.server.Directive1
 import com.ing.wbaa.airlock.proxy.data._
 import com.typesafe.scalalogging.LazyLogging
 
+import scala.language.postfixOps
 import scala.util.Try
 
 object ProxyDirectives extends LazyLogging {
@@ -17,7 +18,10 @@ object ProxyDirectives extends LazyLogging {
   private[this] val AUTHORIZATION_HTTP_HEADER_NAME = "authorization"
   private[this] val X_FORWARDED_FOR_HEADER = "X-Forwarded-For"
   private[this] val X_FORWARDED_PROTO_HEADER = "X-Forwarded-Proto"
+  private[this] val X_REAL_IP_HEADER = "X-Real-IP"
   private[this] val REMOTE_ADDRESS_HEADER = "Remote-Address"
+
+  private[this] val ipv4Regex = "\\s*([0-9\\.]+)(:([0-9]+))?\\s*"r
 
   /**
    * Extract data from the Authorization header of S3
@@ -99,21 +103,39 @@ object ProxyDirectives extends LazyLogging {
     }
 
   /**
-   * Extract the list of IPs in the X-Forwarded-For header.
+   * Extract the list of IPs in the X-Forwarded-For, X-Real-Ip and Remote-Address headers.
    */
-  val extractForwardedForIPs: Directive1[Seq[RemoteAddress]] =
-    optionalHeaderValueByName(X_FORWARDED_FOR_HEADER) flatMap {
-      case Some(ipSeq) =>
-        val addresses = ipSeq
-            .split(',')
-            .toSeq
-            .map(_.trim)
-            .map(ip => Try { RemoteAddress(InetAddress.getByName(ip), None) })
-            .map(_.getOrElse(RemoteAddress.Unknown))
+  val extractHeaderIPs: Directive1[HeaderIPs] =
+    optionalRawHeaderValueByName(X_REAL_IP_HEADER) &
+      optionalRawHeaderValueByName(X_FORWARDED_FOR_HEADER) &
+      optionalRawHeaderValueByName(REMOTE_ADDRESS_HEADER) tflatMap { case (xRealIP, xForwardedFor, remoteAddress) =>
+        provide(HeaderIPs(
+          `X-Real-IP` = xRealIP.map(extractIP),
+          `X-Forwarded-For` = xForwardedFor.map(_.split(',').map(extractIP)),
+          `Remote-Address` = remoteAddress.map(extractIP)
+        ))
+      }
 
-        provide(addresses)
-      case None =>
-        provide(Nil)
-    }
+  /*
+   *  This directive is required to correctly intercept the user provided headers.
+   *  The behavior is the same as optionalHeaderValueByName, but it makes sure that
+   *  the header is instance of RawHeader. This check is necessary because Akka is
+   *  injecting headers (e.g. Remote-Address), which may be interpreted as user headers.
+   */
+  private def optionalRawHeaderValueByName(name: String): Directive1[Option[String]] =
+    optionalHeaderValuePF({
+      case h: RawHeader if h.lowercaseName == name.toLowerCase => h.value
+    })
+
+  private def extractIP(address: String): RemoteAddress =
+    Try {
+      address match {
+        case ipv4Regex(ip, _, port) =>
+          RemoteAddress(InetAddress.getByName(ip), Option(port).map(_.toInt))
+        case _ =>
+          logger.warn(s"Unable to parse IP address ${address}")
+          RemoteAddress.Unknown
+      }
+    } getOrElse RemoteAddress.Unknown
 }
 
