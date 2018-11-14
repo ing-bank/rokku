@@ -26,10 +26,11 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
    * If so, we can retry the request.
    */
   protected[this] def executeRequest(request: HttpRequest, userSTS: User): Future[HttpResponse] = {
+    val userAgent = request.getHeader("User-Agent").orElse(RawHeader("User-Agent", "unknown")).value()
     val newRequest = request
       .withUri(request.uri.withAuthority(storageS3Settings.storageS3Authority))
       .withEntity(request.entity)
-      .addHeader(RawHeader("User-Agent", request.getHeader("User-Agent").get().value()))
+      .addHeader(RawHeader("User-Agent", userAgent))
 
     fireRequestToS3(newRequest).flatMap { response =>
       if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest)
