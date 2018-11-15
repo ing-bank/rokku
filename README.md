@@ -97,12 +97,11 @@ before diving in here. That will introduce you to the various components used.
     > NOTE: This session expires at the expiration date specified by the STS service. You'll need to repeat these steps
     > everytime your session expires.
  
-4. Technically you're now able to use the aws cli to perform any commands through Airlock
-   to S3. Airlock automatically creates the user on Ceph for you. Since Ranger is in place to handle authorisation,
-   all users on Ceph can be allowed to do everything.
-   
-   In order to grant a Ceph user access to other buckets, we currently rely on them to be `system` users. Airlock will
-   automatically create the `system` user on Ceph for you, but the Airlock NPA must be manually configured as `system`:
+4. Technically you're now able to use the aws cli to perform any commands through Airlock to S3. Airlock automatically
+   creates the user on Ceph for you. Since the authorisation is completely handled by ranger, authorization in Ceph
+   should be removed to avoid conflicts. For this reason, ceph users need to have admin rights, granting them full
+   control over all buckets. Airlock creates new users with `system` roles automatically, but the Airlock NPA must be
+   manually configured as `system` user to be able to grant admin rights to other users:
    
    1. Find the ID of the docker Ceph container:
    
