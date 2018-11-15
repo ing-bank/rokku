@@ -157,6 +157,9 @@ trait SignatureHelpers extends LazyLogging {
           .map { header =>
             if (header == "content-type") {
               (fixHeaderCapitals(header), httpRequest.entity.contentType.mediaType.value)
+            } else if (header == "content-length") {
+              val contentLength = httpRequest.entity.getContentLengthOption().orElse(0L)
+              (fixHeaderCapitals(header), contentLength.toString)
             } else if (header == "amz-sdk-invocation-id" || header == "amz-sdk-retry") {
               (header, extractHeaderOption(header).getOrElse(""))
             } else if (header == "x-amz-content-sha256") {
