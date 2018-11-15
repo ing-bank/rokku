@@ -17,7 +17,7 @@ trait HealthService extends RadosGatewayHandler {
     path("ping") {
       get {
         Try(listAllBuckets) match {
-          case Success(_) => complete("pong")
+          case Success(_)  => complete("pong")
           case Failure(ex) => complete(StatusCodes.InternalServerError -> s"storage not available - $ex")
         }
       }

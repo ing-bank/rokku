@@ -32,7 +32,7 @@ trait ProxyService extends LazyLogging {
   protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean
 
   // Authorization methods
-  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress): Boolean
+  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean
 
   // Atlas Lineage
   protected[this] def atlasSettings: AtlasSettings
@@ -41,15 +41,16 @@ trait ProxyService extends LazyLogging {
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
-      extractClientIP { clientIPAddress =>
+      (extractClientIP & extractHeaderIPs) { (clientIPAddress, headerIPs) =>
         logger.debug(s"Extracted Client IP: " +
           s"${clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")}")
+        logger.debug(s"Extracted headers IPs: ${headerIPs}")
         extractRequest { httpRequest =>
           extracts3Request { s3Request =>
             onComplete(areCredentialsActive(s3Request.credential)) {
               case Success(Some(userSTS: User)) =>
                 logger.debug(s"Credentials active for request, user retrieved: $userSTS")
-                processRequestForValidUser(clientIPAddress, httpRequest, s3Request, userSTS)
+                processRequestForValidUser(clientIPAddress, headerIPs, httpRequest, s3Request, userSTS)
               case Success(None) =>
                 val msg = s"Request not authenticated: $s3Request"
                 logger.warn(msg)
@@ -75,11 +76,11 @@ trait ProxyService extends LazyLogging {
     }
   }
 
-  private def processRequestForValidUser(clientIPAddress: RemoteAddress, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User) = {
+  private def processRequestForValidUser(clientIPAddress: RemoteAddress, headerIPs: HeaderIPs, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User) = {
     if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
       logger.debug(s"Request authenticated: $httpRequest")
 
-      if (isUserAuthorizedForRequest(s3Request, userSTS, clientIPAddress)) {
+      if (isUserAuthorizedForRequest(s3Request, userSTS, clientIPAddress, headerIPs)) {
         logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
 
         processAuthorizedRequest(httpRequest, s3Request, userSTS, clientIPAddress)
