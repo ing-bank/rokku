@@ -97,15 +97,11 @@ before diving in here. That will introduce you to the various components used.
     > NOTE: This session expires at the expiration date specified by the STS service. You'll need to repeat these steps
     > everytime your session expires.
  
-4. Technically you're now able to use the aws cli to perform any commands through Airlock
-   to S3. Airlock automatically creates the user on Ceph for you. One thing it cannot do though, is make this user an 
-   admin/system user. Because of this, users on Ceph are not allowed to perform actions on other users' buckets.
-   
-   Since Ranger is in place to handle authorisation, all users on Ceph can be allowed to do everything.
-   
-   In order to allow a user on Ceph to access other buckets, we currently rely on them to be `system` users. Airlock
-   will automatically create the user on Ceph for you, but setting them to be `system` users still needs to be done
-   manually using the following steps:
+4. Technically you're now able to use the aws cli to perform any commands through Airlock to S3. Airlock automatically
+   creates the user on Ceph for you. Since the authorisation is completely handled by ranger, authorization in Ceph
+   should be removed to avoid conflicts. For this reason, ceph users need to have admin rights, granting them full
+   control over all buckets. Airlock creates new users with `system` roles automatically, but the Airlock NPA must be
+   manually configured as `system` user to be able to grant admin rights to other users:
    
    1. Find the ID of the docker Ceph container:
    
@@ -115,9 +111,9 @@ before diving in here. That will introduce you to the various components used.
    
             docker exec -it airlock_ceph_1 bash
             
-   3. Set the `testuser` to be a `system` user:
+   3. Set the `ceph-admin` to be a `system` user:
    
-            radosgw-admin user modify --uid testuser --system
+            radosgw-admin user modify --uid ceph-admin --system
             
 5. Go nuts with the default bucket called `demobucket` that exists on Ceph already:
 
