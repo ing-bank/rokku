@@ -21,7 +21,7 @@ services:
     image: nielsdenissen/airlock-dev-apache-ranger-postgres:0.0.8
 
   ranger-admin:
-    image: nielsdenissen/airlock-dev-apache-ranger:0.0.9
+    image: nielsdenissen/airlock-dev-apache-ranger:0.0.10
     stdin_open: true
     tty: true
     depends_on:
