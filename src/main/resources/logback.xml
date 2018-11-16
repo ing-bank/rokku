@@ -6,6 +6,32 @@
          ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
     <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
       <layout class="com.ing.wbaa.airlock.proxy.util.MaskingPatternLayout">
+        <!-- Insert here the regexes to sanitize the log messages.
+             Replacement supports pattern groups with variables named $1, $2, etc -->
+        <replace>
+          <pattern>AwsSessionToken\([^)]+\)</pattern>
+          <replacement>AwsSessionToken([...])</replacement>
+        </replace>
+        <replace>
+          <pattern>AwsAccessKey\([^)]+\)</pattern>
+          <replacement>AwsAccessKey([...])</replacement>
+        </replace>
+        <replace>
+          <pattern>AwsSecretKey\([^)]+\)</pattern>
+          <replacement>AwsSecretKey([...])</replacement>
+        </replace>
+        <replace>
+          <pattern>(?i)(X-Amz-Security-Token(: |=))[\w\d]+</pattern>
+          <replacement>$1[...]</replacement>
+        </replace>
+        <replace>
+          <pattern>(?i)(Signature(: |=))[\w\d]+</pattern>
+          <replacement>$1[...]</replacement>
+        </replace>
+        <replace>
+          <pattern>(?i)(Credential(: |=))[\w\d]+</pattern>
+          <replacement>$1[...]</replacement>
+        </replace>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
       </layout>
     </encoder>
