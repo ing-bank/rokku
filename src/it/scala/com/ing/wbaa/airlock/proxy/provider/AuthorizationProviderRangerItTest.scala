@@ -15,7 +15,7 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
 
   val s3Request = S3Request(
     AwsRequestCredential(AwsAccessKey("accesskey"), Some(AwsSessionToken("sessiontoken"))),
-    Some("demobucket"),
+    Some("/demobucket"),
     None,
     Read
   )
@@ -61,11 +61,11 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
       }
 
       "authorize for requests without bucket" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None), user, clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None), user, clientIPAddress, headerIPs))
       }
 
       "doesn't authorize for requests that are not supposed to be (Write)" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(accessType = Write), user, clientIPAddress, headerIPs))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(accessType = Write, bucketObjectRoot = Some("object")), user, clientIPAddress, headerIPs))
       }
 
       "doesn't authorize for unauthorized user and group" in withAuthorizationProviderRanger() { apr =>
@@ -82,13 +82,13 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
       }
 
       "authorize allow-list-buckets with default settings" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None, bucketObjectRoot = None, accessType = Read), user, clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None, bucketObjectRoot = None, accessType = Read), user, clientIPAddress, headerIPs))
       }
 
       "does authorize allow-list-buckets set to true" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
         override val listBucketsEnabled: Boolean = true
       }) { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(bucket = None, bucketObjectRoot = None, accessType = Read), user, clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None, bucketObjectRoot = None, accessType = Read), user, clientIPAddress, headerIPs))
       }
 
       "does authorize allow-create-buckets set to true" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
