@@ -9,12 +9,17 @@ class S3RequestSpec extends FlatSpec with DiagrammedAssertions {
 
   "S3Request" should "parse an S3 request from an http Path and Method" in {
     val result = S3Request(testCred, Uri.Path("/demobucket"), HttpMethods.GET)
-    assert(result == S3Request(testCred, Some("demobucket"), None, Read))
+    assert(result == S3Request(testCred, Some("/demobucket"), None, Read))
   }
 
   it should "parse an S3 request from an http Path with object and Method" in {
     val result = S3Request(testCred, Uri.Path("/demobucket/demoobject"), HttpMethods.GET)
-    assert(result == S3Request(testCred, Some("demobucket"), Some("demoobject"), Read))
+    assert(result == S3Request(testCred, Some("/demobucket/demoobject"), Some("demoobject"), Read))
+  }
+
+  it should "parse an S3 request from an http Path with subfolder and Method" in {
+    val result = S3Request(testCred, Uri.Path("/demobucket/subfolder1/"), HttpMethods.GET)
+    assert(result == S3Request(testCred, Some("/demobucket/subfolder1/"), None, Read))
   }
 
   it should "parse none for bucket if path is only root" in {
@@ -29,7 +34,7 @@ class S3RequestSpec extends FlatSpec with DiagrammedAssertions {
 
   it should "set access to write for anything but GET" in {
     val result = S3Request(testCred, Uri.Path("/demobucket"), HttpMethods.POST)
-    assert(result == S3Request(testCred, Some("demobucket"), None, Write))
+    assert(result == S3Request(testCred, Some("/demobucket"), None, Write))
   }
 
 }

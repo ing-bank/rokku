@@ -44,11 +44,11 @@ trait AuthorizationProviderRanger extends LazyLogging {
    */
   def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = {
 
-    def isAuthorisedByRanger(bucket: String): Boolean = {
+    def isAuthorisedByRanger(s3path: String): Boolean = {
       import scala.collection.JavaConverters._
 
       val rangerResource = new RangerAccessResourceImpl(
-        Map[String, AnyRef]("path" -> bucket).asJava
+        Map[String, AnyRef]("path" -> s3path).asJava
       )
 
       val rangerRequest = new RangerAccessRequestImpl(
@@ -71,15 +71,15 @@ trait AuthorizationProviderRanger extends LazyLogging {
           false
       }
     }
-
+    //todo: check object conditions - last is always object? aws is not adding subdir unless object is passed?
     request match {
       // object operations, put / delete etc.
-      case S3Request(_, Some(bucket), Some(_), _) =>
-        isAuthorisedByRanger(bucket)
+      case S3Request(_, Some(s3path), Some(_), _) =>
+        isAuthorisedByRanger(s3path)
 
       // list-objects in the bucket operation
-      case S3Request(_, Some(bucket), None, accessType) if accessType == Read || accessType == Head =>
-        isAuthorisedByRanger(bucket)
+      case S3Request(_, Some(s3path), None, accessType) if accessType == Read || accessType == Head =>
+        isAuthorisedByRanger(s3path)
 
       // create / delete bucket opetation
       case S3Request(_, Some(_), None, accessType) if (accessType == Write || accessType == Delete) && rangerSettings.createBucketsEnabled =>
