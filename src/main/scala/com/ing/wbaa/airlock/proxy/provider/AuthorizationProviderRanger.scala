@@ -71,7 +71,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
           false
       }
     }
-    //todo: check object conditions - last is always object? aws is not adding subdir unless object is passed?
+
     request match {
       // object operations, put / delete etc.
       case S3Request(_, Some(s3path), Some(_), _) =>
