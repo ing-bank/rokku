@@ -23,6 +23,7 @@ before_script:
 - echo "Wait for containers to be up and running"
 - bash waitForContainerSetup.sh
 - docker-compose exec ceph radosgw-admin user modify --uid ceph-admin --system
+- docker-compose exec ceph s3cmd put /etc/issue s3://demobucket/subdir/
 
 script:
 - echo "Running pipeline for branch ${TRAVIS_BRANCH}"

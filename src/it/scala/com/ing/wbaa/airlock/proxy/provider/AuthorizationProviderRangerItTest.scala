@@ -128,6 +128,10 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
         assert(!apr.isUserAuthorizedForRequest(s3Request, user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
       }
 
+      "doesn't allow listing subdir in the bucket" in withAuthorizationProviderRanger() { apr =>
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/demobucket/subdir")), user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+      }
+
     }
   }
 }
