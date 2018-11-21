@@ -1,11 +1,13 @@
 package com.ing.wbaa.airlock.proxy.api
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, RemoteAddress, StatusCodes }
-import akka.http.scaladsl.server.{ AuthorizationFailedRejection, Route }
+import akka.http.scaladsl.server.Route
 import com.ing.wbaa.airlock.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.airlock.proxy.config.AtlasSettings
 import com.ing.wbaa.airlock.proxy.data._
+import com.ing.wbaa.airlock.proxy.provider.aws.AwsErrorCodes
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -54,10 +56,10 @@ trait ProxyService extends LazyLogging {
               case Success(None) =>
                 val msg = s"Request not authenticated: $s3Request"
                 logger.warn(msg)
-                complete((StatusCodes.Forbidden, msg))
+                complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
               case Failure(exception) =>
                 logger.error(s"An error occurred checking authentication with STS service", exception)
-                complete(StatusCodes.InternalServerError)
+                complete(StatusCodes.InternalServerError -> AwsErrorCodes.response(StatusCodes.InternalServerError))
             }
           }
         }
@@ -87,11 +89,11 @@ trait ProxyService extends LazyLogging {
 
       } else {
         logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")
-        reject(AuthorizationFailedRejection)
+        complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
       }
     } else {
       logger.warn(s"Request not authenticated: $httpRequest")
-      complete(StatusCodes.Forbidden)
+      complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
     }
   }
 }
