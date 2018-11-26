@@ -18,10 +18,10 @@ services:
     command: demo
 
   postgres-server:
-    image: nielsdenissen/airlock-dev-apache-ranger-postgres:0.0.8
+    image: wbaa/airlock-dev-apache-ranger-postgres:0.0.8
 
   ranger-admin:
-    image: nielsdenissen/airlock-dev-apache-ranger:0.0.11
+    image: wbaa/airlock-dev-apache-ranger:0.0.11
     stdin_open: true
     tty: true
     depends_on:
@@ -31,7 +31,7 @@ services:
     - "6080:6080"
 
   airlock-sts:
-    image: nielsdenissen/airlock-sts:0.0.10
+    image: wbaa/airlock-sts:0.0.10
     environment:
     - STS_HOST=0.0.0.0
     - STS_PORT=12345
@@ -47,7 +47,7 @@ services:
     - "mariadb"
 
   keycloak:
-    image: nielsdenissen/airlock-dev-keycloak:0.0.2
+    image: wbaa/airlock-dev-keycloak:0.0.2
     environment:
     - KEYCLOAK_USER=admin
     - KEYCLOAK_PASSWORD=admin
@@ -55,12 +55,12 @@ services:
     - "8080:8080"
 
   atlas:
-    image: nielsdenissen/airlock-dev-apache-atlas:0.0.5
+    image: wbaa/airlock-dev-apache-atlas:0.0.5
     ports:
     - "21000:21000"
 
   mariadb:
-    image: nielsdenissen/airlock-dev-mariadb:0.0.1
+    image: wbaa/airlock-dev-mariadb:0.0.1
     environment:
     - MYSQL_ROOT_PASSWORD=admin
     ports:
