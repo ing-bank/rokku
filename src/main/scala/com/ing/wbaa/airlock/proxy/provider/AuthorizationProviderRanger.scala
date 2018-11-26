@@ -86,7 +86,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
       case S3Request(_, Some(s3path), None, accessType) if accessType == Read || accessType == Head =>
         isAuthorisedByRanger(s3path)
 
-      // create / delete bucket opetation
+      // create / delete bucket operation
       case S3Request(_, Some(_), None, accessType) if (accessType == Write || accessType == Delete) && rangerSettings.createBucketsEnabled =>
         logger.debug(s"Skipping ranger for creation/deletion of bucket with request: $request")
         true
