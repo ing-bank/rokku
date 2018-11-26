@@ -132,6 +132,26 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
         assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/demobucket/subdir")), user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
       }
 
+      "does allow read homedir in the bucket" in withAuthorizationProviderRanger() { apr =>
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/home/testuser")), user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+      }
+
+      "doesn't allow read in non homedir in the bucket" in withAuthorizationProviderRanger() { apr =>
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/home/testuser1")), user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+      }
+
+      "does allow write homedir in the bucket" in withAuthorizationProviderRanger() { apr =>
+        assert(apr.isUserAuthorizedForRequest(
+          s3Request.copy(s3BucketPath = Some("/home/testuser"), bucketObjectRoot = Some("object1"), accessType = Write),
+          user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+      }
+
+      "doesn't allow write in non homedir in the bucket" in withAuthorizationProviderRanger() { apr =>
+        assert(!apr.isUserAuthorizedForRequest(
+          s3Request.copy(s3BucketPath = Some("/home/testuser1"), bucketObjectRoot = Some("object1"), accessType = Write),
+          user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+      }
+
     }
   }
 }

@@ -77,6 +77,11 @@ trait AuthorizationProviderRanger extends LazyLogging {
       case S3Request(_, Some(s3path), Some(_), _) =>
         isAuthorisedByRanger(s3path)
 
+      // object operation as subfolder, in this case object can be empty
+      // we need this to differentiate subfolder create/delete from bucket create/delete
+      case S3Request(_, Some(s3path), None, accessType) if s3path.endsWith("/") && (accessType == Delete || accessType == Write) =>
+        isAuthorisedByRanger(s3path)
+
       // list-objects in the bucket operation
       case S3Request(_, Some(s3path), None, accessType) if accessType == Read || accessType == Head =>
         isAuthorisedByRanger(s3path)
