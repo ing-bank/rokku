@@ -6,7 +6,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.{ ActorMaterializer, Materializer }
 import com.ing.wbaa.airlock.proxy.config.AtlasSettings
@@ -19,7 +18,9 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
   private trait ProxyServiceMock extends ProxyServiceWithListAllBuckets {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
+
     override implicit def executionContext: ExecutionContext = system.dispatcher
+
     implicit def materializer: Materializer = ActorMaterializer()
 
     override def executeRequest(request: HttpRequest, userSTS: User): Future[HttpResponse] =
@@ -28,6 +29,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
     override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(
       Some(User(UserName("okUser"), Some(UserAssumedGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
     )
+
     override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = true
 
     override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
@@ -65,44 +67,44 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
     }
   }
 
-  it should "return a rejection when the user credentials cannot be authenticated" in {
+  it should "return an accessDenied when the user credentials cannot be authenticated" in {
     testRequest("notOkAccessKey") ~> new ProxyServiceMock {
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(None)
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
-      val response = responseAs[String]
-      assert(response == "Request not authenticated: " +
-        "S3Request(" +
-        "AwsRequestCredential(AwsAccessKey(notOkAccessKey),Some(AwsSessionToken(okSessionToken)))," +
-        "None," +
-        "None," +
-        "Read)")
+      val response = responseAs[String].replaceAll("\\s", "")
+      assert(response == "<Error><Code>AccessDenied</Code><Message>AccessDenied</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
 
-  it should "return a rejection when an exception occurs in authentication" in {
+  it should "return a serviceUnavailable when an exception occurs in authentication" in {
     testRequest() ~> new ProxyServiceMock {
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(throw new Exception("BOOM"))
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.InternalServerError)
-      val response = responseAs[String]
-      assert(response == "There was an internal server error.")
+      val response = responseAs[String].replaceAll("\\s", "")
+      assert(response == "<Error><Code>ServiceUnavailable</Code><Message>Reduceyourrequestrate.</Message>" +
+        "<Resource></Resource><RequestId></RequestId></Error>")
     }
   }
 
-  it should "return a rejection when user is not authorized" in {
+  it should "return an accessDenied when user is not authorized" in {
     testRequest() ~> new ProxyServiceMock {
       override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = false
     }.proxyServiceRoute ~> check {
-      assert(rejection == AuthorizationFailedRejection)
+      assert(status == StatusCodes.Forbidden)
+      val response = responseAs[String].replaceAll("\\s", "")
+      assert(response == "<Error><Code>AccessDenied</Code><Message>AccessDenied</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
 
-  it should "return a rejection when user is not authenticated" in {
+  it should "return an accessDenied when user is not authenticated" in {
     testRequest() ~> new ProxyServiceMock {
       override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
+      val response = responseAs[String].replaceAll("\\s", "")
+      assert(response == "<Error><Code>AccessDenied</Code><Message>AccessDenied</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
 }
