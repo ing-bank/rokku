@@ -70,8 +70,13 @@ object ProxyDirectives extends LazyLogging {
                   .filter(_.contains("prefix"))
                   .head.split("=")
 
+                val delimiter = queryString
+                  .split("&")
+                  .filter(_.contains("delimiter"))
+                  .head.split("=").last
+
                 if (queryPrefixPair.length == 2) {
-                  Uri.Path(s"${httpRequest.uri.path}/${queryPrefixPair.last.replace("%2F", "/")}")
+                  Uri.Path(s"${httpRequest.uri.path}/${queryPrefixPair.last.replace(delimiter, "/")}")
                 } else {
                   Uri.Path(s"${httpRequest.uri.path}")
                 }
