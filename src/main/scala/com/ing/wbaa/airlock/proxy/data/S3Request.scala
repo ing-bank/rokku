@@ -7,14 +7,14 @@ import com.typesafe.scalalogging.LazyLogging
 /**
  * @param credential
  * @param s3BucketPath     A None for bucket means this is an operation not targeted to a specific bucket (e.g. list buckets)
- * @param bucketObjectRoot
+ * @param s3Object
  * @param accessType The access type for this request, write includes actions like write/update/delete
  *
  */
 case class S3Request(
     credential: AwsRequestCredential,
     s3BucketPath: Option[String],
-    bucketObjectRoot: Option[String],
+    s3Object: Option[String],
     accessType: AccessType
 )
 
@@ -23,7 +23,7 @@ object S3Request extends LazyLogging {
 
     val pathString = path.toString()
     val s3path = if (path.length > 1) { Some(pathString) } else { None }
-    val bucketObjectRoot =
+    val s3Object =
       if (pathString.endsWith("/") || pathString.split("/").length < 3) {
         None
       } else {
@@ -41,6 +41,6 @@ object S3Request extends LazyLogging {
         NoAccess
     }
 
-    S3Request(credential, s3path, bucketObjectRoot, accessType)
+    S3Request(credential, s3path, s3Object, accessType)
   }
 }
