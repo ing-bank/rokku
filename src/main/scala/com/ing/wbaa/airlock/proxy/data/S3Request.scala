@@ -19,16 +19,18 @@ case class S3Request(
 )
 
 object S3Request extends LazyLogging {
+  def extractObject(pathString: String): Option[String] =
+    if (pathString.endsWith("/") || pathString.split("/").length < 3) {
+      None
+    } else {
+      Some(pathString.split("/").last)
+    }
+
   def apply(credential: AwsRequestCredential, path: Path, httpMethod: HttpMethod): S3Request = {
 
     val pathString = path.toString()
     val s3path = if (path.length > 1) { Some(pathString) } else { None }
-    val s3Object =
-      if (pathString.endsWith("/") || pathString.split("/").length < 3) {
-        None
-      } else {
-        Some(pathString.split("/").last)
-      }
+    val s3Object = extractObject(pathString)
 
     val accessType = httpMethod.value match {
       case "GET"    => Read
