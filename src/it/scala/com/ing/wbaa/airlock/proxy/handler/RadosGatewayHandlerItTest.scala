@@ -97,7 +97,7 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
     }
 
     "list all buckets" in {
-      assert(listAllBuckets.head == "demobucket")
+      assert(listAllBuckets.head == "home")
     }
   }
 }

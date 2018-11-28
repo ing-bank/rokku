@@ -6,29 +6,31 @@ import com.typesafe.scalalogging.LazyLogging
 
 /**
  * @param credential
- * @param bucket A None for bucket means this is an operation not targeted to a specific bucket (e.g. list buckets)
- * @param bucketObjectRoot
+ * @param s3BucketPath     A None for bucket means this is an operation not targeted to a specific bucket (e.g. list buckets)
+ * @param s3Object
  * @param accessType The access type for this request, write includes actions like write/update/delete
  *
  */
 case class S3Request(
     credential: AwsRequestCredential,
-    bucket: Option[String],
-    bucketObjectRoot: Option[String],
+    s3BucketPath: Option[String],
+    s3Object: Option[String],
     accessType: AccessType
 )
 
 object S3Request extends LazyLogging {
-  def apply(credential: AwsRequestCredential, path: Path, httpMethod: HttpMethod): S3Request = {
-    val bucket = path.toString
-      .split("/")
-      .toList
-      .lift(1)
+  def extractObject(pathString: String): Option[String] =
+    if (pathString.endsWith("/") || pathString.split("/").length < 3) {
+      None
+    } else {
+      Some(pathString.split("/").last)
+    }
 
-    val bucketObjectRoot = path.toString
-      .split("/")
-      .toList
-      .lift(2)
+  def apply(credential: AwsRequestCredential, path: Path, httpMethod: HttpMethod): S3Request = {
+
+    val pathString = path.toString()
+    val s3path = if (path.length > 1) { Some(pathString) } else { None }
+    val s3Object = extractObject(pathString)
 
     val accessType = httpMethod.value match {
       case "GET"    => Read
@@ -41,6 +43,6 @@ object S3Request extends LazyLogging {
         NoAccess
     }
 
-    S3Request(credential, bucket, bucketObjectRoot, accessType)
+    S3Request(credential, s3path, s3Object, accessType)
   }
 }

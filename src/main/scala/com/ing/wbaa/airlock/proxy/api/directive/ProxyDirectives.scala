@@ -3,7 +3,7 @@ package com.ing.wbaa.airlock.proxy.api.directive
 import java.net.InetAddress
 
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{ HttpHeader, HttpRequest, RemoteAddress }
+import akka.http.scaladsl.model.{ HttpHeader, HttpRequest, RemoteAddress, Uri }
 import akka.http.scaladsl.server.Directive1
 import com.ing.wbaa.airlock.proxy.data._
 import com.typesafe.scalalogging.LazyLogging
@@ -62,9 +62,30 @@ object ProxyDirectives extends LazyLogging {
         case Tuple1(optionalSessionToken) =>
           headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
 
+            // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
+            val s3path = httpRequest.uri.rawQueryString match {
+              case Some(queryString) if queryString.contains("prefix") =>
+                val queryPrefixPair = queryString
+                  .split("&")
+                  .filter(_.contains("prefix"))
+                  .head.split("=")
+
+                val delimiter = queryString
+                  .split("&")
+                  .filter(_.contains("delimiter"))
+                  .head.split("=").last
+
+                if (queryPrefixPair.length == 2) {
+                  Uri.Path(s"${httpRequest.uri.path}/${queryPrefixPair.last.replace(delimiter, "/")}")
+                } else {
+                  Uri.Path(s"${httpRequest.uri.path}")
+                }
+              case _     => httpRequest.uri.path
+            }
+
             val s3Request = S3Request(
               AwsRequestCredential(awsAccessKey, optionalSessionToken.map(AwsSessionToken)),
-              httpRequest.uri.path,
+              s3path,
               httpRequest.method
             )
 

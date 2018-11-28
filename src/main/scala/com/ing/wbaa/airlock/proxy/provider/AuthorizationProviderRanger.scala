@@ -44,11 +44,11 @@ trait AuthorizationProviderRanger extends LazyLogging {
    */
   def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = {
 
-    def isAuthorisedByRanger(bucket: String): Boolean = {
+    def isAuthorisedByRanger(s3path: String): Boolean = {
       import scala.collection.JavaConverters._
 
       val rangerResource = new RangerAccessResourceImpl(
-        Map[String, AnyRef]("path" -> bucket).asJava
+        Map[String, AnyRef]("path" -> s3path).asJava
       )
 
       val rangerRequest = new RangerAccessRequestImpl(
@@ -74,14 +74,19 @@ trait AuthorizationProviderRanger extends LazyLogging {
 
     request match {
       // object operations, put / delete etc.
-      case S3Request(_, Some(bucket), Some(_), _) =>
-        isAuthorisedByRanger(bucket)
+      case S3Request(_, Some(s3path), Some(_), _) =>
+        isAuthorisedByRanger(s3path)
+
+      // object operation as subfolder, in this case object can be empty
+      // we need this to differentiate subfolder create/delete from bucket create/delete
+      case S3Request(_, Some(s3path), None, accessType) if s3path.endsWith("/") && (accessType == Delete || accessType == Write) =>
+        isAuthorisedByRanger(s3path)
 
       // list-objects in the bucket operation
-      case S3Request(_, Some(bucket), None, accessType) if accessType == Read || accessType == Head =>
-        isAuthorisedByRanger(bucket)
+      case S3Request(_, Some(s3path), None, accessType) if accessType == Read || accessType == Head =>
+        isAuthorisedByRanger(s3path)
 
-      // create / delete bucket opetation
+      // create / delete bucket operation
       case S3Request(_, Some(_), None, accessType) if (accessType == Write || accessType == Delete) && rangerSettings.createBucketsEnabled =>
         logger.debug(s"Skipping ranger for creation/deletion of bucket with request: $request")
         true
