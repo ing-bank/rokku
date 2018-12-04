@@ -16,25 +16,31 @@ env:
 
 before_script:
 - echo "Running pipeline for branch ${TRAVIS_BRANCH}"
-- echo "Starting dependent containers for testing"
-- docker-compose up -d
-- echo "Compile the project while containers are starting up"
-- sbt ++$TRAVIS_SCALA_VERSION clean compile
-- echo "Wait for containers to be up and running"
-- bash waitForContainerSetup.sh
-- echo "Workaround for issue where Atlas is often unavailable"
-- docker-compose stop atlas
-- docker-compose up -d atlas
-- echo "Wait for containers to be up and running"
-- bash waitForContainerSetup.sh
-- bash setupS3Env.sh
+- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+    echo "Starting dependent containers for testing"
+    docker-compose up -d
+    echo "Compile the project while containers are starting up"
+    sbt ++$TRAVIS_SCALA_VERSION clean compile
+    echo "Wait for containers to be up and running"
+    bash waitForContainerSetup.sh
+    bash setupS3Env.sh
+  else
+    echo "This is not a PR, so we won't run integration tests"
+  fi
 
 script:
-- echo "Running pipeline for branch ${TRAVIS_BRANCH}"
-- sbt ++$TRAVIS_SCALA_VERSION clean coverage test it:test coverageReport
+- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+    echo "Running pipeline for branch ${TRAVIS_BRANCH} (This is a PR so it:test will be run)"
+    sbt ++$TRAVIS_SCALA_VERSION clean coverage test it:test coverageReport
+  else
+    echo "Running pipeline for branch ${TRAVIS_BRANCH} (This is not a PR so only test will be run)"
+    sbt ++$TRAVIS_SCALA_VERSION clean test
+  fi
 
 after_success:
-- bash <(curl -s https://codecov.io/bash)
+- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+    bash <(curl -s https://codecov.io/bash)
+  fi
 - export DOCKER_TAG="${TRAVIS_BRANCH/\//_}"
 - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 - if [ "${TRAVIS_BRANCH}" != "master" ]; then
@@ -47,4 +53,6 @@ after_success:
   fi
 
 after_script:
-- docker-compose down
+- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+    docker-compose down
+  fi
