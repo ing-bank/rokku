@@ -22,6 +22,11 @@ before_script:
 - sbt ++$TRAVIS_SCALA_VERSION clean compile
 - echo "Wait for containers to be up and running"
 - bash waitForContainerSetup.sh
+- echo "Workaround for issue where Atlas is often unavailable"
+- docker-compose stop atlas
+- docker-compose up -d atlas
+- echo "Wait for containers to be up and running"
+- bash waitForContainerSetup.sh
 - bash setupS3Env.sh
 
 script:
