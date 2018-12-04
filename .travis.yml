@@ -1,7 +1,7 @@
 # In our Travis builds we run the regular tests for Airlock on every push (all branches and PRs)
-# The integration tests that require all dependent docker containers to be started, will only be run on PRs.
+# The integration tests that require all dependent docker containers to be started, will only be run on PRs and master.
 # This is done since the starting of all docker containers (mainly Atlas and Ranger) takes a lot of time.
-# Coverage is only reported on PRs as only then the full coverage with integration tests is known.
+# Coverage is only reported on PRs and master as only then the full coverage with integration tests is known.
 
 sudo: required
 
@@ -21,7 +21,7 @@ env:
 
 before_script:
 - echo "Running pipeline for branch ${TRAVIS_BRANCH}"
-- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+- if [ "$TRAVIS_PULL_REQUEST" != "false" -o "${TRAVIS_BRANCH}" == "master" ]; then
     echo "Starting dependent containers for testing";
     docker-compose up -d;
     echo "Compile the project while containers are starting up";
@@ -32,16 +32,16 @@ before_script:
   fi
 
 script:
-- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
-    echo "Running pipeline for branch ${TRAVIS_BRANCH} (This is a PR so it:test will be run)";
+- if [ "$TRAVIS_PULL_REQUEST" != "false" -o "${TRAVIS_BRANCH}" == "master" ]; then
+    echo "Running pipeline for branch ${TRAVIS_BRANCH} (This is a PR or master build, so it:test will be run)";
     sbt ++$TRAVIS_SCALA_VERSION clean coverage test it:test coverageReport;
   else
-    echo "Running pipeline for branch ${TRAVIS_BRANCH} (This is not a PR so only test will be run)";
+    echo "Running pipeline for branch ${TRAVIS_BRANCH} (This is not a PR or master build so only test will be run)";
     sbt ++$TRAVIS_SCALA_VERSION clean test;
   fi
 
 after_success:
-- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+- if [ "$TRAVIS_PULL_REQUEST" != "false" -o "${TRAVIS_BRANCH}" == "master" ]; then
     bash <(curl -s https://codecov.io/bash);
   fi
 - export DOCKER_TAG="${TRAVIS_BRANCH/\//_}"
@@ -56,6 +56,6 @@ after_success:
   fi
 
 after_script:
-- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+- if [ "$TRAVIS_PULL_REQUEST" != "false" -o "${TRAVIS_BRANCH}" == "master" ]; then
     docker-compose down;
   fi
