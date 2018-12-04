@@ -17,29 +17,29 @@ env:
 before_script:
 - echo "Running pipeline for branch ${TRAVIS_BRANCH}"
 - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
-    echo "Starting dependent containers for testing"
-    docker-compose up -d
-    echo "Compile the project while containers are starting up"
-    sbt ++$TRAVIS_SCALA_VERSION clean compile
-    echo "Wait for containers to be up and running"
-    bash waitForContainerSetup.sh
-    bash setupS3Env.sh
+    echo "Starting dependent containers for testing";
+    docker-compose up -d;
+    echo "Compile the project while containers are starting up";
+    sbt ++$TRAVIS_SCALA_VERSION clean compile;
+    echo "Wait for containers to be up and running";
+    bash waitForContainerSetup.sh;
+    bash setupS3Env.sh;
   else
-    echo "This is not a PR, so we won't run integration tests"
+    echo "This is not a PR, so we won't run integration tests";
   fi
 
 script:
 - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
-    echo "Running pipeline for branch ${TRAVIS_BRANCH} (This is a PR so it:test will be run)"
-    sbt ++$TRAVIS_SCALA_VERSION clean coverage test it:test coverageReport
+    echo "Running pipeline for branch ${TRAVIS_BRANCH} (This is a PR so it:test will be run)";
+    sbt ++$TRAVIS_SCALA_VERSION clean coverage test it:test coverageReport;
   else
-    echo "Running pipeline for branch ${TRAVIS_BRANCH} (This is not a PR so only test will be run)"
-    sbt ++$TRAVIS_SCALA_VERSION clean test
+    echo "Running pipeline for branch ${TRAVIS_BRANCH} (This is not a PR so only test will be run)";
+    sbt ++$TRAVIS_SCALA_VERSION clean test;
   fi
 
 after_success:
 - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
-    bash <(curl -s https://codecov.io/bash)
+    bash <(curl -s https://codecov.io/bash);
   fi
 - export DOCKER_TAG="${TRAVIS_BRANCH/\//_}"
 - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
@@ -54,5 +54,5 @@ after_success:
 
 after_script:
 - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
-    docker-compose down
+    docker-compose down;
   fi
