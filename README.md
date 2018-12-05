@@ -299,3 +299,14 @@ Commands can also be issued against the underlying RadosGW service:
     % aws --profile radosgw s3 ls
 
 The default profile can also be switched by modifying the `AWS_DEFAULT_PROFILE` environment variable.
+
+## Security environment
+
+For kerberos environment (e.g connecting to ranger) you need to provide keytab file and principle name.
+
+```bash
+AIRLOCK_KERBEROS_KEYTAB: "keytab_full_path"
+AIRLOCK_KERBEROS_PRINCIPAL: "user"
+```
+
+ 
