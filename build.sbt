@@ -62,7 +62,7 @@ dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
 dockerAlias        := docker.DockerAlias(Some("docker.io"),
-                                         Some("nielsdenissen"),
+                                         Some("wbaa"),
                                          "airlock",
                                          Option(System.getenv("DOCKER_TAG")))
 
