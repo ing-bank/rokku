@@ -73,7 +73,10 @@ object ProxyDirectives extends LazyLogging {
                 val delimiter = queryString
                   .split("&")
                   .filter(_.contains("delimiter"))
-                  .head.split("=").last
+                  .headOption match {
+                    case Some(d)     => d
+                    case None        => "/"
+                  }
 
                 if (queryPrefixPair.length == 2) {
                   Uri.Path(s"${httpRequest.uri.path}/${queryPrefixPair.last.replace(delimiter, "/")}")
