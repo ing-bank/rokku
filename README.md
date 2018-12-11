@@ -103,17 +103,7 @@ before diving in here. That will introduce you to the various components used.
    control over all buckets. Airlock creates new users with `system` roles automatically, but the Airlock NPA must be
    manually configured as `system` user to be able to grant admin rights to other users:
    
-   1. Find the ID of the docker Ceph container:
-   
-            docker ps
-            
-   2. Open a shell in the Ceph container:
-   
-            docker exec -it airlock_ceph_1 bash
-            
-   3. Set the `ceph-admin` to be a `system` user:
-   
-            radosgw-admin user modify --uid ceph-admin --system
+            docker-compose exec ceph radosgw-admin user modify --uid ceph-admin --system
             
 5. Go nuts with the default bucket called `demobucket` that exists on Ceph already:
 
