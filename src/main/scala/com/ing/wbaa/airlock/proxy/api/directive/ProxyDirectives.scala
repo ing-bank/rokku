@@ -72,7 +72,7 @@ object ProxyDirectives extends LazyLogging {
 
                 val delimiter = queryString
                   .split("&").find(_.contains("delimiter")) match {
-                    case Some(d)     => d
+                    case Some(d)     => d.split("=").last
                     case None        => "/"
                   }
 
