@@ -2,9 +2,9 @@
 [![codecov.io](http://codecov.io/github/ing-bank/airlock/coverage.svg?branch=master)](https://codecov.io/gh/ing-bank/airlock?branch=master)
 [![](https://images.microbadger.com/badges/image/wbaa/airlock:latest.svg)](https://hub.docker.com/r/wbaa/airlock/tags/)
 
-# Airlock
+![](./docs/img/airlock.jpg)
 
-Airlock acts as a security layer between s3 user (eg. application using aws sdk) and s3 backend (eg. ceph RadosGW).
+*A security layer between s3 user (eg. application using aws sdk) and s3 backend (eg. ceph RadosGW).*
 
 # Difference between the proxy and Ceph
 
