@@ -6,17 +6,7 @@
 
 *A security layer between s3 user (eg. application using aws sdk) and s3 backend (eg. ceph RadosGW).*
 
-# Difference between the proxy and Ceph
-
-1. Ceph allows only list all your own buckets. We need to see all buckets by all users so the functionality is modified.
-
-But the functionality is separated in the class 
-[ProxyServiceWithListAllBuckets](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/api/ProxyServiceWithListAllBuckets.scala) 
-so if you want to have standard behaviour use 
-the [ProxyService](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/api/ProxyService.scala) 
-in [AirlockS3Proxy](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/AirlockS3Proxy.scala)
-
-## What do you need
+# What do you need
 
 To get started with Airlock you only need a few applications set up:
 
@@ -26,7 +16,7 @@ To get started with Airlock you only need a few applications set up:
 
 We've added a small description on how to setup the AWS CLI [here](#setting-up-aws-cli).
 
-## How to run
+# How to run
 1. To test the proxy (both live and integration tests), we need all dependencies to be running. For this we use a `docker-compose.yml` which defines all dependencies, run it using:
 
         docker-compose up
@@ -53,13 +43,13 @@ We've added a small description on how to setup the AWS CLI [here](#setting-up-a
 > * change the ranger.plugin.s3.policy.rest.url in ranger-s3-security.xml
 
 
-### Proxy as docker image
+## Proxy as docker image
 
 When proxy is started as docker image, the ranger-s3-security.xml file can be added in the following way:
 
         docker run -d -v /host/dir/with/xmls:/etc/airlock -p 8010:8010 airlock
 
-## Getting Started
+# Getting Started
 
 > This guide assumes you're using the default docker containers provided, see: [How to run](#how-to-run)
 
@@ -127,8 +117,17 @@ before diving in here. That will introduce you to the various components used.
         aws s3api list-objects --bucket demobucket
         aws s3api get-object --bucket demobucket --key SOME_FILE SOME_TARGET_FILE
 
+# Difference between the proxy and Ceph
 
-## Verified AWS clients
+1. Ceph allows only list all your own buckets. We need to see all buckets by all users so the functionality is modified.
+
+But the functionality is separated in the class 
+[ProxyServiceWithListAllBuckets](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/api/ProxyServiceWithListAllBuckets.scala) 
+so if you want to have standard behaviour use 
+the [ProxyService](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/api/ProxyService.scala) 
+in [AirlockS3Proxy](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/AirlockS3Proxy.scala)
+
+# Verified AWS clients
 
 We've currently verified that the following set of AWS clients work with Airlock:
 
@@ -137,7 +136,7 @@ We've currently verified that the following set of AWS clients work with Airlock
 
 Other options may work but haven't been checked yet by us. There are known limitiations for other signer types within the Java SDK.
 
-## Architecture
+# Architecture
 ![alt text](./docs/img/architecture.png)
 
 Dependencies:
@@ -152,7 +151,7 @@ The Apache Ranger docker images are created from this repo: https://github.com/i
 A more in-depth discussion of the architecture and interaction of various components can be found here: [What is Airlock?](docs/What_is_airlock.md)
 
 
-## Docker Ceph settings
+# Docker Ceph settings
 
 In order to enable debug logging on Ceph RadosGW:
 
@@ -164,7 +163,7 @@ debug civetweb = 20
 
 2. Restart rgw process (either docker stop <ceph/daemon rgw> or whole ceph/demo)
 
-## Lineage to Atlas
+# Lineage to Atlas
 
 Currently it is possible to create lineage based on incoming request to proxy server. It is however disabled by
 default (preview feature). To enable lineage shipment to Atlas, following setting has to be added to application.conf:
@@ -187,7 +186,7 @@ To check lineage that has been created, login to Atlas web UI console, [default 
 admin user and password 
 
 
-## Setting Up AWS CLI
+# Setting Up AWS CLI
 
 It is possible to set up the AWS command-line tools for working with Ceph RadosGW and Airlock. Following are instructions
 to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com/).
@@ -290,7 +289,7 @@ Commands can also be issued against the underlying RadosGW service:
 
 The default profile can also be switched by modifying the `AWS_DEFAULT_PROFILE` environment variable.
 
-## Security environment
+# Security environment
 
 For kerberos environment (e.g connecting to ranger) you need to provide keytab file and principle name.
 
