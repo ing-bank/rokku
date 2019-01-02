@@ -2,7 +2,7 @@ package com.ing.wbaa.airlock.proxy.provider
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.amazonaws.services.securitytoken.model.AssumeRoleWithWebIdentityRequest
+import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest
 import com.ing.wbaa.airlock.proxy.config.StsSettings
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.testkit.awssdk.StsSdkHelpers
@@ -24,7 +24,7 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAsser
 
   private val validKeycloakCredentials = Map(
     "grant_type" -> "password",
-    "username" -> "userone",
+    "username" -> "testuser",
     "password" -> "password",
     "client_id" -> "sts-airlock"
   )
@@ -32,11 +32,8 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAsser
   def withAwsCredentialsValidInSTS(testCode: AwsRequestCredential => Future[Assertion]): Future[Assertion] = {
     val stsSdk = getAmazonSTSSdk(StsSettings(testSystem).stsBaseUri)
     retrieveKeycloackToken(validKeycloakCredentials).flatMap { keycloakToken =>
-      val cred = stsSdk.assumeRoleWithWebIdentity(new AssumeRoleWithWebIdentityRequest()
-        .withRoleArn("arn:aws:iam::123456789012:role/user")
-        .withProviderId("provider")
-        .withRoleSessionName("sessionName")
-        .withWebIdentityToken(keycloakToken.access_token))
+      val cred = stsSdk.getSessionToken(new GetSessionTokenRequest()
+        .withTokenCode(keycloakToken.access_token))
         .getCredentials
 
       testCode(AwsRequestCredential(AwsAccessKey(cred.getAccessKeyId), Some(AwsSessionToken(cred.getSessionToken))))
@@ -48,8 +45,10 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAsser
       "succeeds for valid credentials" in {
         withAwsCredentialsValidInSTS { awsCredential =>
           areCredentialsActive(awsCredential).map { userResult =>
-            assert(userResult.map(_.userName).contains(UserName("userone")))
-            assert(userResult.flatMap(_.userAssumedGroup).contains(UserAssumedGroup("user")))
+            assert(userResult.map(_.userName).contains(UserName("testuser")))
+            assert(userResult.map(_.userGroups).head.contains(UserGroup("testgroup")))
+            assert(userResult.map(_.userGroups).head.contains(UserGroup("group3")))
+            assert(userResult.map(_.userGroups).head.size == 2)
             assert(userResult.exists(_.accessKey.value.length == 32))
             assert(userResult.exists(_.secretKey.value.length == 32))
           }

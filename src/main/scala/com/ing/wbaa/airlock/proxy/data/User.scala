@@ -1,17 +1,17 @@
 package com.ing.wbaa.airlock.proxy.data
 
 case class UserName(value: String) extends AnyVal
-case class UserAssumedGroup(value: String) extends AnyVal
+case class UserGroup(value: String) extends AnyVal
 
 case class UserRawJson(
     userName: String,
-    userAssumedGroup: Option[String],
+    userGroups: Set[String],
     accessKey: String,
     secretKey: String)
 
 case class User(
     userName: UserName,
-    userAssumedGroup: Option[UserAssumedGroup],
+    userGroups: Set[UserGroup],
     accessKey: AwsAccessKey,
     secretKey: AwsSecretKey)
 
@@ -19,7 +19,7 @@ object User {
   def apply(userRawJson: UserRawJson): User =
     User(
       UserName(userRawJson.userName),
-      userRawJson.userAssumedGroup.map(UserAssumedGroup),
+      userRawJson.userGroups.map(UserGroup),
       AwsAccessKey(userRawJson.accessKey),
       AwsSecretKey(userRawJson.secretKey)
     )
