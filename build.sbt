@@ -3,9 +3,9 @@ import com.typesafe.sbt.packager.docker.ExecCmd
 import scalariform.formatter.preferences._
 
 name := "airlock"
-version := "0.0.8"
+version := "0.1.0"
 
-scalaVersion := "2.12.7"
+scalaVersion := "2.12.8"
 
 scalacOptions += "-unchecked"
 scalacOptions += "-deprecation"
@@ -19,7 +19,7 @@ scalacOptions += "-Xfatal-warnings"
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
 val akkaVersion       = "10.1.5"
-val akkaStreamVersion = "2.5.17"
+val akkaStreamVersion = "2.5.19"
 
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",

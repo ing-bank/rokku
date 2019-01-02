@@ -31,7 +31,7 @@ services:
     - "6080:6080"
 
   airlock-sts:
-    image: wbaa/airlock-sts:feature_get-user-groups
+    image: wbaa/airlock-sts:0.1.0
     environment:
     - STS_HOST=0.0.0.0
     - STS_PORT=12345
