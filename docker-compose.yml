@@ -31,7 +31,7 @@ services:
     - "6080:6080"
 
   airlock-sts:
-    image: wbaa/airlock-sts:0.0.10
+    image: wbaa/airlock-sts:0.1.0
     environment:
     - STS_HOST=0.0.0.0
     - STS_PORT=12345
@@ -47,7 +47,7 @@ services:
     - "mariadb"
 
   keycloak:
-    image: wbaa/airlock-dev-keycloak:0.0.2
+    image: wbaa/airlock-dev-keycloak:0.0.3
     environment:
     - KEYCLOAK_USER=admin
     - KEYCLOAK_PASSWORD=admin
@@ -60,7 +60,7 @@ services:
     - "21000:21000"
 
   mariadb:
-    image: wbaa/airlock-dev-mariadb:0.0.1
+    image: wbaa/airlock-dev-mariadb:0.0.2
     environment:
     - MYSQL_ROOT_PASSWORD=admin
     ports:

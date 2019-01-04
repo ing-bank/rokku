@@ -55,7 +55,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
         rangerResource,
         request.accessType.rangerName,
         user.userName.value + rangerSettings.userDomainPostfix,
-        user.userAssumedGroup.map(_.value).toSet[String].asJava
+        user.userGroups.map(_.value).asJava
       )
       // We're using the original client's IP address for verification in Ranger. Ranger seems to use the
       // RemoteIPAddress variable for this. For the header IPs we use the ForwardedAddresses: this is not

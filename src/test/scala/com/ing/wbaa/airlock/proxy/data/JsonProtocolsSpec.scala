@@ -12,23 +12,24 @@ class JsonProtocolsSpec extends WordSpec with DiagrammedAssertions with JsonProt
         val jsonString =
           """{
             | "userName": "user",
-            | "userAssumedGroup": "group1",
+            | "userGroups": ["group1"],
             | "accessKey": "accesskey",
             | "secretKey": "secretkey"
             |}""".stripMargin
         val result = jsonString.parseJson.convertTo[UserRawJson]
-        assert(result == UserRawJson("user", Some("group1"), "accesskey", "secretkey"))
+        assert(result == UserRawJson("user", Set("group1"), "accesskey", "secretkey"))
       }
 
       "does not have a group" in {
         val jsonString =
           """{
             | "userName": "user",
+            | "userGroups": [],
             | "accessKey": "accesskey",
             | "secretKey": "secretkey"
             |}""".stripMargin
         val result = jsonString.parseJson.convertTo[UserRawJson]
-        assert(result == UserRawJson("user", None, "accesskey", "secretkey"))
+        assert(result == UserRawJson("user", Set.empty[String], "accesskey", "secretkey"))
       }
 
       "fail when fields are missing" in {

@@ -23,7 +23,7 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
 
   def testUser: User = User(UserRawJson(
     Random.alphanumeric.take(32).mkString,
-    None,
+    Set.empty[String],
     Random.alphanumeric.take(32).mkString,
     Random.alphanumeric.take(32).mkString
   ))
@@ -97,7 +97,7 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
     }
 
     "list all buckets" in {
-      assert(listAllBuckets.head == "home")
+      assert(listAllBuckets.contains("demobucket"))
     }
   }
 }

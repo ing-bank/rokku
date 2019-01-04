@@ -27,7 +27,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
       Future(HttpResponse(status = StatusCodes.OK))
 
     override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(
-      Some(User(UserName("okUser"), Some(UserAssumedGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
+      Some(User(UserName("okUser"), Set(UserGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
     )
 
     override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = true

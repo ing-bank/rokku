@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.Uri.{Authority, Host}
 import akka.stream.ActorMaterializer
 import com.amazonaws.auth.BasicSessionCredentials
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
-import com.amazonaws.services.securitytoken.model.{AssumeRoleWithWebIdentityRequest, GetSessionTokenRequest}
+import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest
 import com.ing.wbaa.airlock.proxy.config.{AtlasSettings, HttpSettings, StorageS3Settings, StsSettings}
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.handler.RequestHandlerS3
@@ -75,28 +75,6 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       retrieveKeycloackToken(validKeycloakCredentials).map { keycloakToken =>
         val cred = stsSdk.getSessionToken(new GetSessionTokenRequest()
           .withTokenCode(keycloakToken.access_token))
-          .getCredentials
-
-        val sessionCredentials = new BasicSessionCredentials(
-          cred.getAccessKeyId,
-          cred.getSecretAccessKey,
-          cred.getSessionToken
-        )
-
-        val s3Sdk = getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)
-        withBucket(s3Sdk) { testBucket =>
-          assert(s3Sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
-        }
-      }
-    }
-
-    "connect to ceph with credentials from STS (AssumeRole)" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
-      retrieveKeycloackToken(validKeycloakCredentials).map { keycloakToken =>
-        val cred = stsSdk.assumeRoleWithWebIdentity(new AssumeRoleWithWebIdentityRequest()
-          .withRoleArn("arn:aws:iam::123456789012:role/user")
-          .withProviderId("provider")
-          .withRoleSessionName("sessionName")
-          .withWebIdentityToken(keycloakToken.access_token))
           .getCredentials
 
         val sessionCredentials = new BasicSessionCredentials(

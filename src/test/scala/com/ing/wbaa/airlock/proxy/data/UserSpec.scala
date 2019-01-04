@@ -6,8 +6,8 @@ class UserSpec extends WordSpec with DiagrammedAssertions {
   "UserRawJson" should {
     "convert to User in apply of UserRawJson" in {
       assert(
-        User(UserRawJson("u", Some("g"), "a", "s")) ==
-          User(UserName("u"), Some(UserAssumedGroup("g")), AwsAccessKey("a"), AwsSecretKey("s"))
+        User(UserRawJson("u", Set("g"), "a", "s")) ==
+          User(UserName("u"), Set(UserGroup("g")), AwsAccessKey("a"), AwsSecretKey("s"))
       )
     }
   }

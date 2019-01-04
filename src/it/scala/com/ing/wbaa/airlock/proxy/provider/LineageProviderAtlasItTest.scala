@@ -30,7 +30,7 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
   }
   val remoteClientIP = RemoteAddress(InetAddress.getByName("127.0.0.1"))
 
-  val userSTS = User(UserName("fakeUser"), None, AwsAccessKey("a"), AwsSecretKey("k"))
+  val userSTS = User(UserName("fakeUser"), Set.empty[UserGroup], AwsAccessKey("a"), AwsSecretKey("k"))
 
   def withLineageProviderAtlas(atlasTestSettings: AtlasSettings = AtlasSettings(testSystem))(testCode: LineageProviderAtlas => Future[Assertion]) =
     testCode(new LineageProviderAtlas {

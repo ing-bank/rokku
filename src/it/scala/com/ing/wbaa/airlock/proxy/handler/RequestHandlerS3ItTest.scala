@@ -44,7 +44,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
       override val atlasSettings: AtlasSettings = new AtlasSettings(system.settings.config)
 
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] =
-        Future(Some(User(UserRawJson("userId", Some("group"), "accesskey", "secretkey"))))
+        Future(Some(User(UserRawJson("userId", Set("group"), "accesskey", "secretkey"))))
 
       def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = Future.failed(LineageProviderAtlasException("Create lineage failed"))
     }
