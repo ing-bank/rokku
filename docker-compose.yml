@@ -21,7 +21,7 @@ services:
     image: wbaa/airlock-dev-apache-ranger-postgres:0.0.13
 
   ranger-admin:
-    image: wbaa/airlock-dev-apache-ranger:0.0.13
+    image: wbaa/airlock-dev-apache-ranger:0.0.15
     stdin_open: true
     tty: true
     depends_on:
@@ -31,15 +31,14 @@ services:
     - "6080:6080"
 
   airlock-sts:
-    image: wbaa/airlock-sts:0.1.0
+    image: wbaa/airlock-sts:0.1.2
     environment:
     - STS_HOST=0.0.0.0
     - STS_PORT=12345
     - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
     - KEYCLOAK_URL=http://keycloak:8080
     - KEYCLOAK_CHECK_REALM_URL=false
-    - MARIADB_HOST=mariadb
-    - MARIADB_PORT=3306
+    - MARIADB_URL=jdbc:mysql:loadbalance://mariadb:3306,mariadb:3306/airlock
     ports:
     - "12345:12345"
     depends_on:
