@@ -38,7 +38,7 @@ services:
     - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
     - KEYCLOAK_URL=http://keycloak:8080
     - KEYCLOAK_CHECK_REALM_URL=false
-    - MARIADB_URL="jdbc:mysql:loadbalance://mariadb:3307,mariadb:3307/airlock"
+    - MARIADB_URL="jdbc:mysql:loadbalance://mariadb:3306,mariadb:3306/airlock"
     ports:
     - "12345:12345"
     depends_on:
