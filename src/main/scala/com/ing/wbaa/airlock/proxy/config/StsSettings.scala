@@ -5,12 +5,8 @@ import akka.http.scaladsl.model.Uri
 import com.typesafe.config.Config
 
 class StsSettings(config: Config) extends Extension {
-  private val stsPort: Int = config.getInt("airlock.sts.port")
-  private val stsHost: String = config.getString("airlock.sts.host")
-  val stsBaseUri: Uri = Uri(
-    scheme = "http",
-    authority = Uri.Authority(host = Uri.Host(stsHost), port = stsPort)
-  )
+  private val stsUri: String = config.getString("airlock.sts.uri")
+  val stsBaseUri: Uri = Uri(stsUri)
 }
 
 object StsSettings extends ExtensionId[StsSettings] with ExtensionIdProvider {
