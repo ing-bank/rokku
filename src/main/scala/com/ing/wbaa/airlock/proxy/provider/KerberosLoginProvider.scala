@@ -10,7 +10,6 @@ import org.apache.hadoop.security.UserGroupInformation
 
 import scala.util.{ Failure, Success, Try }
 
-
 trait KerberosLoginProvider extends LazyLogging {
 
   protected[this] def kerberosSettings: KerberosSettings
