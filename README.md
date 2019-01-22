@@ -267,12 +267,12 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
     b. **Anaconda**
     
        % cat >> /YOUR_CONDA_HOME/envs/airlock/etc/conda/deactivate.d/aws.sh << EOF
-       AWS_DEFAULT_PROFILE=airlock
-       export AWS_DEFAULT_PROFILE
+       unset AWS_DEFAULT_PROFILE
        EOF
        
        % cat >> /YOUR_CONDA_HOME/envs/airlock/etc/conda/activate.d/aws.sh << EOF
-       unset AWS_DEFAULT_PROFILE
+       AWS_DEFAULT_PROFILE=airlock
+       export AWS_DEFAULT_PROFILE
        EOF
        
        % source deactivate
