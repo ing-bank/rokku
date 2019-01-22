@@ -200,7 +200,7 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
     b. **Anaconda**
 
        % conda create -n airlock python=3
-       % source activate airlock
+       % conda activate airlock
 
 2. Install the AWS command-line tools and the endpoint plugin:
 
