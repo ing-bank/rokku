@@ -148,16 +148,18 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
           withBucket(sdk) { testBucket =>
             withFile(1024 * 1024) { filename =>
               val testKeyFile = "keyPutFileByFile"
+              val destinationKey = "sdkcopy"
+              val ownerValue = "itTest"
               sdk.putObject(testBucket, testKeyFile, new File(filename))
 
-              val copyRequest = new CopyObjectRequest(testBucket, testKeyFile, testBucket, "sdkcopy")
+              val copyRequest = new CopyObjectRequest(testBucket, testKeyFile, testBucket, destinationKey)
               val newMetadata = new ObjectMetadata()
-              newMetadata.addUserMetadata("Owner", "itTest")
+              newMetadata.addUserMetadata("Owner", ownerValue)
               copyRequest.setMetadataDirective("REPLACE")
               copyRequest.setNewObjectMetadata(newMetadata)
 
-              val copyResult = sdk.copyObject(copyRequest)
-              assert(!copyResult.getETag.isEmpty)
+              sdk.copyObject(copyRequest)
+              assert(sdk.getObjectMetadata(testBucket, destinationKey).getUserMetadata.containsValue(ownerValue))
             }
           }
         }
