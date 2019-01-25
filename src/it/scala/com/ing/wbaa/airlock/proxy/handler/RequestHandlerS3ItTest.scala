@@ -6,6 +6,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
 import akka.http.scaladsl.model.Uri.{Authority, Host}
 import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.model.{CopyObjectRequest, ObjectMetadata}
 import com.ing.wbaa.airlock.proxy.AirlockS3Proxy
 import com.ing.wbaa.airlock.proxy.config.{AtlasSettings, HttpSettings, StorageS3Settings}
 import com.ing.wbaa.airlock.proxy.data._
@@ -139,6 +140,24 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
               sdk.deleteObject(testBucket, testKeyContent)
               val keys2 = getKeysInBucket(sdk, testBucket)
               assert(!keys2.contains(testKeyContent))
+            }
+          }
+        }
+
+        "copy object with REPLACE metadata on object" in withS3SdkToMockProxy(awsSignerType) { sdk =>
+          withBucket(sdk) { testBucket =>
+            withFile(1024 * 1024) { filename =>
+              val testKeyFile = "keyPutFileByFile"
+              sdk.putObject(testBucket, testKeyFile, new File(filename))
+
+              val copyRequest = new CopyObjectRequest(testBucket, testKeyFile, testBucket, "sdkcopy")
+              val newMetadata = new ObjectMetadata()
+              newMetadata.addUserMetadata("Owner", "itTest")
+              copyRequest.setMetadataDirective("REPLACE")
+              copyRequest.setNewObjectMetadata(newMetadata)
+
+              val copyResult = sdk.copyObject(copyRequest)
+              assert(!copyResult.getETag.isEmpty)
             }
           }
         }
