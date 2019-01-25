@@ -34,7 +34,7 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
 
     fireRequestToS3(newRequest).flatMap { response =>
       if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest)
-      else Future.successful(response)
+      else Future.successful(response.withEntity(response.entity.withoutSizeLimit()))
     }
   }
 

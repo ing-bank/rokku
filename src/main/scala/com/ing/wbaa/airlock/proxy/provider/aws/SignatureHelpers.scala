@@ -147,8 +147,10 @@ trait SignatureHelpers extends LazyLogging {
         val requestDate = extractHeaderOption("Date")
         val securityToken = extractHeaderOption("X-Amz-Security-Token")
         val contentMD5 = extractHeaderOption("Content-MD5")
+        val possibleAWSHeaders = httpRequest.headers.filter(_.lowercaseName().contains("x-amz"))
+          .map { h => (h.name(), h.value()) }.toMap
 
-        AWSHeaderValues(accessKey, Map.empty, signature, requestDate, securityToken, AWS_SIGN_V2, contentMD5)
+        AWSHeaderValues(accessKey, possibleAWSHeaders, signature, requestDate, securityToken, AWS_SIGN_V2, contentMD5)
 
       case ver if ver == AWS_SIGN_V4 =>
         val signedHeadersMap = authorization.map(auth => getSignedHeaders(auth)).getOrElse("")
@@ -196,8 +198,9 @@ trait SignatureHelpers extends LazyLogging {
       case "POST" if !requestParameters.isEmpty =>
         logger.debug(s"Setting additional params (as body) for request $requestParameters")
         val requestParamsCombined =
-          requestParameters.asScala.map { case (k, v) =>
-            s"$k=${v.asScala.head}"
+          requestParameters.asScala.map {
+            case (k, v) if v.isEmpty => s"$k="
+            case (k, v)              => s"$k=${v.asScala.head}"
           }.mkString("&")
 
         request.setResourcePath(httpRequest.uri.path.toString())
