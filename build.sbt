@@ -3,7 +3,7 @@ import com.typesafe.sbt.packager.docker.ExecCmd
 import scalariform.formatter.preferences._
 
 name := "airlock"
-version := "0.1.3"
+version := "0.1.4"
 
 scalaVersion := "2.12.8"
 
@@ -20,10 +20,15 @@ updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true
 
 val akkaVersion       = "10.1.5"
 val akkaStreamVersion = "2.5.19"
+val logbackJson = "0.1.5"
 
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
     "ch.qos.logback"               %  "logback-classic"        % "1.2.3",
+    "ch.qos.logback.contrib"       %  "logback-json-classic"   % logbackJson,
+    "ch.qos.logback.contrib"       %  "logback-jackson"        % logbackJson,
+    "com.fasterxml.jackson.core"   %  "jackson-databind"       % "2.9.8",
+    "com.typesafe.akka"            %% "akka-slf4j"             % akkaStreamVersion,
     "com.typesafe.akka"            %% "akka-http"              % akkaVersion,
     "com.typesafe.akka"            %% "akka-stream"            % akkaStreamVersion,
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaVersion,
@@ -31,10 +36,10 @@ libraryDependencies ++= Seq(
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.437",
     "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0",
-    "io.github.twonote"            % "radosgw-admin4j"         % "1.0.2",
+    "io.github.twonote"            %  "radosgw-admin4j"        % "1.0.2",
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion       % Test,
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
-    "com.amazonaws"                % "aws-java-sdk-sts"        % "1.11.437"        % IntegrationTest
+    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.437"        % IntegrationTest
 )
 
 // Fix logging dependencies:
