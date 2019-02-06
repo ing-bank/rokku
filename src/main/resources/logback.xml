@@ -9,28 +9,16 @@
         <!-- Insert here the regexes to sanitize the log messages.
              Replacement supports pattern groups with variables named $1, $2, etc -->
         <replace>
-          <pattern>AwsSessionToken\([^)]+\)</pattern>
-          <replacement>AwsSessionToken([...])</replacement>
+          <pattern>AwsSessionToken\(([\w\d]{5})[^)]+\)</pattern>
+          <replacement>AwsSessionToken([$1...])</replacement>
         </replace>
         <replace>
-          <pattern>AwsAccessKey\([^)]+\)</pattern>
-          <replacement>AwsAccessKey([...])</replacement>
+          <pattern>AwsSecretKey\(([\w\d]{5})[^)]+\)</pattern>
+          <replacement>AwsSecretKey([$1...])</replacement>
         </replace>
         <replace>
-          <pattern>AwsSecretKey\([^)]+\)</pattern>
-          <replacement>AwsSecretKey([...])</replacement>
-        </replace>
-        <replace>
-          <pattern>(?i)(X-Amz-Security-Token(: |=))[\w\d]+</pattern>
-          <replacement>$1[...]</replacement>
-        </replace>
-        <replace>
-          <pattern>(?i)(Signature(: |=))[\w\d]+</pattern>
-          <replacement>$1[...]</replacement>
-        </replace>
-        <replace>
-          <pattern>(?i)(Credential(: |=))[\w\d]+</pattern>
-          <replacement>$1[...]</replacement>
+          <pattern>(?i)(X-Amz-Security-Token(: |=))([\w\d]{5})[\w\d]+</pattern>
+          <replacement>$1[$3...]</replacement>
         </replace>
         <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter" />
         <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSSX</timestampFormat>
