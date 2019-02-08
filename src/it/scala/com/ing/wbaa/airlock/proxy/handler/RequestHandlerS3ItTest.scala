@@ -173,6 +173,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
               val testKeyFileWithSpace = "keywith space.txt"
               val testKeyFileWithBracket = "keywith[bracket].txt"
               val testKeyFileWithPlus = "keywith+.txt"
+              val testKeyFileWithCurly = "keywith(curly).txt"
 
               val dolarUploadResult = sdk.putObject(testBucket, testKeyFileWithDolar, new File(filename))
               val hashUploadResult = sdk.putObject(testBucket, testKeyFileWithHash, new File(filename))
@@ -180,6 +181,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
               val spaceUploadResult = sdk.putObject(testBucket, testKeyFileWithSpace, new File(filename))
               val bracketUploadResult = sdk.putObject(testBucket, testKeyFileWithBracket, new File(filename))
               val plusUploadResult = sdk.putObject(testBucket, testKeyFileWithPlus, new File(filename))
+              val curlyUploadResult = sdk.putObject(testBucket, testKeyFileWithCurly, new File(filename))
 
               assert(!dolarUploadResult.getETag.isEmpty)
               assert(!hashUploadResult.getETag.isEmpty)
@@ -187,6 +189,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
               assert(!spaceUploadResult.getETag.isEmpty)
               assert(!bracketUploadResult.getETag.isEmpty)
               assert(!plusUploadResult.getETag.isEmpty)
+              assert(!curlyUploadResult.getETag.isEmpty)
             }
           }
         }
