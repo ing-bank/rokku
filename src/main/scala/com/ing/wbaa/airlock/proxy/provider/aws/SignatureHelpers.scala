@@ -175,6 +175,12 @@ trait SignatureHelpers extends LazyLogging {
     }
   }
 
+  private def getResourcePathFromRequest(httpRequest: HttpRequest): String =
+    httpRequest.getHeader("Raw-Request-URI").isPresent match {
+      case true  => httpRequest.getHeader("Raw-Request-URI").get().value().split("\\?").head
+      case false => httpRequest.uri.path.toString()
+    }
+
   def getSignableRequest(
       httpRequest: HttpRequest,
       version: String,
@@ -189,7 +195,9 @@ trait SignatureHelpers extends LazyLogging {
       case _        => throw new Exception("Method not supported, request signature verification failed")
     })
 
-    request.setResourcePath(httpRequest.uri.path.toString())
+    val resourcePath = getResourcePathFromRequest(httpRequest)
+
+    request.setResourcePath(resourcePath)
     request.setEndpoint(new URI(s"http://${httpRequest.uri.authority.toString()}"))
 
     val requestParameters = extractRequestParameters(httpRequest, version)
@@ -203,18 +211,18 @@ trait SignatureHelpers extends LazyLogging {
             case (k, v)              => s"$k=${v.asScala.head}"
           }.mkString("&")
 
-        request.setResourcePath(httpRequest.uri.path.toString())
+        request.setResourcePath(resourcePath)
         request.setParameters(requestParameters)
         request.setContent(new ByteArrayInputStream(requestParamsCombined.getBytes()))
 
       case _ if !requestParameters.isEmpty =>
         logger.debug(s"Setting additional params for request $requestParameters")
 
-        request.setResourcePath(httpRequest.uri.path.toString())
+        request.setResourcePath(resourcePath)
         request.setParameters(requestParameters)
 
       case _ =>
-        request.setResourcePath(httpRequest.uri.path.toString())
+        request.setResourcePath(resourcePath)
     }
     request
   }

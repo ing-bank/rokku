@@ -164,6 +164,33 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
           }
         }
 
+        "put objects with special characters in object names" in withS3SdkToMockProxy(awsSignerType) { sdk =>
+          withBucket(sdk) { testBucket =>
+            withFile(1024 * 1024) { filename =>
+              val testKeyFileWithDolar = "keywith$.txt"
+              val testKeyFileWithHash = "keywith#.txt"
+              val testKeyFileWithExclamation = "keywith!.txt"
+              val testKeyFileWithSpace = "keywith space.txt"
+              val testKeyFileWithBracket = "keywith[bracket].txt"
+              val testKeyFileWithPlus = "keywith+.txt"
+
+              val dolarUploadResult = sdk.putObject(testBucket, testKeyFileWithDolar, new File(filename))
+              val hashUploadResult = sdk.putObject(testBucket, testKeyFileWithHash, new File(filename))
+              val exclamationUploadResult = sdk.putObject(testBucket, testKeyFileWithExclamation, new File(filename))
+              val spaceUploadResult = sdk.putObject(testBucket, testKeyFileWithSpace, new File(filename))
+              val bracketUploadResult = sdk.putObject(testBucket, testKeyFileWithBracket, new File(filename))
+              val plusUploadResult = sdk.putObject(testBucket, testKeyFileWithPlus, new File(filename))
+
+              assert(!dolarUploadResult.getETag.isEmpty)
+              assert(!hashUploadResult.getETag.isEmpty)
+              assert(!exclamationUploadResult.getETag.isEmpty)
+              assert(!spaceUploadResult.getETag.isEmpty)
+              assert(!bracketUploadResult.getETag.isEmpty)
+              assert(!plusUploadResult.getETag.isEmpty)
+            }
+          }
+        }
+
         // TODO: Fix proxy for copyObject function
 //        "check if object can be copied" in withS3SdkToMockProxy(awsSignerType) { sdk =>
 //          withBucket(sdk) { testBucket =>
