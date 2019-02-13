@@ -3,7 +3,7 @@ import com.typesafe.sbt.packager.docker.ExecCmd
 import scalariform.formatter.preferences._
 
 name := "airlock"
-version := "0.1.6"
+version := "0.1.7"
 
 scalaVersion := "2.12.8"
 
@@ -34,7 +34,7 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaVersion,
     "com.typesafe.akka"            %% "akka-http-xml"          % akkaVersion,
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.437",
-    "com.lightbend.akka"           %% "akka-stream-alpakka-s3" % "0.20",
+    "com.typesafe.akka"            %% "akka-stream-kafka"      % "0.22",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0",
     "io.github.twonote"            %  "radosgw-admin4j"        % "1.0.2",
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion       % Test,

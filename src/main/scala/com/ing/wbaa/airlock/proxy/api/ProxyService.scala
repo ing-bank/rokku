@@ -1,8 +1,9 @@
 package com.ing.wbaa.airlock.proxy.api
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, RemoteAddress, StatusCodes }
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import com.ing.wbaa.airlock.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.airlock.proxy.config.AtlasSettings
@@ -41,6 +42,8 @@ trait ProxyService extends LazyLogging {
 
   protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineageResponse]
 
+  protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String, clientIPAddress: RemoteAddress): Future[Done]
+
   val proxyServiceRoute: Route =
     withoutSizeLimit {
       (extractClientIP & extractHeaderIPs) { (clientIPAddress, headerIPs) =>
@@ -73,6 +76,12 @@ trait ProxyService extends LazyLogging {
           if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent))
             // delete on AWS response 204
             createLineageFromRequest(httpRequest, userSTS, clientIPAddress)
+
+          httpRequest.method match {
+            case HttpMethods.POST | HttpMethods.PUT | HttpMethods.DELETE if response.status == StatusCodes.OK || response.status == StatusCodes.NoContent =>
+              emitEvent(s3Request, httpRequest.method, userSTS.userName.value, clientIPAddress)
+            case _ =>
+          }
       }
       complete(httpResponse)
     }
