@@ -21,7 +21,9 @@ trait EventProducer {
     ProducerSettings(kafkaSettings.kafkaConfig, new StringSerializer, new StringSerializer)
       .withBootstrapServers(kafkaSettings.bootstrapServers)
 
-  def simpleEmit(event: String, topic: String): Future[Done] =
+  // Retry handling for producers is built-in into Kafka. In case of failure when sending a message,
+  // an exception will be thrown, which should fail the stream.
+  def sendSingleMessage(event: String, topic: String): Future[Done] =
     Source.single(event)
       .map(value => new ProducerRecord[String, String](topic, value))
       .runWith(Producer.plainSink(producerSettings))

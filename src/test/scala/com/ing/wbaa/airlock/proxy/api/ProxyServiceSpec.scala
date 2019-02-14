@@ -8,7 +8,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.{ ActorMaterializer, Materializer }
-import com.ing.wbaa.airlock.proxy.config.AtlasSettings
 import com.ing.wbaa.airlock.proxy.data._
 import org.scalatest.{ DiagrammedAssertions, FlatSpec }
 
@@ -34,10 +33,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
     override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
 
-    override def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = Future(LineagePostGuidResponse("", "", "", "", ""))
-
-    override def atlasSettings: AtlasSettings = new AtlasSettings(system.settings.config)
-
+    override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User, clientIPAddress: RemoteAddress): Unit = ()
   }
 
   private def testRequest(accessKey: String = "okAccessKey", path: String = "/okBucket") = HttpRequest(

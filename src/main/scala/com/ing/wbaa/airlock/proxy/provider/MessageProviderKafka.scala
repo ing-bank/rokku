@@ -16,14 +16,14 @@ trait MessageProviderKafka extends EventProducer with AWSMessageEventJsonSupport
       case HttpMethods.POST | HttpMethods.PUT =>
         prepareAWSMessage(s3Request, method, principalId, clientIPAddress)
           .map { case jse =>
-            simpleEmit(jse.toString(), kafkaSettings.createTopic)
+            sendSingleMessage(jse.toString(), kafkaSettings.createTopic)
           }
           .getOrElse(incompeteData)
 
       case HttpMethods.DELETE =>
         prepareAWSMessage(s3Request, method, principalId, clientIPAddress)
           .map { case jse =>
-            simpleEmit(jse.toString(), kafkaSettings.deleteTopic)
+            sendSingleMessage(jse.toString(), kafkaSettings.deleteTopic)
           }
           .getOrElse(incompeteData)
 

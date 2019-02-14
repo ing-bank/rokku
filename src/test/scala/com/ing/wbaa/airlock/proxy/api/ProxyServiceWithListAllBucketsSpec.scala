@@ -7,12 +7,11 @@ import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.stream.{ ActorMaterializer, Materializer }
-import com.ing.wbaa.airlock.proxy.config.AtlasSettings
+import akka.stream.{ActorMaterializer, Materializer}
 import com.ing.wbaa.airlock.proxy.data._
-import org.scalatest.{ DiagrammedAssertions, FlatSpec }
+import org.scalatest.{DiagrammedAssertions, FlatSpec}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAssertions with ScalatestRouteTest {
 
@@ -34,10 +33,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
     override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
 
-    override def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = Future(LineagePostGuidResponse("", "", "", "", ""))
-
-    override def atlasSettings: AtlasSettings = new AtlasSettings(system.settings.config)
-
+    override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User, clientIPAddress: RemoteAddress): Unit = ()
     override protected[this] def listAllBuckets: Seq[String] = List("bucket1", "bucket2")
 
   }

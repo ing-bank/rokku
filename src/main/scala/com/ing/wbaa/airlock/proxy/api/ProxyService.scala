@@ -1,12 +1,10 @@
 package com.ing.wbaa.airlock.proxy.api
 
-import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import com.ing.wbaa.airlock.proxy.api.directive.ProxyDirectives
-import com.ing.wbaa.airlock.proxy.config.AtlasSettings
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.provider.aws.AwsErrorCodes
 import com.typesafe.scalalogging.LazyLogging
@@ -37,12 +35,7 @@ trait ProxyService extends LazyLogging {
   // Authorization methods
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean
 
-  // Atlas Lineage
-  protected[this] def atlasSettings: AtlasSettings
-
-  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineageResponse]
-
-  protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String, clientIPAddress: RemoteAddress): Future[Done]
+  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User, clientIPAddress: RemoteAddress): Unit
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
@@ -73,15 +66,7 @@ trait ProxyService extends LazyLogging {
     updateHeadersForRequest { newHttpRequest =>
       val httpResponse = executeRequest(newHttpRequest, userSTS).andThen {
         case Success(response: HttpResponse) =>
-          if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent))
-            // delete on AWS response 204
-            createLineageFromRequest(httpRequest, userSTS, clientIPAddress)
-
-          httpRequest.method match {
-            case HttpMethods.POST | HttpMethods.PUT | HttpMethods.DELETE if response.status == StatusCodes.OK || response.status == StatusCodes.NoContent =>
-              emitEvent(s3Request, httpRequest.method, userSTS.userName.value, clientIPAddress)
-            case _ =>
-          }
+          handlePostRequestActions(response, httpRequest, s3Request, userSTS, clientIPAddress)
       }
       complete(httpResponse)
     }

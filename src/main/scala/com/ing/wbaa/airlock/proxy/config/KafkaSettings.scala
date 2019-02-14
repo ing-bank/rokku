@@ -4,6 +4,7 @@ import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProv
 import com.typesafe.config.Config
 
 class KafkaSettings(config: Config) extends Extension {
+  val kafkaEnabled: Boolean = config.getBoolean("akka.kafka.producer.enabled")
   val bootstrapServers: String = config.getString("akka.kafka.producer.bootstrapServers")
   val createTopic: String = config.getString("akka.kafka.producer.createTopic")
   val deleteTopic: String = config.getString("akka.kafka.producer.deleteTopic")
