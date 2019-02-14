@@ -7,10 +7,10 @@ import akka.stream.ActorMaterializer
 import com.amazonaws.auth.BasicSessionCredentials
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
 import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest
-import com.ing.wbaa.airlock.proxy.config.{AtlasSettings, HttpSettings, StorageS3Settings, StsSettings}
+import com.ing.wbaa.airlock.proxy.config._
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.handler.RequestHandlerS3
-import com.ing.wbaa.airlock.proxy.provider.{AuthenticationProviderSTS, LineageProviderAtlas, SignatureProviderAws}
+import com.ing.wbaa.airlock.proxy.provider.{AuthenticationProviderSTS, LineageProviderAtlas, MessageProviderKafka, SignatureProviderAws}
 import com.ing.wbaa.testkit.AirlockFixtures
 import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
 import com.ing.wbaa.testkit.oauth.OAuth2TokenRequest
@@ -54,12 +54,13 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     * @return Future[Assertion]
     */
   def withSdkToMockProxy(testCode: (AWSSecurityTokenService, Authority) => Future[Assertion]): Future[Assertion] = {
-    val proxy: AirlockS3Proxy = new AirlockS3Proxy with RequestHandlerS3 with AuthenticationProviderSTS with LineageProviderAtlas with SignatureProviderAws {
+    val proxy: AirlockS3Proxy = new AirlockS3Proxy with RequestHandlerS3 with AuthenticationProviderSTS with LineageProviderAtlas with SignatureProviderAws with MessageProviderKafka {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = airlockHttpSettings
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
       override val stsSettings: StsSettings = StsSettings(testSystem)
       override val atlasSettings: AtlasSettings = new AtlasSettings(testSystem.settings.config)
+      override val kafkaSettings: KafkaSettings = new KafkaSettings(testSystem.settings.config)
 
       override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = true
     }
