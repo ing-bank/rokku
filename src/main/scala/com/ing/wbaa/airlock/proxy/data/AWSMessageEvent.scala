@@ -4,7 +4,7 @@ import java.time.Instant
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{ HttpMethod, RemoteAddress }
-import com.ing.wbaa.airlock.proxy.provider.aws.s3ObjectCreated
+import com.ing.wbaa.airlock.proxy.provider.aws.S3ObjectAction
 import spray.json.DefaultJsonProtocol
 
 case class Records(records: List[AWSMessageEvent])
@@ -49,7 +49,7 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
 
   import spray.json._
 
-  def prepareAWSMessage(s3Request: S3Request, method: HttpMethod, principalId: String, clientIPAddress: RemoteAddress): Option[JsValue] = {
+  def prepareAWSMessage(s3Request: S3Request, method: HttpMethod, principalId: String, clientIPAddress: RemoteAddress, s3Action: S3ObjectAction): Option[JsValue] = {
     s3Request.s3BucketPath.flatMap { bucket =>
       s3Request.s3Object.map { s3object =>
         Records(List(AWSMessageEvent(
@@ -57,7 +57,7 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
           "airlock:s3",
           "us-east-1",
           Instant.now().toString(),
-          s3ObjectCreated(method.value).value,
+          s3Action.value,
           UserIdentity(principalId),
           RequestParameters(clientIPAddress.getAddress().toString),
           ResponseElements("", ""),

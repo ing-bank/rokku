@@ -59,8 +59,8 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       override val httpSettings: HttpSettings = airlockHttpSettings
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
       override val stsSettings: StsSettings = StsSettings(testSystem)
-      override val atlasSettings: AtlasSettings = new AtlasSettings(testSystem.settings.config)
-      override val kafkaSettings: KafkaSettings = new KafkaSettings(testSystem.settings.config)
+      override val atlasSettings: AtlasSettings = AtlasSettings(testSystem)
+      override val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
       override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = true
     }

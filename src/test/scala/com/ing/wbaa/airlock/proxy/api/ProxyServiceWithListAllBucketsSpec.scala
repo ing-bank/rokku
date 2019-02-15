@@ -7,11 +7,11 @@ import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.{ ActorMaterializer, Materializer }
 import com.ing.wbaa.airlock.proxy.data._
-import org.scalatest.{DiagrammedAssertions, FlatSpec}
+import org.scalatest.{ DiagrammedAssertions, FlatSpec }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAssertions with ScalatestRouteTest {
 

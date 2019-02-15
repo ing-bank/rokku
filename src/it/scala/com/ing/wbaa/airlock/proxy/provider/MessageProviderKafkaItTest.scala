@@ -14,7 +14,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
 
   implicit val testSystem: ActorSystem = ActorSystem("kafkaTest")
 
-  override implicit def kafkaSettings: KafkaSettings = new KafkaSettings(testSystem.settings.config)
+  override implicit def kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -43,7 +43,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
         createCustomTopic(deleteEventsTopic)
 
         emitEvent(s3Request, HttpMethods.DELETE, "testUser", remoteClientIP)
-        assert(consumeFirstStringMessageFrom(deleteEventsTopic).contains("s3:ObjectCreated:DELETE"))
+        assert(consumeFirstStringMessageFrom(deleteEventsTopic).contains("s3:ObjectRemoved:DELETE"))
       }
     }
 

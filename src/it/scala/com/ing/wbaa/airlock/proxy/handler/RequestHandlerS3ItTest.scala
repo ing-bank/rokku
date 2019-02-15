@@ -42,8 +42,8 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
       override val httpSettings: HttpSettings = airlockHttpSettings
       override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = true
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
-      override val atlasSettings: AtlasSettings = new AtlasSettings(system.settings.config)
-      override val kafkaSettings: KafkaSettings = new KafkaSettings(system.settings.config)
+      override val atlasSettings: AtlasSettings = AtlasSettings(testSystem)
+      override val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] =
         Future(Some(User(UserRawJson("userId", Set("group"), "accesskey", "secretkey"))))
