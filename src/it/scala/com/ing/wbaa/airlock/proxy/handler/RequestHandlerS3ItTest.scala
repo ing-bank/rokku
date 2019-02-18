@@ -8,10 +8,10 @@ import akka.http.scaladsl.model.Uri.{Authority, Host}
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.{CopyObjectRequest, ObjectMetadata}
 import com.ing.wbaa.airlock.proxy.AirlockS3Proxy
-import com.ing.wbaa.airlock.proxy.config.{AtlasSettings, HttpSettings, StorageS3Settings}
+import com.ing.wbaa.airlock.proxy.config.{AtlasSettings, HttpSettings, KafkaSettings, StorageS3Settings}
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.provider.LineageProviderAtlas.LineageProviderAtlasException
-import com.ing.wbaa.airlock.proxy.provider.SignatureProviderAws
+import com.ing.wbaa.airlock.proxy.provider.{MessageProviderKafka, SignatureProviderAws}
 import com.ing.wbaa.testkit.AirlockFixtures
 import org.scalatest._
 
@@ -37,12 +37,13 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
     * @return Assertion
     */
   def withS3SdkToMockProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
-    val proxy: AirlockS3Proxy = new AirlockS3Proxy with RequestHandlerS3 with SignatureProviderAws {
+    val proxy: AirlockS3Proxy = new AirlockS3Proxy with RequestHandlerS3 with SignatureProviderAws with MessageProviderKafka {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = airlockHttpSettings
       override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = true
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
-      override val atlasSettings: AtlasSettings = new AtlasSettings(system.settings.config)
+      override val atlasSettings: AtlasSettings = AtlasSettings(testSystem)
+      override val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] =
         Future(Some(User(UserRawJson("userId", Set("group"), "accesskey", "secretkey"))))

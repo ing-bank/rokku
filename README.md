@@ -185,6 +185,23 @@ Lineage is done according following model
 To check lineage that has been created, login to Atlas web UI console, [default url](http://localhost:21000) with
 admin user and password 
 
+# Events Notification
+
+Airlock can send event notification to message queue based on user requests, in [AWS format](https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html).
+
+Currently, two types are emitted:
+
+- s3:ObjectCreated:*
+- s3:ObjectRemoved:*
+
+In order to enable update application.conf, mainly:
+
+```
+        enabled = ${?AIRLOCK_KAFKA_ENABLED}
+        bootstrapServers = ${?AIRLOCK_KAFKA_BOOTSTRAP_SERVERS}
+        createTopic = ${?AIRLOCK_KAFKA_CREATE_TOPIC}
+        deleteTopic = ${?AIRLOCK_KAFKA_DELETE_TOPIC}
+```
 
 # Setting Up AWS CLI
 

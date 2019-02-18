@@ -7,7 +7,7 @@ import com.ing.wbaa.airlock.proxy.provider._
 
 object Server extends App {
 
-  new AirlockS3Proxy with AuthorizationProviderRanger with RequestHandlerS3 with AuthenticationProviderSTS with LineageProviderAtlas with SignatureProviderAws with KerberosLoginProvider {
+  new AirlockS3Proxy with AuthorizationProviderRanger with RequestHandlerS3 with AuthenticationProviderSTS with LineageProviderAtlas with SignatureProviderAws with KerberosLoginProvider with MessageProviderKafka {
     override implicit lazy val system: ActorSystem = ActorSystem.create("airlock")
 
     override def kerberosSettings: KerberosSettings = KerberosSettings(system)
@@ -17,6 +17,7 @@ object Server extends App {
     override val storageS3Settings: StorageS3Settings = StorageS3Settings(system)
     override val stsSettings: StsSettings = StsSettings(system)
     override val atlasSettings: AtlasSettings = AtlasSettings(system)
+    override val kafkaSettings: KafkaSettings = KafkaSettings(system)
 
     // Force Ranger plugin to initialise on startup
     rangerPluginForceInit
