@@ -8,9 +8,10 @@ import org.apache.kafka.common.serialization.StringSerializer
 
 import scala.concurrent.duration.SECONDS
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Failure, Success }
 
 trait EventProducer {
+
   import scala.collection.JavaConverters._
 
   protected[this] implicit val kafkaSettings: KafkaSettings
@@ -30,14 +31,14 @@ trait EventProducer {
   def kafkaProducer: KafkaProducer[String, String] = new KafkaProducer(config.asJava, new StringSerializer, new StringSerializer)
 
   def sendSingleMessage(event: String, topic: String): Future[Done] = {
-    val sentF = kafkaProducer.send(new ProducerRecord[String, String](topic, event))
-    Try(
-      sentF.get(3, SECONDS)
-    ) match {
-        case Success(r) =>
-          kafkaProducer.close()
-          Future.successful(Done)
-        case Failure(ex) => Future.failed(throw new Exception(s"Failed to send event to Kafka, ${ex.getMessage}"))
-      }
+    Future {
+      kafkaProducer
+        .send(new ProducerRecord[String, String](topic, event))
+        .get(3, SECONDS)
+    } transform {
+      case Success(_) =>
+        Success(Done)
+      case Failure(ex) => Failure(new Exception(s"Failed to send event to Kafka, ${ex.getMessage}"))
+    }
   }
 }
