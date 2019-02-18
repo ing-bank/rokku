@@ -196,12 +196,12 @@ Currently, two types are emitted:
 
 In order to enable update application.conf, mainly:
 
-````
+```
         enabled = ${?AIRLOCK_KAFKA_ENABLED}
         bootstrapServers = ${?AIRLOCK_KAFKA_BOOTSTRAP_SERVERS}
         createTopic = ${?AIRLOCK_KAFKA_CREATE_TOPIC}
         deleteTopic = ${?AIRLOCK_KAFKA_DELETE_TOPIC}
-````  
+```
 
 # Setting Up AWS CLI
 

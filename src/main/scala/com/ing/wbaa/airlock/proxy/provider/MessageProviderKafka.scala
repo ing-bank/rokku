@@ -10,7 +10,7 @@ import scala.concurrent.Future
 
 trait MessageProviderKafka extends EventProducer with AWSMessageEventJsonSupport {
 
-  private def incompeteData: Future[Nothing] = Future.failed(throw new Exception("Cannot send event to kafka, not enough input data"))
+  private def incompleteData: Future[Nothing] = Future.failed(new Exception("Cannot send event to kafka, not enough input data"))
 
   def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String, clientIPAddress: RemoteAddress): Future[Done] =
     method match {
@@ -19,16 +19,16 @@ trait MessageProviderKafka extends EventProducer with AWSMessageEventJsonSupport
           .map { case jse =>
             sendSingleMessage(jse.toString(), kafkaSettings.createEventsTopic)
           }
-          .getOrElse(incompeteData)
+          .getOrElse(incompleteData)
 
       case HttpMethods.DELETE =>
         prepareAWSMessage(s3Request, method, principalId, clientIPAddress, s3ObjectRemoved(method.value))
           .map { case jse =>
             sendSingleMessage(jse.toString(), kafkaSettings.deleteEventsTopic)
           }
-          .getOrElse(incompeteData)
+          .getOrElse(incompleteData)
 
-      case _ => incompeteData
+      case _ => incompleteData
     }
 
 }

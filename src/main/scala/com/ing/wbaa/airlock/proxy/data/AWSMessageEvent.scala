@@ -50,22 +50,28 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
   import spray.json._
 
   def prepareAWSMessage(s3Request: S3Request, method: HttpMethod, principalId: String, clientIPAddress: RemoteAddress, s3Action: S3ObjectAction): Option[JsValue] = {
-    s3Request.s3BucketPath.flatMap { bucket =>
-      s3Request.s3Object.map { s3object =>
-        Records(List(AWSMessageEvent(
-          "2.1",
-          "airlock:s3",
-          "us-east-1",
-          Instant.now().toString(),
-          s3Action.value,
-          UserIdentity(principalId),
-          RequestParameters(clientIPAddress.getAddress().toString),
-          ResponseElements("", ""),
-          S3("1.0", "", BucketProps(bucket, OwnerIdentity(""), ""),
-            ObjectProps(s3object, 0, "", "", ""))))
-        ).toJson
-      }
+    val clientIP = clientIPAddress.toIP match {
+      case Some(ip) => ip.toString()
+      case _        => "Unknown"
     }
+
+    for {
+      bucketPath <- s3Request.s3BucketPath
+      s3object <- s3Request.s3Object
+    } yield Records(List(AWSMessageEvent(
+      "2.1",
+      "airlock:s3",
+      "us-east-1",
+      Instant.now().toString(),
+      s3Action.value,
+      UserIdentity(principalId),
+      RequestParameters(clientIP),
+      ResponseElements("", ""),
+      S3("1.0", "",
+        BucketProps(bucketPath, OwnerIdentity(""), ""),
+        ObjectProps(s3object, 0, "", "", ""))))
+    ).toJson
   }
+
 }
 
