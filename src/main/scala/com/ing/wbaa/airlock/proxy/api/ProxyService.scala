@@ -48,7 +48,8 @@ trait ProxyService extends LazyLogging {
             onComplete(areCredentialsActive(s3Request.credential)) {
               case Success(Some(userSTS: User)) =>
                 logger.debug(s"Credentials active for request, user retrieved: $userSTS")
-                processRequestForValidUser(httpRequest, s3Request, userSTS)
+                val fullS3Request = s3Request.copy(clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs))
+                processRequestForValidUser(httpRequest, fullS3Request, userSTS)
               case Success(None) =>
                 val msg = s"Request not authenticated: $s3Request"
                 logger.warn(msg)
