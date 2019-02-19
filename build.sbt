@@ -38,6 +38,7 @@ libraryDependencies ++= Seq(
     "net.manub"                    %% "scalatest-embedded-kafka" % "2.0.0" % IntegrationTest,
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11"),
     "io.github.twonote"            %  "radosgw-admin4j"        % "1.0.2",
+    "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.0-M2",
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion       % Test,
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
     "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.437"        % IntegrationTest

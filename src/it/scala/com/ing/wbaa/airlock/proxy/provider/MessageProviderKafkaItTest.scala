@@ -24,7 +24,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
   override implicit val executionContext: ExecutionContext = testSystem.dispatcher
 
   val s3Request = S3Request(AwsRequestCredential(AwsAccessKey("a"), None), Some("demobucket"), Some("s3object"), Read)
-  val remoteClientIP = RemoteAddress(InetAddress.getByName("127.0.0.1"))
+    .copy(clientIPAddress = Some(RemoteAddress(InetAddress.getByName("127.0.0.1"))))
 
   "KafkaMessageProvider" should {
     "Send message to correct topic with Put or Post" in {
@@ -34,7 +34,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
         val createEventsTopic = "create_events"
         createCustomTopic(createEventsTopic)
 
-        emitEvent(s3Request, HttpMethods.PUT, "testUser", remoteClientIP)
+        emitEvent(s3Request, HttpMethods.PUT, "testUser")
         val result = consumeFirstStringMessageFrom(createEventsTopic)
         assert(result.contains("s3:ObjectCreated:PUT"))
       }
@@ -47,13 +47,13 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
         val deleteEventsTopic = "delete_events"
         createCustomTopic(deleteEventsTopic)
 
-        emitEvent(s3Request, HttpMethods.DELETE, "testUser", remoteClientIP)
+        emitEvent(s3Request, HttpMethods.DELETE, "testUser")
         assert(consumeFirstStringMessageFrom(deleteEventsTopic).contains("s3:ObjectRemoved:DELETE"))
       }
     }
 
     "fail on incomplete data" in {
-      recoverToSucceededIf[Exception](emitEvent(s3Request.copy(s3Object = None), HttpMethods.PUT, "testUser", remoteClientIP))
+      recoverToSucceededIf[Exception](emitEvent(s3Request.copy(s3Object = None), HttpMethods.PUT, "testUser"))
     }
   }
 

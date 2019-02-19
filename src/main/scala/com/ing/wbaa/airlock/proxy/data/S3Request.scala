@@ -1,6 +1,6 @@
 package com.ing.wbaa.airlock.proxy.data
 
-import akka.http.scaladsl.model.HttpMethod
+import akka.http.scaladsl.model.{ HttpMethod, RemoteAddress }
 import akka.http.scaladsl.model.Uri.Path
 import com.typesafe.scalalogging.LazyLogging
 
@@ -15,7 +15,9 @@ case class S3Request(
     credential: AwsRequestCredential,
     s3BucketPath: Option[String],
     s3Object: Option[String],
-    accessType: AccessType
+    accessType: AccessType,
+    clientIPAddress: Option[RemoteAddress] = None,
+    headerIPs: Option[HeaderIPs] = None
 )
 
 object S3Request extends LazyLogging {

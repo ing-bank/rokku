@@ -1,6 +1,7 @@
 package com.ing.wbaa.airlock.proxy.provider
 
-import akka.http.scaladsl.model.RemoteAddress
+import java.net.URLDecoder
+
 import com.ing.wbaa.airlock.proxy.config.RangerSettings
 import com.ing.wbaa.airlock.proxy.data._
 import com.typesafe.scalalogging.LazyLogging
@@ -42,13 +43,13 @@ trait AuthorizationProviderRanger extends LazyLogging {
    *  Check authorization with Ranger. Operations like list-buckets or create, delete bucket must be
    *  enabled in configuration. They are disabled by default
    */
-  def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = {
+  def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = {
 
     def isAuthorisedByRanger(s3path: String): Boolean = {
       import scala.collection.JavaConverters._
 
       val rangerResource = new RangerAccessResourceImpl(
-        Map[String, AnyRef]("path" -> s3path).asJava
+        Map[String, AnyRef]("path" -> URLDecoder.decode(s3path, "UTF-8")).asJava
       )
 
       val rangerRequest = new RangerAccessRequestImpl(
@@ -60,8 +61,8 @@ trait AuthorizationProviderRanger extends LazyLogging {
       // We're using the original client's IP address for verification in Ranger. Ranger seems to use the
       // RemoteIPAddress variable for this. For the header IPs we use the ForwardedAddresses: this is not
       // completely true, but it works fairly enough.
-      rangerRequest.setRemoteIPAddress(clientIPAddress.toOption.map(_.getHostAddress).orNull)
-      rangerRequest.setForwardedAddresses(headerIPs.allIPs.map(_.toOption.map(_.getHostAddress).orNull).asJava)
+      rangerRequest.setRemoteIPAddress(request.clientIPAddress.map(_.toOption.map(_.getHostAddress).orNull).orNull)
+      rangerRequest.setForwardedAddresses(request.headerIPs.map(_.allIPs.map(_.toOption.map(_.getHostAddress).orNull)).orNull.asJava)
 
       logger.debug(s"Checking ranger with request: $rangerRequest")
       Try { rangerPlugin.isAccessAllowed(rangerRequest).getIsAllowed } match {
@@ -74,25 +75,25 @@ trait AuthorizationProviderRanger extends LazyLogging {
 
     request match {
       // object operations, put / delete etc.
-      case S3Request(_, Some(s3path), Some(_), _) =>
+      case S3Request(_, Some(s3path), Some(_), _, _, _) =>
         isAuthorisedByRanger(s3path)
 
       // object operation as subfolder, in this case object can be empty
       // we need this to differentiate subfolder create/delete from bucket create/delete
-      case S3Request(_, Some(s3path), None, accessType) if s3path.endsWith("/") && (accessType == Delete || accessType == Write) =>
+      case S3Request(_, Some(s3path), None, accessType, _, _) if s3path.endsWith("/") && (accessType == Delete || accessType == Write) =>
         isAuthorisedByRanger(s3path)
 
       // list-objects in the bucket operation
-      case S3Request(_, Some(s3path), None, accessType) if accessType == Read || accessType == Head =>
+      case S3Request(_, Some(s3path), None, accessType, _, _) if accessType == Read || accessType == Head =>
         isAuthorisedByRanger(s3path)
 
       // create / delete bucket operation
-      case S3Request(_, Some(_), None, accessType) if (accessType == Write || accessType == Delete) && rangerSettings.createBucketsEnabled =>
+      case S3Request(_, Some(_), None, accessType, _, _) if (accessType == Write || accessType == Delete) && rangerSettings.createBucketsEnabled =>
         logger.debug(s"Skipping ranger for creation/deletion of bucket with request: $request")
         true
 
       // list buckets
-      case S3Request(_, None, None, accessType) if accessType == Read && rangerSettings.listBucketsEnabled =>
+      case S3Request(_, None, None, accessType, _, _) if accessType == Read && rangerSettings.listBucketsEnabled =>
         logger.debug(s"Skipping ranger for listing of buckets with request: $request")
         true
 

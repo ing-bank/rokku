@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='UTF-8'?><ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Name>demobucket</Name>
+  <Prefix>user</Prefix>
+  <Marker/>
+  <MaxKeys>1000</MaxKeys>
+  <IsTruncated>false</IsTruncated>
+  <EncodingType>url</EncodingType>
+  <Contents>
+    <Key>user1%2Fa%2Fc%2Ftest%2Faala%2Fgg%2Fdfgfg%2F1</Key>
+    <LastModified>2019-02-12T10:21:05.353Z</LastModified>
+    <ETag>"c334e35ed0bd79dfcf1b656c53801d7f"</ETag>
+    <Size>16384</Size>
+    <StorageClass>STANDARD</StorageClass>
+    <Owner>
+      <ID>testuser</ID>
+      <DisplayName>testuser</DisplayName>
+    </Owner>
+    <RgwxTag>15e78dc1-26ef-45e1-a170-c49693738a71.4110.45</RgwxTag>
+  </Contents>
+  <Contents>
+    <Key>user2%2Fa%2Fc%2Ftest%2Faala%2Fgg%2Fdfgfg%2F2</Key>
+    <LastModified>2019-02-12T10:21:28.390Z</LastModified>
+    <ETag>"c334e35ed0bd79dfcf1b656c53801d7f"</ETag>
+    <Size>16384</Size>
+    <StorageClass>STANDARD</StorageClass>
+    <Owner>
+      <ID>testuser</ID>
+      <DisplayName>testuser</DisplayName>
+    </Owner>
+    <RgwxTag>15e78dc1-26ef-45e1-a170-c49693738a71.4110.46</RgwxTag>
+  </Contents>
+  <Contents>
+    <Key>user2</Key>
+    <LastModified>2019-02-12T07:15:17.978Z</LastModified>
+    <ETag>"fcab217e86b7b0bfbb8a6ab4bf713ec5"</ETag>
+    <Size>3638</Size>
+    <StorageClass>STANDARD</StorageClass>
+    <Owner>
+      <ID>ceph-admin</ID>
+      <DisplayName>Ceph demo user</DisplayName>
+    </Owner>
+    <RgwxTag>15e78dc1-26ef-45e1-a170-c49693738a71.4110.20</RgwxTag>
+  </Contents>
+  <Contents>
+    <Key>user1</Key>
+    <LastModified>2019-02-12T07:15:24.291Z</LastModified>
+    <ETag>"fcab217e86b7b0bfbb8a6ab4bf713ec5"</ETag>
+    <Size>3638</Size>
+    <StorageClass>STANDARD</StorageClass>
+    <Owner>
+      <ID>ceph-admin</ID>
+      <DisplayName>Ceph demo user</DisplayName>
+    </Owner>
+    <RgwxTag>15e78dc1-26ef-45e1-a170-c49693738a71.4110.21</RgwxTag>
+  </Contents>
+</ListBucketResult>

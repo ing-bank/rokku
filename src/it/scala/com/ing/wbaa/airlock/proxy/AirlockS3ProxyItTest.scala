@@ -1,7 +1,6 @@
 package com.ing.wbaa.airlock.proxy
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.Uri.{Authority, Host}
 import akka.stream.ActorMaterializer
 import com.amazonaws.auth.BasicSessionCredentials
@@ -62,7 +61,7 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       override val atlasSettings: AtlasSettings = AtlasSettings(testSystem)
       override val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
-      override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = true
+      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
     }
     proxy.startup.flatMap { binding =>
       val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)

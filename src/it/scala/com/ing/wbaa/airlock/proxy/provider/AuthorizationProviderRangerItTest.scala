@@ -41,117 +41,145 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
   /**
     * Fixture for setting up a Ranger provider object
     *
-    * @param testCode      Code that accepts the created authorization provider
+    * @param testCode Code that accepts the created authorization provider
     * @return Assertion
     */
-  def withAuthorizationProviderRanger(rangerTestSettings: RangerSettings = RangerSettings(testSystem))(testCode: AuthorizationProviderRanger => Future[Assertion]): Future[Assertion] = {
+  def withAuthorizationProviderRanger(rangerTestSettings: RangerSettings =
+                                      RangerSettings(testSystem))
+                                     (testCode: AuthorizationProviderRanger => Future[Assertion]): Future[Assertion] = {
     testCode(new AuthorizationProviderRanger {
-        override def rangerSettings: RangerSettings = rangerTestSettings
+      override def rangerSettings: RangerSettings = rangerTestSettings
     })
   }
 
   "Authorization Provider Ranger" should {
     "authorize a request" that {
       "successfully authorizes a request on a bucket" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request, user, clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(clientIPAddress = Some(clientIPAddress),
+          headerIPs = Some(headerIPs)), user))
       }
 
       "successfully authorizes a request on an object in a bucket" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = Some("object")), user, clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = Some("object"),
+          clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs)), user))
       }
 
       "authorize for requests without bucket" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None), user, clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None,
+          clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs)), user))
       }
 
       "doesn't authorize for requests that are not supposed to be (Write)" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(accessType = Write, s3Object = Some("object")), user, clientIPAddress, headerIPs))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(accessType = Write, s3Object = Some("object"),
+          clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs)), user))
       }
 
       "doesn't authorize for unauthorized user and group" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request, user.copy(
-          userName = UserName("unauthorized"), userGroups = Set(UserGroup("unauthorized"))), clientIPAddress, headerIPs))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(clientIPAddress = Some(clientIPAddress),
+          headerIPs = Some(headerIPs)), user.copy(
+          userName = UserName("unauthorized"), userGroups = Set(UserGroup("unauthorized")))))
       }
 
       "does authorize for unauthorized user but authorized group" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userName = UserName("unauthorized")), clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(clientIPAddress = Some(clientIPAddress),
+          headerIPs = Some(headerIPs)), user.copy(userName = UserName("unauthorized"))))
       }
 
       "does authorize for authorized user but unauthorized group" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request, user.copy(userGroups = Set(UserGroup("unauthorized"))), clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(clientIPAddress = Some(clientIPAddress),
+          headerIPs = Some(headerIPs)), user.copy(userGroups = Set(UserGroup("unauthorized")))))
       }
 
       "authorize allow-list-buckets with default settings" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None, s3Object = None, accessType = Read), user, clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None, s3Object = None,
+          accessType = Read, clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs)), user))
       }
 
       "does authorize allow-list-buckets set to true" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
         override val listBucketsEnabled: Boolean = true
       }) { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None, s3Object = None, accessType = Read), user, clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None, s3Object = None,
+          accessType = Read, clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs)), user))
       }
 
       "does authorize allow-create-buckets set to true" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
         override val createBucketsEnabled: Boolean = true
       }) { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Write), user, clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Write,
+          clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs)), user))
       }
 
       "does authorize delete buckets set to true" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
         override val createBucketsEnabled: Boolean = true
       }) { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Delete), user, clientIPAddress, headerIPs))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Delete,
+          clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs)), user))
       }
 
       "doesn't authorize when method is not REST (GET, PUT, DELETE etc.)" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = NoAccess), user, clientIPAddress, headerIPs))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = NoAccess,
+          clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs)), user))
       }
 
       "doesn't authorize when remoteIpAddress is in a DENY policy" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request, user, unauthorizedIPAddress, headerIPs))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(clientIPAddress = Some(unauthorizedIPAddress),
+          headerIPs = Some(headerIPs)), user))
       }
 
       "doesn't authorize when X-Real-IP is in a DENY policy" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request, user, clientIPAddress, headerIPs.copy(`X-Real-IP` = Some(unauthorizedIPAddress))))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(clientIPAddress = Some(clientIPAddress),
+          headerIPs = Some(headerIPs.copy(`X-Real-IP` = Some(unauthorizedIPAddress)))), user))
       }
 
       "doesn't authorize when any of X-Forwarded-For is in a DENY policy" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request, user, clientIPAddress, headerIPs.copy(`X-Forwarded-For` = Some(headerIPs.`X-Forwarded-For`.get :+ unauthorizedIPAddress))))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(clientIPAddress = Some(clientIPAddress),
+          headerIPs = Some(headerIPs.copy(`X-Forwarded-For` = Some(headerIPs.`X-Forwarded-For`.get :+ unauthorizedIPAddress)))), user))
       }
 
       "doesn't authorize when Remote-Address is in a DENY policy" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request, user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(unauthorizedIPAddress))))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(clientIPAddress = Some(clientIPAddress),
+          headerIPs = Some(headerIPs.copy(`Remote-Address` = Some(unauthorizedIPAddress)))), user))
       }
 
       "doesn't authorize when any IP is unknown" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request, user, RemoteAddress.Unknown, headerIPs))
-        assert(!apr.isUserAuthorizedForRequest(s3Request, user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(clientIPAddress = Some(RemoteAddress.Unknown), headerIPs = Some(headerIPs)), user))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(clientIPAddress = Some(clientIPAddress),
+          headerIPs = Some(headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown)))), user))
       }
 
       "doesn't allow listing subdir in the bucket" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/demobucket/subdir")), user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/demobucket/subdir"),
+          clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown)))), user))
       }
 
       "does allow read homedir in the bucket" in withAuthorizationProviderRanger() { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/home/testuser")), user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/home/testuser"),
+          clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown)))), user))
       }
 
       "doesn't allow read in non homedir in the bucket" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/home/testuser1")), user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/home/testuser1"),
+          clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown)))), user))
       }
 
       "does allow write homedir in the bucket" in withAuthorizationProviderRanger() { apr =>
         assert(apr.isUserAuthorizedForRequest(
-          s3Request.copy(s3BucketPath = Some("/home/testuser"), s3Object = Some("object1"), accessType = Write),
-          user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+          s3Request.copy(s3BucketPath = Some("/home/testuser"), s3Object = Some("object1"),
+            accessType = Write, clientIPAddress = Some(clientIPAddress),
+            headerIPs = Some(headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown)))), user))
       }
 
       "doesn't allow write in non homedir in the bucket" in withAuthorizationProviderRanger() { apr =>
         assert(!apr.isUserAuthorizedForRequest(
-          s3Request.copy(s3BucketPath = Some("/home/testuser1"), s3Object = Some("object1"), accessType = Write),
-          user, clientIPAddress, headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))))
+          s3Request.copy(s3BucketPath = Some("/home/testuser1"), s3Object = Some("object1"),
+            accessType = Write, clientIPAddress = Some(clientIPAddress),
+            headerIPs = Some(headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown)))), user))
       }
 
+      "does allow read all user dir" in withAuthorizationProviderRanger() { apr =>
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/home"),
+          clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs)), user))
+      }
     }
   }
 }
