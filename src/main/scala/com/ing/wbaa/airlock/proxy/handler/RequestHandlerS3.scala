@@ -117,7 +117,7 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
       val delimiterIndex = decodedPath.lastIndexOf(delimiter)
       val pathToCheck = if (delimiterIndex > 0) delimiter + decodedPath.substring(0, delimiterIndex) else ""
       val s3path = requestS3.s3BucketPath.getOrElse(delimiter)
-      val s3pathWithoutLastDelimiter = (if (s3path.length > 1 && s3path.endsWith(delimiter)) s3path.substring(0, s3path.length - 1) else s3path) + pathToCheck
+      val s3pathWithoutLastDelimiter = if (s3path.length > 1 && s3path.endsWith(delimiter)) s3path.substring(0, s3path.length - 1) else s3path
       s3pathWithoutLastDelimiter + pathToCheck
     }
 
