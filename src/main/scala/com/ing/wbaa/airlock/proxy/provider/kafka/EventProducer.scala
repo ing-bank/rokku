@@ -3,12 +3,13 @@ package com.ing.wbaa.airlock.proxy.provider.kafka
 import akka.Done
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.airlock.proxy.config.KafkaSettings
-import org.apache.kafka.clients.producer.{ KafkaProducer, ProducerConfig, ProducerRecord }
+import org.apache.kafka.clients.CommonClientConfigs
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.apache.kafka.common.serialization.StringSerializer
 
 import scala.concurrent.duration.SECONDS
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 trait EventProducer {
 
@@ -25,7 +26,8 @@ trait EventProducer {
       "bootstrap.servers" -> kafkaSettings.bootstrapServers,
       ProducerConfig.RETRIES_CONFIG -> kafkaSettings.retries,
       ProducerConfig.RECONNECT_BACKOFF_MS_CONFIG -> kafkaSettings.retriesBackOff,
-      ProducerConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG -> kafkaSettings.retriesBackOffMax
+      ProducerConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG -> kafkaSettings.retriesBackOffMax,
+      CommonClientConfigs.SECURITY_PROTOCOL_CONFIG -> kafkaSettings.protocol
     )
 
   def kafkaProducer: KafkaProducer[String, String] = new KafkaProducer(config.asJava, new StringSerializer, new StringSerializer)

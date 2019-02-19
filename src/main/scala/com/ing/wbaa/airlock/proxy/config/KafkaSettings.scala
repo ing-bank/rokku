@@ -11,6 +11,7 @@ class KafkaSettings(config: Config) extends Extension {
   val retries: String = config.getString("kafka.producer.retries")
   val retriesBackOff: String = config.getString("kafka.producer.backoff")
   val retriesBackOffMax: String = config.getString("kafka.producer.backoffMax")
+  val protocol: String = config.getString("kafka.producer.protocol")
   val kafkaConfig = config.getConfig("kafka.producer")
 }
 
