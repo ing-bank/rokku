@@ -44,10 +44,10 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
       .addHeader(RawHeader("User-Agent", userAgent))
 
     fireRequestToS3(newRequest).flatMap { response =>
-      if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS)) fireRequestToS3(newRequest)
+      if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS))
+        fireRequestToS3(newRequest).flatMap(retryResponse => Future(filterResponse(request, userSTS, s3request, retryResponse)))
       else {
-        val originalResponse = response.withEntity(response.entity.withoutSizeLimit())
-        Future(filterResponse(request, userSTS, s3request, originalResponse))
+        Future(filterResponse(request, userSTS, s3request, response))
       }
     }
   }
@@ -63,6 +63,7 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
     Http()
       .singleRequest(request)
       .andThen { case Success(r) => logger.debug(s"Received response from Ceph: ${r.status}") }
+      .map(r => r.withEntity(r.entity.withoutSizeLimit()))
   }
 
   /**
@@ -75,7 +76,6 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
    * @return for recursive request it returns filtered response for others the original response
    */
   protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse): HttpResponse = {
-    println(s3request)
     val isNoDelimiterParamAndIsReadAccess =
       !request.uri.rawQueryString.getOrElse("").contains("delimiter") && s3request.accessType == Read && s3request.s3Object.isEmpty
     if (isNoDelimiterParamAndIsReadAccess) {
