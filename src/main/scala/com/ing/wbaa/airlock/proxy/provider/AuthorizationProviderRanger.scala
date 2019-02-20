@@ -61,8 +61,8 @@ trait AuthorizationProviderRanger extends LazyLogging {
       // We're using the original client's IP address for verification in Ranger. Ranger seems to use the
       // RemoteIPAddress variable for this. For the header IPs we use the ForwardedAddresses: this is not
       // completely true, but it works fairly enough.
-      rangerRequest.setRemoteIPAddress(request.clientIPAddress.map(_.toOption.map(_.getHostAddress).orNull).orNull)
-      rangerRequest.setForwardedAddresses(request.headerIPs.map(_.allIPs.map(_.toOption.map(_.getHostAddress).orNull)).orNull.asJava)
+      rangerRequest.setRemoteIPAddress(request.clientIPAddress.toOption.map(_.getHostAddress).orNull)
+      rangerRequest.setForwardedAddresses(request.headerIPs.allIPs.map(_.toOption.map(_.getHostAddress).orNull).asJava)
 
       logger.debug(s"Checking ranger with request: $rangerRequest")
       Try { rangerPlugin.isAccessAllowed(rangerRequest).getIsAllowed } match {

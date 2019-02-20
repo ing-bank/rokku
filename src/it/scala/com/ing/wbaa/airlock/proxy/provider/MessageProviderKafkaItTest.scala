@@ -24,7 +24,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
   override implicit val executionContext: ExecutionContext = testSystem.dispatcher
 
   val s3Request = S3Request(AwsRequestCredential(AwsAccessKey("a"), None), Some("demobucket"), Some("s3object"), Read)
-    .copy(clientIPAddress = Some(RemoteAddress(InetAddress.getByName("127.0.0.1"))))
+    .copy(clientIPAddress = RemoteAddress(InetAddress.getByName("127.0.0.1")))
 
   "KafkaMessageProvider" should {
     "Send message to correct topic with Put or Post" in {

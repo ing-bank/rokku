@@ -30,7 +30,7 @@ trait PostRequestActions {
     }
 
   protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit = {
-    createAtlasLineage(response, httpRequest, userSTS, s3Request.clientIPAddress.get)
+    createAtlasLineage(response, httpRequest, userSTS, s3Request.clientIPAddress)
     createBucketNotification(response, httpRequest, s3Request, userSTS)
   }
 

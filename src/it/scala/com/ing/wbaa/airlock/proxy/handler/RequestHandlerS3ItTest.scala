@@ -37,7 +37,8 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
     * @return Assertion
     */
   def withS3SdkToMockProxy(awsSignerType: String)(testCode: AmazonS3 => Assertion): Future[Assertion] = {
-    val proxy: AirlockS3Proxy = new AirlockS3Proxy with RequestHandlerS3 with SignatureProviderAws with MessageProviderKafka {
+    val proxy: AirlockS3Proxy = new AirlockS3Proxy with RequestHandlerS3 with SignatureProviderAws
+      with FilterRecursiveListBucketHandler with MessageProviderKafka {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = airlockHttpSettings
       override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true

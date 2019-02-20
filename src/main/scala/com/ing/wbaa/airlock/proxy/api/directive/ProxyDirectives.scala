@@ -21,7 +21,7 @@ object ProxyDirectives extends LazyLogging {
   private[this] val X_REAL_IP_HEADER = "X-Real-IP"
   private[this] val REMOTE_ADDRESS_HEADER = "Remote-Address"
 
-  private[this] val ipv4Regex = "\\s*([0-9\\.]+)(:([0-9]+))?\\s*"r
+  private[this] val ipv4Regex = "\\s*([0-9\\.]+)(:([0-9]+))?\\s*" r
 
   /**
    * Extract data from the Authorization header of S3
@@ -57,46 +57,55 @@ object ProxyDirectives extends LazyLogging {
 
   //TODO: Put Remote IP Address in the S3 Request, call it IP Origin
   val extracts3Request: Directive1[S3Request] =
-    extractRequest tflatMap { case Tuple1(httpRequest) =>
-      optionalHeaderValueByName("x-amz-security-token") tflatMap {
-        case Tuple1(optionalSessionToken) =>
-          headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
+    extractClientIP tflatMap { case Tuple1(clientIPAddress) =>
+      logger.debug(s"Extracted Client IP: " +
+        s"${clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")}")
+      extractHeaderIPs tflatMap { case Tuple1(headerIPs) =>
+        logger.debug(s"Extracted headers IPs: $headerIPs")
+        extractRequest tflatMap { case Tuple1(httpRequest) =>
+          optionalHeaderValueByName("x-amz-security-token") tflatMap {
+            case Tuple1(optionalSessionToken) =>
+              headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
 
-            val rootPath =
-              if (httpRequest.uri.path.endsWithSlash) httpRequest.uri.path.toString().dropRight(1)
-              else httpRequest.uri.path.toString()
+                val rootPath =
+                  if (httpRequest.uri.path.endsWithSlash) httpRequest.uri.path.toString().dropRight(1)
+                  else httpRequest.uri.path.toString()
 
-            // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
-            val s3path = httpRequest.uri.rawQueryString match {
-              case Some(queryString) if queryString.contains("prefix") =>
-                val queryPrefixPair = queryString
-                  .split("&")
-                  .filter(_.contains("prefix"))
-                  .head.split("=")
+                // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
+                val s3path = httpRequest.uri.rawQueryString match {
+                  case Some(queryString) if queryString.contains("prefix") =>
+                    val queryPrefixPair = queryString
+                      .split("&")
+                      .filter(_.contains("prefix"))
+                      .head.split("=")
 
-                val delimiter = queryString
-                  .split("&").find(_.contains("delimiter")) match {
-                    case Some(d)     => d.split("=").last
-                    case None        => "/"
-                  }
+                    val delimiter = queryString
+                      .split("&").find(_.contains("delimiter")) match {
+                        case Some(d)         => d.split("=").last
+                        case None            => "/"
+                      }
 
-                if (queryPrefixPair.length == 2) {
-                  Uri.Path(s"${rootPath}/${queryPrefixPair.last.replace(delimiter, "/")}")
-                } else {
-                  Uri.Path(s"${rootPath}")
+                    if (queryPrefixPair.length == 2) {
+                      Uri.Path(s"$rootPath/${queryPrefixPair.last.replace(delimiter, "/")}")
+                    } else {
+                      Uri.Path(s"$rootPath")
+                    }
+                  case _         => Uri.Path(s"$rootPath")
                 }
-              case _     => Uri.Path(s"${rootPath}")
-            }
 
-            val s3Request = S3Request(
-              AwsRequestCredential(awsAccessKey, optionalSessionToken.map(AwsSessionToken)),
-              s3path,
-              httpRequest.method
-            )
+                val s3Request = S3Request(
+                  AwsRequestCredential(awsAccessKey, optionalSessionToken.map(AwsSessionToken)),
+                  s3path,
+                  httpRequest.method,
+                  clientIPAddress,
+                  headerIPs
+                )
 
-            logger.debug(s"Extracted S3 Request: $s3Request")
-            s3Request
+                logger.debug(s"Extracted S3 Request: $s3Request")
+                s3Request
+              }
           }
+        }
       }
     }
 

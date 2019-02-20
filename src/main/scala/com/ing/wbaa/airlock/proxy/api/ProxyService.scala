@@ -39,25 +39,19 @@ trait ProxyService extends LazyLogging {
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
-      (extractClientIP & extractHeaderIPs) { (clientIPAddress, headerIPs) =>
-        logger.debug(s"Extracted Client IP: " +
-          s"${clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")}")
-        logger.debug(s"Extracted headers IPs: ${headerIPs}")
-        extractRequest { httpRequest =>
-          extracts3Request { s3Request =>
-            onComplete(areCredentialsActive(s3Request.credential)) {
-              case Success(Some(userSTS: User)) =>
-                logger.debug(s"Credentials active for request, user retrieved: $userSTS")
-                val fullS3Request = s3Request.copy(clientIPAddress = Some(clientIPAddress), headerIPs = Some(headerIPs))
-                processRequestForValidUser(httpRequest, fullS3Request, userSTS)
-              case Success(None) =>
-                val msg = s"Request not authenticated: $s3Request"
-                logger.warn(msg)
-                complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
-              case Failure(exception) =>
-                logger.error(s"An error occurred checking authentication with STS service", exception)
-                complete(StatusCodes.InternalServerError -> AwsErrorCodes.response(StatusCodes.InternalServerError))
-            }
+      extractRequest { httpRequest =>
+        extracts3Request { s3Request =>
+          onComplete(areCredentialsActive(s3Request.credential)) {
+            case Success(Some(userSTS: User)) =>
+              logger.debug(s"Credentials active for request, user retrieved: $userSTS")
+              processRequestForValidUser(httpRequest, s3Request, userSTS)
+            case Success(None) =>
+              val msg = s"Request not authenticated: $s3Request"
+              logger.warn(msg)
+              complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+            case Failure(exception) =>
+              logger.error(s"An error occurred checking authentication with STS service", exception)
+              complete(StatusCodes.InternalServerError -> AwsErrorCodes.response(StatusCodes.InternalServerError))
           }
         }
       }

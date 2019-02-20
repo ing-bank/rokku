@@ -1,34 +1,26 @@
 package com.ing.wbaa.airlock.proxy.handler
 
-import java.net.URLDecoder
-
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.stream.alpakka.xml.{ EndElement, ParseEvent, StartElement, TextEvent }
-import akka.stream.alpakka.xml.scaladsl.{ XmlParsing, XmlWriting }
-import akka.stream.scaladsl.Flow
-import akka.util.ByteString
 import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
-import com.ing.wbaa.airlock.proxy.data.{ Read, S3Request, User }
+import com.ing.wbaa.airlock.proxy.data.{ S3Request, User }
 import com.ing.wbaa.airlock.proxy.handler.radosgw.RadosGatewayHandler
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.collection.{ immutable, mutable }
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Success
 
 trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
 
   protected[this] implicit def system: ActorSystem
+
   protected[this] implicit def executionContext: ExecutionContext
 
   protected[this] def storageS3Settings: StorageS3Settings
 
-  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
+  protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse): HttpResponse
 
   /**
    * Updates the URI for S3 and sends the request to S3.
@@ -64,101 +56,5 @@ trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
       .singleRequest(request)
       .andThen { case Success(r) => logger.debug(s"Received response from Ceph: ${r.status}") }
       .map(r => r.withEntity(r.entity.withoutSizeLimit()))
-  }
-
-  /**
-   * for list objects in bucket we need filter response when --recursive is set
-   * --recursive means that there is a delimiter param in request query and the access type is READ
-   * @param request
-   * @param userSTS
-   * @param s3request
-   * @param response
-   * @return for recursive request it returns filtered response for others the original response
-   */
-  protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse): HttpResponse = {
-    val isNoDelimiterParamAndIsReadAccess =
-      !request.uri.rawQueryString.getOrElse("").contains("delimiter") && s3request.accessType == Read && s3request.s3Object.isEmpty
-    if (isNoDelimiterParamAndIsReadAccess) {
-      response.transformEntityDataBytes(filterRecursiveListObjects(userSTS, s3request))
-    } else {
-      response
-    }
-  }
-
-  /**
-   * Xml as byte of steam is parsed and each value of <Key> tags is checked if the user is authorised for it.
-   * @param user
-   * @param requestS3
-   * @return xml as stream of bytes with only authorised resources
-   */
-  protected[this] def filterRecursiveListObjects(user: User, requestS3: S3Request): Flow[ByteString, ByteString, NotUsed] = {
-    def elementResult(allContentsElements: ListBuffer[ParseEvent], isContentsTag: Boolean, element: ParseEvent): immutable.Seq[ParseEvent] = {
-      if (isContentsTag) {
-        allContentsElements += element
-        immutable.Seq.empty
-      } else {
-        immutable.Seq(element)
-      }
-    }
-
-    val rangerAuthorizedFalseCache = mutable.Map.empty[String, Boolean]
-
-    def isPathOkInRangerPolicy(path: String): Boolean = {
-      val pathToCheck = normalizePath(path)
-      val isUserAuthorized = isUserAuthorizedForRequest(requestS3.copy(s3BucketPath = Some(pathToCheck)), user)
-      logger.debug("user {} isUserAuthorized for path {} = {}", user.userName, pathToCheck, isUserAuthorized)
-      if (!isUserAuthorized) rangerAuthorizedFalseCache.put(path, isUserAuthorized)
-      isUserAuthorized
-    }
-
-    def normalizePath(path: String): String = {
-      val delimiter = "/"
-      val decodedPath = URLDecoder.decode(path, "UTF-8")
-      val delimiterIndex = decodedPath.lastIndexOf(delimiter)
-      val pathToCheck = if (delimiterIndex > 0) delimiter + decodedPath.substring(0, delimiterIndex) else ""
-      val s3path = requestS3.s3BucketPath.getOrElse(delimiter)
-      val s3pathWithoutLastDelimiter = if (s3path.length > 1 && s3path.endsWith(delimiter)) s3path.substring(0, s3path.length - 1) else s3path
-      s3pathWithoutLastDelimiter + pathToCheck
-    }
-
-    Flow[ByteString].via(XmlParsing.parser)
-      .statefulMapConcat(() => {
-        // state
-        val keyTagValue = StringBuilder.newBuilder
-        val allContentsElements = new ListBuffer[ParseEvent]
-        var isContentsTag = false
-        var isKeyTag = false
-
-        // aggregation function
-        parseEvent =>
-          parseEvent match {
-            case element: StartElement if element.localName == "Contents" =>
-              isContentsTag = true
-              allContentsElements.clear()
-              allContentsElements += element
-              immutable.Seq.empty
-            case element: EndElement if element.localName == "Contents" =>
-              isContentsTag = false
-              allContentsElements += element
-              if (isPathOkInRangerPolicy(keyTagValue.stripMargin)) {
-                allContentsElements.toList
-              } else {
-                immutable.Seq.empty
-              }
-            case element: StartElement if element.localName == "Key" =>
-              keyTagValue.clear()
-              isKeyTag = true
-              elementResult(allContentsElements, isContentsTag, element)
-            case element: EndElement if element.localName == "Key" =>
-              isKeyTag = false
-              elementResult(allContentsElements, isContentsTag, element)
-            case element: TextEvent =>
-              if (isKeyTag) keyTagValue.append(element.text)
-              elementResult(allContentsElements, isContentsTag, element)
-            case s =>
-              elementResult(allContentsElements, isContentsTag, s)
-          }
-      })
-      .via(XmlWriting.writer)
   }
 }
