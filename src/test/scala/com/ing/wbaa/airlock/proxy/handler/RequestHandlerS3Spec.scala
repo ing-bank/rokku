@@ -50,7 +50,7 @@ class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with 
         executeRequest(
           HttpRequest(),
           User(UserRawJson("u", Set.empty[String], "a", "s")),
-          null
+          S3Request(AwsRequestCredential(AwsAccessKey(""), None), Uri.Path("/demobucket/user"), HttpMethods.GET)
         ).map(_ => assert(numFiredRequests - initialNumFiredRequests == 2))
       }
     }

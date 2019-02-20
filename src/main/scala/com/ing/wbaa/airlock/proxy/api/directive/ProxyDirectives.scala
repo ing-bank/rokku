@@ -85,7 +85,7 @@ object ProxyDirectives extends LazyLogging {
                 } else {
                   Uri.Path(s"${rootPath}")
                 }
-              case _     => httpRequest.uri.path
+              case _     => Uri.Path(s"${rootPath}")
             }
 
             val s3Request = S3Request(
