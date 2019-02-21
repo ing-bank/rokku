@@ -62,11 +62,6 @@ trait FilterRecursiveListBucketHandler extends LazyLogging {
       isUserAuthorized
     }
 
-    /**
-     * decode all url caracters
-     * @param path
-     * @return decoded path without last slash or last object
-     */
     def normalizePath(path: String): String = {
       val delimiter = "/"
       val decodedPath = URLDecoder.decode(path, "UTF-8")
