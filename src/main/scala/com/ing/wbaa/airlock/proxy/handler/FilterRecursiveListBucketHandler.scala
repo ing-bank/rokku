@@ -63,10 +63,7 @@ trait FilterRecursiveListBucketHandler extends LazyLogging {
     }
 
     /**
-     * ei file => dir/dir2
-     * ei dir%2Fdir2%2F => dir/dir2
-     * ei dir%2Fdir2%2Ffile => dir/dir2
-     *
+     * decode all url caracters
      * @param path
      * @return decoded path without last slash or last object
      */
