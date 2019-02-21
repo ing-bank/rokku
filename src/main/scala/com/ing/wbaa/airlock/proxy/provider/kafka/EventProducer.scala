@@ -3,15 +3,14 @@ package com.ing.wbaa.airlock.proxy.provider.kafka
 import akka.Done
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.airlock.proxy.config.KafkaSettings
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.producer.{ KafkaProducer, ProducerConfig, ProducerRecord }
+import org.apache.kafka.clients.producer.{ KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata }
 import org.apache.kafka.common.serialization.StringSerializer
 
-import scala.concurrent.duration.SECONDS
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
 
-trait EventProducer {
+trait EventProducer extends LazyLogging {
 
   import scala.collection.JavaConverters._
 
@@ -27,20 +26,21 @@ trait EventProducer {
       ProducerConfig.RETRIES_CONFIG -> kafkaSettings.retries,
       ProducerConfig.RECONNECT_BACKOFF_MS_CONFIG -> kafkaSettings.retriesBackOff,
       ProducerConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG -> kafkaSettings.retriesBackOffMax,
-      CommonClientConfigs.SECURITY_PROTOCOL_CONFIG -> kafkaSettings.protocol
+      CommonClientConfigs.SECURITY_PROTOCOL_CONFIG -> kafkaSettings.protocol,
+      ProducerConfig.MAX_BLOCK_MS_CONFIG -> kafkaSettings.maxblock
     )
 
   def kafkaProducer: KafkaProducer[String, String] = new KafkaProducer(config.asJava, new StringSerializer, new StringSerializer)
 
   def sendSingleMessage(event: String, topic: String): Future[Done] = {
-    Future {
-      kafkaProducer
-        .send(new ProducerRecord[String, String](topic, event))
-        .get(3, SECONDS)
-    } transform {
-      case Success(_) =>
-        Success(Done)
-      case Failure(ex) => Failure(new Exception(s"Failed to send event to Kafka, ${ex.getMessage}"))
-    }
+    kafkaProducer
+      .send(new ProducerRecord[String, String](topic, event), (metadata: RecordMetadata, exception: Exception) => {
+        exception match {
+          case e: Exception => throw new Exception(e)
+          case _            => logger.info("Event notification sent to kafka, offset " + metadata.offset())
+        }
+      }) match {
+        case _ => Future(Done)
+      }
   }
 }
