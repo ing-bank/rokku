@@ -24,7 +24,7 @@ trait ProxyService extends LazyLogging {
   protected[this] implicit def executionContext: ExecutionContext
 
   // Request Handler methods
-  protected[this] def executeRequest(request: HttpRequest, userSTS: User): Future[HttpResponse]
+  protected[this] def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request): Future[HttpResponse]
 
   // Authentication methods
   protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]]
@@ -33,53 +33,48 @@ trait ProxyService extends LazyLogging {
   protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean
 
   // Authorization methods
-  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean
+  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
 
-  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User, clientIPAddress: RemoteAddress): Unit
+  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit
 
   val proxyServiceRoute: Route =
     withoutSizeLimit {
-      (extractClientIP & extractHeaderIPs) { (clientIPAddress, headerIPs) =>
-        logger.debug(s"Extracted Client IP: " +
-          s"${clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")}")
-        logger.debug(s"Extracted headers IPs: ${headerIPs}")
-        extractRequest { httpRequest =>
-          extracts3Request { s3Request =>
-            onComplete(areCredentialsActive(s3Request.credential)) {
-              case Success(Some(userSTS: User)) =>
-                logger.debug(s"Credentials active for request, user retrieved: $userSTS")
-                processRequestForValidUser(clientIPAddress, headerIPs, httpRequest, s3Request, userSTS)
-              case Success(None) =>
-                val msg = s"Request not authenticated: $s3Request"
-                logger.warn(msg)
-                complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
-              case Failure(exception) =>
-                logger.error(s"An error occurred checking authentication with STS service", exception)
-                complete(StatusCodes.InternalServerError -> AwsErrorCodes.response(StatusCodes.InternalServerError))
-            }
+      extractRequest { httpRequest =>
+        extracts3Request { s3Request =>
+          onComplete(areCredentialsActive(s3Request.credential)) {
+            case Success(Some(userSTS: User)) =>
+              logger.debug(s"Credentials active for request, user retrieved: $userSTS")
+              processRequestForValidUser(httpRequest, s3Request, userSTS)
+            case Success(None) =>
+              val msg = s"Request not authenticated: $s3Request"
+              logger.warn(msg)
+              complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+            case Failure(exception) =>
+              logger.error(s"An error occurred checking authentication with STS service", exception)
+              complete(StatusCodes.InternalServerError -> AwsErrorCodes.response(StatusCodes.InternalServerError))
           }
         }
       }
     }
 
-  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User, clientIPAddress: RemoteAddress): Route = {
+  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Route = {
     updateHeadersForRequest { newHttpRequest =>
-      val httpResponse = executeRequest(newHttpRequest, userSTS).andThen {
+      val httpResponse = executeRequest(newHttpRequest, userSTS, s3Request).andThen {
         case Success(response: HttpResponse) =>
-          handlePostRequestActions(response, httpRequest, s3Request, userSTS, clientIPAddress)
+          handlePostRequestActions(response, httpRequest, s3Request, userSTS)
       }
       complete(httpResponse)
     }
   }
 
-  private def processRequestForValidUser(clientIPAddress: RemoteAddress, headerIPs: HeaderIPs, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User) = {
+  private def processRequestForValidUser(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User) = {
     if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
       logger.debug(s"Request authenticated: $httpRequest")
 
-      if (isUserAuthorizedForRequest(s3Request, userSTS, clientIPAddress, headerIPs)) {
+      if (isUserAuthorizedForRequest(s3Request, userSTS)) {
         logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
 
-        processAuthorizedRequest(httpRequest, s3Request, userSTS, clientIPAddress)
+        processAuthorizedRequest(httpRequest, s3Request, userSTS)
 
       } else {
         logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")

@@ -6,7 +6,8 @@ import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.testkit.awssdk.S3SdkHelpers
 import org.scalatest.Assertion
 
-import scala.util.Random
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Random, Try}
 
 trait AirlockFixtures extends S3SdkHelpers {
 
@@ -42,6 +43,25 @@ trait AirlockFixtures extends S3SdkHelpers {
     s3Client.createBucket(testBucket)
     try testCode(testBucket)
     finally {
+      cleanBucket(s3Client, testBucket)
+      s3Client.deleteBucket(testBucket)
+    }
+  }
+
+  /**
+    * Fixture that creates home bucket and users objects
+    *
+    * @param s3Client An Amazon S3 sdk object pointed to a running cluster
+    * @param objects - list of objects to create
+    * @param testCode Code that accepts the bucket name that was created
+    * @return Future Assertion
+    */
+  def withHomeBucket(s3Client: AmazonS3, objects: Seq[String])(testCode: String => Future[Assertion])(implicit exCtx: ExecutionContext): Future[Assertion] = {
+    val testBucket = "home"
+    Try(s3Client.createBucket(testBucket))
+    objects.foreach(obj => s3Client.putObject(testBucket, obj, ""))
+    testCode(testBucket).andThen {
+      case _ =>
       cleanBucket(s3Client, testBucket)
       s3Client.deleteBucket(testBucket)
     }

@@ -2,12 +2,12 @@ package com.ing.wbaa.airlock.proxy
 
 import akka.actor.ActorSystem
 import com.ing.wbaa.airlock.proxy.config._
-import com.ing.wbaa.airlock.proxy.handler.RequestHandlerS3
+import com.ing.wbaa.airlock.proxy.handler.{ FilterRecursiveListBucketHandler, RequestHandlerS3 }
 import com.ing.wbaa.airlock.proxy.provider._
 
 object Server extends App {
 
-  new AirlockS3Proxy with AuthorizationProviderRanger with RequestHandlerS3 with AuthenticationProviderSTS with LineageProviderAtlas with SignatureProviderAws with KerberosLoginProvider with MessageProviderKafka {
+  new AirlockS3Proxy with AuthorizationProviderRanger with RequestHandlerS3 with AuthenticationProviderSTS with LineageProviderAtlas with SignatureProviderAws with KerberosLoginProvider with FilterRecursiveListBucketHandler with MessageProviderKafka {
     override implicit lazy val system: ActorSystem = ActorSystem.create("airlock")
 
     override def kerberosSettings: KerberosSettings = KerberosSettings(system)

@@ -22,18 +22,18 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
     implicit def materializer: Materializer = ActorMaterializer()
 
-    override def executeRequest(request: HttpRequest, userSTS: User): Future[HttpResponse] =
+    override def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request): Future[HttpResponse] =
       Future(HttpResponse(status = StatusCodes.OK))
 
     override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(
       Some(User(UserName("okUser"), Set(UserGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
     )
 
-    override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = true
+    override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
 
     override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
 
-    override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User, clientIPAddress: RemoteAddress): Unit = ()
+    override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit = ()
   }
 
   private def testRequest(accessKey: String = "okAccessKey", path: String = "/okBucket") = HttpRequest(
@@ -77,7 +77,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
   it should "return an accessDenied when user is not authorized" in {
     testRequest() ~> new ProxyServiceMock {
-      override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = false
+      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
       val response = responseAs[String].replaceAll("\\s", "")

@@ -1,19 +1,19 @@
 package com.ing.wbaa.airlock.proxy
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.Uri.{Authority, Host}
 import akka.stream.ActorMaterializer
 import com.amazonaws.auth.BasicSessionCredentials
+import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
 import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest
 import com.ing.wbaa.airlock.proxy.config._
-import com.ing.wbaa.airlock.proxy.data._
-import com.ing.wbaa.airlock.proxy.handler.RequestHandlerS3
-import com.ing.wbaa.airlock.proxy.provider.{AuthenticationProviderSTS, LineageProviderAtlas, MessageProviderKafka, SignatureProviderAws}
+import com.ing.wbaa.airlock.proxy.data.{S3Request, User}
+import com.ing.wbaa.airlock.proxy.handler.{FilterRecursiveListBucketHandler, RequestHandlerS3}
+import com.ing.wbaa.airlock.proxy.provider._
 import com.ing.wbaa.testkit.AirlockFixtures
 import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
-import com.ing.wbaa.testkit.oauth.OAuth2TokenRequest
+import com.ing.wbaa.testkit.oauth.{KeycloackToken, OAuth2TokenRequest}
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -40,9 +40,23 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     override val httpBind: String = "127.0.0.1"
   }
 
-  private val validKeycloakCredentials = Map(
+  private val validKeycloakCredentialsTestuser = Map(
+    "grant_type" -> "password",
+    "username" -> "testuser",
+    "password" -> "password",
+    "client_id" -> "sts-airlock"
+  )
+
+  private val validKeycloakCredentialsUserone = Map(
     "grant_type" -> "password",
     "username" -> "userone",
+    "password" -> "password",
+    "client_id" -> "sts-airlock"
+  )
+
+  private val validKeycloakCredentialsUsertwo = Map(
+    "grant_type" -> "password",
+    "username" -> "usertwo",
     "password" -> "password",
     "client_id" -> "sts-airlock"
   )
@@ -54,7 +68,9 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     * @return Future[Assertion]
     */
   def withSdkToMockProxy(testCode: (AWSSecurityTokenService, Authority) => Future[Assertion]): Future[Assertion] = {
-    val proxy: AirlockS3Proxy = new AirlockS3Proxy with RequestHandlerS3 with AuthenticationProviderSTS with LineageProviderAtlas with SignatureProviderAws with MessageProviderKafka {
+    val proxy: AirlockS3Proxy = new AirlockS3Proxy with RequestHandlerS3
+      with FilterRecursiveListBucketHandler with AuthenticationProviderSTS
+      with AuthorizationProviderRanger with LineageProviderAtlas with SignatureProviderAws with MessageProviderKafka {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = airlockHttpSettings
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
@@ -62,7 +78,14 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       override val atlasSettings: AtlasSettings = AtlasSettings(testSystem)
       override val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
-      override def isUserAuthorizedForRequest(request: S3Request, user: User, clientIPAddress: RemoteAddress, headerIPs: HeaderIPs): Boolean = true
+      override protected def rangerSettings: RangerSettings = RangerSettings(testSystem)
+
+      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = {
+        user match {
+          case User(userName, _, _, _) if userName.value == "testuser" => true
+          case _ => super.isUserAuthorizedForRequest(request, user)
+        }
+      }
     }
     proxy.startup.flatMap { binding =>
       val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
@@ -71,22 +94,42 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     }
   }
 
+  private def getSdk(stsSdk: AWSSecurityTokenService, s3ProxyAuthority: Authority, keycloakToken: KeycloackToken): AmazonS3 = {
+    val cred = stsSdk.getSessionToken(new GetSessionTokenRequest()
+      .withTokenCode(keycloakToken.access_token))
+      .getCredentials
+
+    val sessionCredentials = new BasicSessionCredentials(
+      cred.getAccessKeyId,
+      cred.getSecretAccessKey,
+      cred.getSessionToken
+    )
+
+    getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)
+  }
+
   "Airlock" should {
-    "connect to ceph with credentials from STS (GetSessionToken)" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
-      retrieveKeycloackToken(validKeycloakCredentials).map { keycloakToken =>
-        val cred = stsSdk.getSessionToken(new GetSessionTokenRequest()
-          .withTokenCode(keycloakToken.access_token))
-          .getCredentials
-
-        val sessionCredentials = new BasicSessionCredentials(
-          cred.getAccessKeyId,
-          cred.getSecretAccessKey,
-          cred.getSessionToken
-        )
-
-        val s3Sdk = getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)
-        withBucket(s3Sdk) { testBucket =>
-          assert(s3Sdk.listBuckets().asScala.toList.map(_.getName).contains(testBucket))
+    "create a home bucket and files for userone and user two - users can see only own objects" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
+      retrieveKeycloackToken(validKeycloakCredentialsTestuser).flatMap { keycloakTokenTestuser =>
+        val testuserS3 = getSdk(stsSdk, s3ProxyAuthority, keycloakTokenTestuser)
+        val objectForAll = List("mainfile")
+        val userOneObjects = List("userone/", "userone/dir1/", "userone/dir1/file1")
+        val userTwoObjects = List("usertwo/", "usertwo/dir2/", "usertwo/dir2/file2")
+        withHomeBucket(testuserS3, objectForAll ++ userOneObjects ++ userTwoObjects) { bucket =>
+          retrieveKeycloackToken(validKeycloakCredentialsUserone).map { keycloakToken =>
+            val useroneS3 = getSdk(stsSdk, s3ProxyAuthority, keycloakToken)
+            val returnedObjects = useroneS3.listObjects(bucket).getObjectSummaries.asScala.toList.map(_.getKey)
+            objectForAll.foreach(obj => assert(returnedObjects.contains(obj)))
+            userOneObjects.foreach(obj => assert(returnedObjects.contains(obj)))
+            assert(returnedObjects.size == 4)
+          }
+          retrieveKeycloackToken(validKeycloakCredentialsUsertwo).map { keycloakToken =>
+            val usertwoS3 = getSdk(stsSdk, s3ProxyAuthority, keycloakToken)
+            val returnedObjects = usertwoS3.listObjects(bucket).getObjectSummaries.asScala.toList.map(_.getKey)
+            objectForAll.foreach(obj => assert(returnedObjects.contains(obj)))
+            userTwoObjects.foreach(obj => assert(returnedObjects.contains(obj)))
+            assert(returnedObjects.size == 4)
+          }
         }
       }
     }
