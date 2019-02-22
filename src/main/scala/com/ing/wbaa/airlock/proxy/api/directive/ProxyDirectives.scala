@@ -55,7 +55,6 @@ object ProxyDirectives extends LazyLogging {
       }
     } else None
 
-  //TODO: Put Remote IP Address in the S3 Request, call it IP Origin
   val extracts3Request: Directive1[S3Request] =
     extractClientIP tflatMap { case Tuple1(clientIPAddress) =>
       logger.debug(s"Extracted Client IP: " +
