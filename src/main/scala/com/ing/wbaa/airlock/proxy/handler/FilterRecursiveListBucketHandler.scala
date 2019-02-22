@@ -14,6 +14,13 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 
+
+/**
+  * aws s3 ls s3://bucket --recursive
+  * the command above returns all objects in the bucket
+  * If there is a ranger policy only for "read" the bucket (non recursively) we need to check all subdirs of the bucket
+  * in ranger as well
+  */
 trait FilterRecursiveListBucketHandler extends LazyLogging {
 
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
@@ -29,9 +36,9 @@ trait FilterRecursiveListBucketHandler extends LazyLogging {
    * @return for recursive request it returns filtered response for others the original response
    */
   protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse): HttpResponse = {
-    val isNoDelimiterParamAndIsReadAccess =
+    val noDelimiterWithReadAndNoObject =
       !request.uri.rawQueryString.getOrElse("").contains("delimiter") && s3request.accessType == Read && s3request.s3Object.isEmpty
-    if (isNoDelimiterParamAndIsReadAccess) {
+    if (noDelimiterWithReadAndNoObject) {
       response.transformEntityDataBytes(filterRecursiveListObjects(userSTS, s3request))
     } else {
       response
@@ -66,10 +73,10 @@ trait FilterRecursiveListBucketHandler extends LazyLogging {
       val delimiter = "/"
       val decodedPath = URLDecoder.decode(path, "UTF-8")
       val delimiterIndex = decodedPath.lastIndexOf(delimiter)
-      val pathToCheck = if (delimiterIndex > 0) delimiter + decodedPath.substring(0, delimiterIndex) else ""
-      val s3path = requestS3.s3BucketPath.getOrElse(delimiter)
-      val s3pathWithoutLastDelimiter = if (s3path.length > 1 && s3path.endsWith(delimiter)) s3path.substring(0, s3path.length - 1) else s3path
-      s3pathWithoutLastDelimiter + pathToCheck
+      val pathToCheckWithoutLastSlash = if (delimiterIndex > 0) delimiter + decodedPath.substring(0, delimiterIndex) else ""
+      val s3BucketName = requestS3.s3BucketPath.getOrElse(delimiter)
+      val s3pathWithoutLastDelimiter = if (s3BucketName.length > 1 && s3BucketName.endsWith(delimiter)) s3BucketName.substring(0, s3BucketName.length - 1) else s3BucketName
+      s3pathWithoutLastDelimiter + pathToCheckWithoutLastSlash
     }
 
     Flow[ByteString].via(XmlParsing.parser)
