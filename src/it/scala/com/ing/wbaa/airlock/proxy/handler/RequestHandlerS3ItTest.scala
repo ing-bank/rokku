@@ -185,6 +185,15 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
               val plusUploadResult = sdk.putObject(testBucket, testKeyFileWithPlus, new File(filename))
               val curlyUploadResult = sdk.putObject(testBucket, testKeyFileWithCurly, new File(filename))
 
+
+              assert(sdk.doesObjectExist(testBucket, testKeyFileWithDolar))
+              assert(sdk.doesObjectExist(testBucket, testKeyFileWithHash))
+              assert(sdk.doesObjectExist(testBucket, testKeyFileWithExclamation))
+              assert(sdk.doesObjectExist(testBucket, testKeyFileWithSpace))
+              assert(sdk.doesObjectExist(testBucket, testKeyFileWithBracket))
+              assert(sdk.doesObjectExist(testBucket, testKeyFileWithPlus))
+              assert(sdk.doesObjectExist(testBucket, testKeyFileWithCurly))
+
               assert(!dolarUploadResult.getETag.isEmpty)
               assert(!hashUploadResult.getETag.isEmpty)
               assert(!exclamationUploadResult.getETag.isEmpty)
