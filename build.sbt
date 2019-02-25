@@ -21,6 +21,7 @@ updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true
 val akkaHttpVersion       = "10.1.7"
 val akkaVersion = "2.5.21"
 val logbackJson = "0.1.5"
+val metricVersion = "4.0.5"
 
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
@@ -39,6 +40,8 @@ libraryDependencies ++= Seq(
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11"),
     "io.github.twonote"            %  "radosgw-admin4j"        % "1.0.2",
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.0-M2",
+    "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
+    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion,
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
