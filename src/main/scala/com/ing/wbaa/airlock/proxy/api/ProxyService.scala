@@ -38,20 +38,22 @@ trait ProxyService extends LazyLogging {
   protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit
 
   val proxyServiceRoute: Route =
-    withoutSizeLimit {
-      extractRequest { httpRequest =>
-        extracts3Request { s3Request =>
-          onComplete(areCredentialsActive(s3Request.credential)) {
-            case Success(Some(userSTS: User)) =>
-              logger.debug(s"Credentials active for request, user retrieved: $userSTS")
-              processRequestForValidUser(httpRequest, s3Request, userSTS)
-            case Success(None) =>
-              val msg = s"Request not authenticated: $s3Request"
-              logger.warn(msg)
-              complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
-            case Failure(exception) =>
-              logger.error(s"An error occurred checking authentication with STS service", exception)
-              complete(StatusCodes.InternalServerError -> AwsErrorCodes.response(StatusCodes.InternalServerError))
+    metricDuration {
+      withoutSizeLimit {
+        extractRequest { httpRequest =>
+          extracts3Request { s3Request =>
+            onComplete(areCredentialsActive(s3Request.credential)) {
+              case Success(Some(userSTS: User)) =>
+                logger.debug(s"Credentials active for request, user retrieved: $userSTS")
+                processRequestForValidUser(httpRequest, s3Request, userSTS)
+              case Success(None) =>
+                val msg = s"Request not authenticated: $s3Request"
+                logger.warn(msg)
+                complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+              case Failure(exception) =>
+                logger.error(s"An error occurred checking authentication with STS service", exception)
+                complete(StatusCodes.InternalServerError -> AwsErrorCodes.response(StatusCodes.InternalServerError))
+            }
           }
         }
       }

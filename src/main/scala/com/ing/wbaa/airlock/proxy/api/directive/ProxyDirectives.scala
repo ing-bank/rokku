@@ -3,9 +3,10 @@ package com.ing.wbaa.airlock.proxy.api.directive
 import java.net.InetAddress
 
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{ HttpHeader, HttpRequest, RemoteAddress, Uri }
-import akka.http.scaladsl.server.Directive1
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.{ Directive0, Directive1 }
 import com.ing.wbaa.airlock.proxy.data._
+import com.ing.wbaa.airlock.proxy.metrics.MetricsFactory
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.language.postfixOps
@@ -171,5 +172,19 @@ object ProxyDirectives extends LazyLogging {
           RemoteAddress.Unknown
       }
     } getOrElse RemoteAddress.Unknown
+
+  val metricDuration: Directive0 = extractRequestContext.flatMap { _ =>
+    val start = System.nanoTime()
+    mapResponse { response =>
+      val took = System.nanoTime() - start
+      MetricsFactory.markRequestTime(took)
+      response.status match {
+        case StatusCodes.InternalServerError => MetricsFactory.countRequest(MetricsFactory.FAILURE_REQUEST)
+        case StatusCodes.Forbidden           => MetricsFactory.countRequest(MetricsFactory.UNAUTHENTICATED_REQUEST)
+        case _                               => MetricsFactory.countRequest(MetricsFactory.SUCCESS_REQUEST)
+      }
+      response
+    }
+  }
 }
 

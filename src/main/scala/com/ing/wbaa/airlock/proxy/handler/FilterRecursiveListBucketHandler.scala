@@ -14,13 +14,12 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 
-
 /**
-  * aws s3 ls s3://bucket --recursive
-  * the command above returns all objects in the bucket
-  * If there is a ranger policy only for "read" the bucket (non recursively) we need to check all subdirs of the bucket
-  * in ranger as well
-  */
+ * aws s3 ls s3://bucket --recursive
+ * the command above returns all objects in the bucket
+ * If there is a ranger policy only for "read" the bucket (non recursively) we need to check all subdirs of the bucket
+ * in ranger as well
+ */
 trait FilterRecursiveListBucketHandler extends LazyLogging {
 
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
