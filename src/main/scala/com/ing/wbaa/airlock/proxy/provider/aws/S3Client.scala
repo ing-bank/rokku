@@ -41,4 +41,8 @@ trait S3Client {
     s3Client.setBucketPolicy(bucketName, defaultBucketPolicy)
   }
 
+  def getBucketPolicy(bucketName: String): Future[String] = Future {
+    s3Client.getBucketPolicy(bucketName).getPolicyText
+  }
+
 }

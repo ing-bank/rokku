@@ -35,10 +35,10 @@ trait PostRequestActions {
     }
 
   private[this] def updateBucketPolicy(httpRequest: HttpRequest, s3Request: S3Request): Unit = {
-    lazy val matches = bucketRegex findFirstIn httpRequest.uri.path.toString()
+    lazy val bucketName = bucketRegex findFirstMatchIn httpRequest.uri.path.toString() map (_.group(1))
     if (httpRequest.method == HttpMethods.PUT &&
-      matches.isDefined) {
-      setDefaultBucketPolicy(matches.get)
+      bucketName.isDefined) {
+      setDefaultBucketPolicy(bucketName.get)
     }
   }
 
@@ -51,5 +51,5 @@ trait PostRequestActions {
 }
 
 object PostRequestActions {
-  private val bucketRegex: Regex = new Regex("^/([a-zA-Z0-9]*)$")
+  private val bucketRegex: Regex = new Regex("^/([a-zA-Z0-9]+)/?$")
 }
