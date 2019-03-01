@@ -3,7 +3,7 @@ import com.typesafe.sbt.packager.docker.ExecCmd
 import scalariform.formatter.preferences._
 
 name := "airlock"
-version := "0.1.10"
+version := "0.1.13"
 
 scalaVersion := "2.12.8"
 
@@ -18,9 +18,10 @@ scalacOptions += "-Xfatal-warnings"
 // Experimental: improved update resolution.
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
-val akkaVersion       = "10.1.5"
-val akkaStreamVersion = "2.5.19"
+val akkaHttpVersion       = "10.1.7"
+val akkaVersion = "2.5.21"
 val logbackJson = "0.1.5"
+val metricVersion = "4.0.5"
 
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
@@ -28,20 +29,23 @@ libraryDependencies ++= Seq(
     "ch.qos.logback.contrib"       %  "logback-json-classic"   % logbackJson,
     "ch.qos.logback.contrib"       %  "logback-jackson"        % logbackJson,
     "com.fasterxml.jackson.core"   %  "jackson-databind"       % "2.9.8",
-    "com.typesafe.akka"            %% "akka-slf4j"             % akkaStreamVersion,
-    "com.typesafe.akka"            %% "akka-http"              % akkaVersion,
-    "com.typesafe.akka"            %% "akka-stream"            % akkaStreamVersion,
-    "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaVersion,
-    "com.typesafe.akka"            %% "akka-http-xml"          % akkaVersion,
+    "com.typesafe.akka"            %% "akka-slf4j"             % akkaVersion,
+    "com.typesafe.akka"            %% "akka-http"              % akkaHttpVersion,
+    "com.typesafe.akka"            %% "akka-stream"            % akkaVersion,
+    "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaHttpVersion,
+    "com.typesafe.akka"            %% "akka-http-xml"          % akkaHttpVersion,
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.437",
     "org.apache.kafka"             %  "kafka-clients"           % "2.0.0",
     "net.manub"                    %% "scalatest-embedded-kafka" % "2.0.0" % IntegrationTest,
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11"),
     "io.github.twonote"            %  "radosgw-admin4j"        % "1.0.2",
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.0-M2",
-    "com.typesafe.akka"            %% "akka-http-testkit"      % akkaVersion       % Test,
+    "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
+    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion,
+    "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
+    "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
-    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.437"        % IntegrationTest
+    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.505"        % IntegrationTest
 )
 
 // Fix logging dependencies:

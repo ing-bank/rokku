@@ -1,7 +1,10 @@
 package com.ing.wbaa.airlock.proxy.api.directive
 
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.headers.RawHeader
+import java.net.InetAddress
+
+import akka.http.scaladsl.model.headers.{ RawHeader, _ }
+import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.ing.wbaa.airlock.proxy.data.AwsAccessKey
 import org.scalatest.{ DiagrammedAssertions, PrivateMethodTester, WordSpec }
@@ -58,8 +61,6 @@ class ProxyDirectivesSpec extends WordSpec with ScalatestRouteTest with Diagramm
     }
 
     "add forward headers to request" that {
-      import akka.http.scaladsl.server.Directives._
-
       def testRoute(headerToReturn: String) =
         ProxyDirectives.updateHeadersForRequest { h =>
           complete(h.getHeader(headerToReturn).map[String](_.value).orElse("unknown"))
@@ -94,6 +95,60 @@ class ProxyDirectivesSpec extends WordSpec with ScalatestRouteTest with Diagramm
           }
       }
     }
-  }
 
+    "extract s3Request" that {
+      def testClientIp = {
+        ProxyDirectives.extracts3Request { s3Request =>
+          complete(s"Client ip = ${s3Request.clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")}, " +
+            s"Header ips = ${s3Request.headerIPs}")
+        }
+      }
+
+      val authHeader = RawHeader(
+        "authorization",
+        "AWS testAccessKey:RQcTmduqmXRc3EWHGWhgMvpZ1dY="
+      )
+
+      "return unknown client ip and None header ips" in {
+        HttpRequest().withHeaders(authHeader) ~> testClientIp ~> check {
+          val response = responseAs[String]
+          assert(response == "Client ip = unknown, Header ips = HeaderIPs(None,None,None)")
+        }
+      }
+
+      "return 1.2.3.4 client ip and None header ips" in {
+        HttpRequest().withHeaders(authHeader, `Remote-Address`(RemoteAddress(InetAddress.getByName("1.2.3.4")))) ~> testClientIp ~> check {
+          val response = responseAs[String]
+          assert(response == "Client ip = 1.2.3.4, Header ips = HeaderIPs(None,None,None)")
+        }
+      }
+
+      "return 1.2.3.4 client ip and HeaderIPs(None,None,Some(2.3.4.5) header ips" in {
+        HttpRequest().withHeaders(authHeader, `Remote-Address`(RemoteAddress(InetAddress.getByName("1.2.3.4"))),
+          RawHeader("Remote-Address", "2.3.4.5")) ~> testClientIp ~> check {
+            val response = responseAs[String]
+            assert(response == "Client ip = 1.2.3.4, Header ips = HeaderIPs(None,None,Some(2.3.4.5))")
+          }
+      }
+
+      "return 1.2.3.4 client ip and HeaderIPs(None,Some(ArraySeq(3.4.5.6)),Some(2.3.4.5) header ips" in {
+        HttpRequest().withHeaders(authHeader, `Remote-Address`(RemoteAddress(InetAddress.getByName("1.2.3.4"))),
+          RawHeader("Remote-Address", "2.3.4.5"),
+          RawHeader("X-Forwarded-For", "3.4.5.6")) ~> testClientIp ~> check {
+            val response = responseAs[String]
+            assert(response == "Client ip = 1.2.3.4, Header ips = HeaderIPs(None,Some(ArraySeq(3.4.5.6)),Some(2.3.4.5))")
+          }
+      }
+
+      "return 1.2.3.4 client ip and HeaderIPs(Some(4.5.6.7),Some(ArraySeq(3.4.5.6)),Some(2.3.4.5) header ips" in {
+        HttpRequest().withHeaders(authHeader, `Remote-Address`(RemoteAddress(InetAddress.getByName("1.2.3.4"))),
+          RawHeader("Remote-Address", "2.3.4.5"),
+          RawHeader("X-Forwarded-For", "3.4.5.6"),
+          RawHeader("X-Real-IP", "4.5.6.7")) ~> testClientIp ~> check {
+            val response = responseAs[String]
+            assert(response == "Client ip = 1.2.3.4, Header ips = HeaderIPs(Some(4.5.6.7),Some(ArraySeq(3.4.5.6)),Some(2.3.4.5))")
+          }
+      }
+    }
+  }
 }

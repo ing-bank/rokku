@@ -14,11 +14,10 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with M
       val testServerEntities =
         Entities(Seq(Server("server", "fakeUser", ServerAttributes("fakeHost", "fakeHost", "fakeHost", "fakeHost"), Seq(Classification("staging_node")))))
           .toJson
-          .toString()
       val jsonEntities =
         """{"entities":[{"typeName":"server","createdBy":"fakeUser","attributes":{"qualifiedName":"fakeHost","name":"fakeHost","server_name":"fakeHost","ip_address":"fakeHost"},"classifications":[{"typeName":"staging_node"}]}]}"""
 
-      assert(testServerEntities == jsonEntities)
+      assert(testServerEntities == jsonEntities.parseJson)
     }
   }
 
@@ -27,11 +26,10 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with M
       val testBucketEntities =
         Entities(Seq(Bucket("Bucket", BucketAttributes("fakeBucket", "fakeBucket"), Seq(Classification("customer_PII")))))
           .toJson
-          .toString()
       val jsonEntities =
         """{"entities":[{"typeName":"Bucket","attributes":{"qualifiedName":"fakeBucket","name":"fakeBucket"},"classifications":[{"typeName":"customer_PII"}]}]}"""
 
-      assert(testBucketEntities == jsonEntities)
+      assert(testBucketEntities == jsonEntities.parseJson)
     }
   }
 
@@ -44,11 +42,10 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with M
             guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "aws_s3_pseudo_dir"),
             Seq(Classification("customer_PII"))))))
           .toJson
-          .toString()
       val jsonEntities =
         """{"entities":[{"typeName":"aws_s3_object","attributes":{"name":"fakeObject","pseudoDirectory":{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"aws_s3_pseudo_dir"},"classifications":[{"typeName":"customer_PII"}],"qualifiedName":"fakeObject","dataType":"application/octet-stream"}}]}"""
 
-      assert(testFileEntities == jsonEntities)
+      assert(testFileEntities == jsonEntities.parseJson)
     }
   }
 
@@ -61,11 +58,10 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with M
             guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "aws_s3_pseudo_dir"),
             Seq(Classification("customer_PII"))))))
           .toJson
-          .toString()
       val jsonEntities =
         s"""{"entities":[{"typeName":"aws_s3_object","attributes":{"name":"fakeObject","pseudoDirectory":{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"aws_s3_pseudo_dir"},"classifications":[{"typeName":"customer_PII"}],"qualifiedName":"fakeObject","dataType":"none/none"}}]}"""
 
-      assert(testFileEntities == jsonEntities)
+      assert(testFileEntities == jsonEntities.parseJson)
     }
   }
 
@@ -75,16 +71,15 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with M
         Entities(Seq(ClientProcess(
           "aws_cli_script",
           "fakeUser",
-          ClientProcessAttributes(s"aws_cli_${timestamp}", s"aws_cli_${timestamp}", "write", "fakeUser",
+          ClientProcessAttributes(s"aws_cli_$timestamp", s"aws_cli_$timestamp", "write", "fakeUser",
             guidRef("4af9ec97-b320-4e3b-9363-5763fa63b03b", "server"),
             List(guidRef("254f0c29-be7f-4dd6-a188-4cced02b0298", "aws_s3_object")),
             List(guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "aws_s3_pseudo_dir"))))))
           .toJson
-          .toString()
       val jsonEntities =
-        s"""{"entities":[{"typeName":"aws_cli_script","createdBy":"fakeUser","attributes":{"name":"aws_cli_${timestamp}","server":{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"server"},"outputs":[{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"aws_s3_pseudo_dir"}],"inputs":[{"guid":"254f0c29-be7f-4dd6-a188-4cced02b0298","typeName":"aws_s3_object"}],"operation":"write","qualifiedName":"aws_cli_${timestamp}","run_as":"fakeUser"}}]}"""
+        s"""{"entities":[{"typeName":"aws_cli_script","createdBy":"fakeUser","attributes":{"name":"aws_cli_$timestamp","server":{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"server"},"outputs":[{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"aws_s3_pseudo_dir"}],"inputs":[{"guid":"254f0c29-be7f-4dd6-a188-4cced02b0298","typeName":"aws_s3_object"}],"operation":"write","qualifiedName":"aws_cli_$timestamp","run_as":"fakeUser"}}]}"""
 
-      assert(testBucketEntities == jsonEntities)
+      assert(testBucketEntities == jsonEntities.parseJson)
     }
   }
 
@@ -94,16 +89,15 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with M
         Entities(Seq(ClientProcess(
           "aws_cli_script",
           "fakeUser",
-          ClientProcessAttributes(s"aws_cli_${timestamp}", s"aws_cli_${timestamp}", "read", "fakeUser",
+          ClientProcessAttributes(s"aws_cli_$timestamp", s"aws_cli_$timestamp", "read", "fakeUser",
             guidRef("4af9ec97-b320-4e3b-9363-5763fa63b03b", "server"),
             List(guidRef("f0a46ae7-481a-4bbf-a202-44bdff598ab5", "aws_s3_pseudo_dir")),
             List(guidRef("254f0c29-be7f-4dd6-a188-4cced02b0298", "aws_s3_object"))))))
           .toJson
-          .toString()
       val jsonEntities =
-        s"""{"entities":[{"typeName":"aws_cli_script","createdBy":"fakeUser","attributes":{"name":"aws_cli_${timestamp}","server":{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"server"},"outputs":[{"guid":"254f0c29-be7f-4dd6-a188-4cced02b0298","typeName":"aws_s3_object"}],"inputs":[{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"aws_s3_pseudo_dir"}],"operation":"read","qualifiedName":"aws_cli_${timestamp}","run_as":"fakeUser"}}]}"""
+        s"""{"entities":[{"typeName":"aws_cli_script","createdBy":"fakeUser","attributes":{"name":"aws_cli_$timestamp","server":{"guid":"4af9ec97-b320-4e3b-9363-5763fa63b03b","typeName":"server"},"outputs":[{"guid":"254f0c29-be7f-4dd6-a188-4cced02b0298","typeName":"aws_s3_object"}],"inputs":[{"guid":"f0a46ae7-481a-4bbf-a202-44bdff598ab5","typeName":"aws_s3_pseudo_dir"}],"operation":"read","qualifiedName":"aws_cli_$timestamp","run_as":"fakeUser"}}]}"""
 
-      assert(testBucketEntities == jsonEntities)
+      assert(testBucketEntities == jsonEntities.parseJson)
     }
   }
 
@@ -115,10 +109,9 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with M
           FsPathAttributes("external_object/object1", "external_object/object1", "external_object/object1")
         )))
           .toJson
-          .toString()
       val jsonEntities =
         """{"entities":[{"typeName":"fs_path","attributes":{"qualifiedName":"external_object/object1","name":"external_object/object1","path":"external_object/object1"}}]}"""
-      assert(testFsPathEntities == jsonEntities)
+      assert(testFsPathEntities == jsonEntities.parseJson)
     }
   }
 

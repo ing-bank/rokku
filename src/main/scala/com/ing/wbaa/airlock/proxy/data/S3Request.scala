@@ -43,10 +43,10 @@ object S3Request extends LazyLogging {
       case "POST"   => Write
       case "DELETE" => Delete
       case _ =>
-        logger.debug("HttpMetchod not supported")
+        logger.debug("HttpMethod not supported")
         NoAccess
     }
 
-    S3Request(credential, s3path, s3Object, accessType)
+    S3Request(credential, s3path, s3Object, accessType, clientIPAddress, headerIPs)
   }
 }
