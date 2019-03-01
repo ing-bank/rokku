@@ -11,12 +11,14 @@ import com.ing.wbaa.airlock.proxy.config._
 import com.ing.wbaa.airlock.proxy.data.{S3Request, User}
 import com.ing.wbaa.airlock.proxy.handler.{FilterRecursiveListBucketHandler, RequestHandlerS3}
 import com.ing.wbaa.airlock.proxy.provider._
+import com.ing.wbaa.airlock.proxy.provider.aws.S3Client
 import com.ing.wbaa.testkit.AirlockFixtures
 import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
 import com.ing.wbaa.testkit.oauth.{KeycloackToken, OAuth2TokenRequest}
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.io.Source
 
 class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   with S3SdkHelpers
@@ -25,6 +27,8 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   with OAuth2TokenRequest {
 
   import scala.collection.JavaConverters._
+
+  private[this] val defaultBucketPolicy: String = Source.fromResource("default-bucket-policy.json").getLines().mkString
 
   override implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
@@ -131,6 +135,27 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
             assert(returnedObjects.size == 4)
           }
         }
+      }
+    }
+
+    "set the default bucket policy on bucket creation" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
+      retrieveKeycloackToken(validKeycloakCredentialsTestuser) flatMap { keycloackToken =>
+        val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
+
+
+        s3Client.createBucket("policytest")
+
+        // This pause is necessary because the policy is set asynchronously
+        Thread.sleep(5000)
+
+        val radosS3client = new S3Client {
+          override protected[this] def storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
+        }
+
+        import scala.concurrent.duration._
+        val testBucketPolicy = Await.result(radosS3client.getBucketPolicy("policytest"), 5.seconds)
+
+        assertResult(defaultBucketPolicy)(testBucketPolicy)
       }
     }
   }

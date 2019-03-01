@@ -6,13 +6,14 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.{ ActorMaterializer, Materializer }
 import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
+import com.ing.wbaa.airlock.proxy.provider.aws.S3Client
 import org.scalatest.{ DiagrammedAssertions, FlatSpec }
 
 import scala.concurrent.ExecutionContext
 
 class HealthServiceSpec extends FlatSpec with ScalatestRouteTest with DiagrammedAssertions {
 
-  private trait HealthServiceMock extends HealthService {
+  private trait HealthServiceMock extends HealthService with S3Client {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
 
     override implicit def executionContext: ExecutionContext = system.dispatcher

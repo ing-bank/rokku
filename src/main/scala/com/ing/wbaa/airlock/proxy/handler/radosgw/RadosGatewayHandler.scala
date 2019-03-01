@@ -1,12 +1,13 @@
 package com.ing.wbaa.airlock.proxy.handler.radosgw
 
 import akka.actor.ActorSystem
+import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
 import com.ing.wbaa.airlock.proxy.data.{ AwsAccessKey, AwsSecretKey, User, UserName }
 import com.typesafe.scalalogging.LazyLogging
 import org.twonote.rgwadmin4j.{ RgwAdmin, RgwAdminBuilder }
-import scala.collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success, Try }
 
 trait RadosGatewayHandler extends LazyLogging {
@@ -14,6 +15,8 @@ trait RadosGatewayHandler extends LazyLogging {
   protected[this] implicit def system: ActorSystem
 
   protected[this] def storageS3Settings: StorageS3Settings
+
+  protected[this] val s3Client: AmazonS3
 
   private[this] case class CredentialsOnCeph(awsAccessKey: AwsAccessKey, awsSecretKey: AwsSecretKey)
 

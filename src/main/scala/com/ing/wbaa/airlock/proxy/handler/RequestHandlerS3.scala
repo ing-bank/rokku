@@ -7,12 +7,13 @@ import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
 import com.ing.wbaa.airlock.proxy.data.{ S3Request, User }
 import com.ing.wbaa.airlock.proxy.handler.radosgw.RadosGatewayHandler
+import com.ing.wbaa.airlock.proxy.provider.aws.S3Client
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Success
 
-trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler {
+trait RequestHandlerS3 extends LazyLogging with RadosGatewayHandler with S3Client {
 
   protected[this] implicit def system: ActorSystem
 

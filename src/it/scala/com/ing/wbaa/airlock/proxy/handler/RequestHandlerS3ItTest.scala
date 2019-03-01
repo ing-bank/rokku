@@ -3,8 +3,8 @@ package com.ing.wbaa.airlock.proxy.handler
 import java.io.File
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
 import akka.http.scaladsl.model.Uri.{Authority, Host}
+import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.{CopyObjectRequest, ObjectMetadata}
 import com.ing.wbaa.airlock.proxy.AirlockS3Proxy
