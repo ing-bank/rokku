@@ -1,48 +1,26 @@
 package com.ing.wbaa.airlock.proxy.handler.radosgw
 
 import akka.actor.ActorSystem
-import com.amazonaws.auth.{ AWSStaticCredentialsProvider, BasicAWSCredentials }
-import com.amazonaws.client.builder.AwsClientBuilder
-import com.amazonaws.regions.Regions
-import com.amazonaws.services.s3.{ AmazonS3, AmazonS3ClientBuilder }
+import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
 import com.ing.wbaa.airlock.proxy.data.{ AwsAccessKey, AwsSecretKey, User, UserName }
 import com.typesafe.scalalogging.LazyLogging
 import org.twonote.rgwadmin4j.{ RgwAdmin, RgwAdminBuilder }
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
-import scala.io.Source
 import scala.util.{ Failure, Success, Try }
 
 trait RadosGatewayHandler extends LazyLogging {
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   protected[this] implicit def system: ActorSystem
 
   protected[this] def storageS3Settings: StorageS3Settings
 
+  protected[this] val s3Client: AmazonS3
+
   private[this] case class CredentialsOnCeph(awsAccessKey: AwsAccessKey, awsSecretKey: AwsSecretKey)
 
   private[this] case class UserOnCeph(userName: UserName, credentials: List[CredentialsOnCeph])
-
-  private[this] val bucketPolicy: String = Source.fromResource("default-bucket-policy.json").getLines().mkString
-
-  private[this] lazy val s3Client: AmazonS3 = {
-    val credentials = new BasicAWSCredentials(
-      storageS3Settings.storageS3AdminAccesskey,
-      storageS3Settings.storageS3AdminSecretkey)
-
-    val endpointConfiguration = new AwsClientBuilder.EndpointConfiguration(
-      s"http://${storageS3Settings.storageS3Authority.host.address()}:${storageS3Settings.storageS3Authority.port}",
-      Regions.US_EAST_1.getName)
-
-    AmazonS3ClientBuilder.standard()
-      .withPathStyleAccessEnabled(true)
-      .withCredentials(new AWSStaticCredentialsProvider(credentials))
-      .withEndpointConfiguration(endpointConfiguration)
-      .build()
-  }
 
   private[this] lazy val rgwAdmin: RgwAdmin = new RgwAdminBuilder()
     .accessKey(storageS3Settings.storageS3AdminAccesskey)
@@ -161,14 +139,5 @@ trait RadosGatewayHandler extends LazyLogging {
    */
   protected[this] def listAllBuckets: Seq[String] = {
     rgwAdmin.listBucket("").asScala
-  }
-
-  /**
-   * Sets the default bucket policy
-   * @param bucketName The name of the bucket to set the policy
-   * @return A future which completes when the policy is set
-   */
-  protected[this] def setBucketPolicy(bucketName: String): Future[Unit] = Future {
-    s3Client.setBucketPolicy(bucketName, bucketPolicy)
   }
 }
