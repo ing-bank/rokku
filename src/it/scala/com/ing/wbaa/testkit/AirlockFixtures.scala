@@ -59,8 +59,6 @@ trait AirlockFixtures extends S3SdkHelpers {
   def withHomeBucket(s3Client: AmazonS3, objects: Seq[String])(testCode: String => Future[Assertion])(implicit exCtx: ExecutionContext): Future[Assertion] = {
     val testBucket = "home"
     Try(s3Client.createBucket(testBucket))
-    // Leave some time to set bucket policy asynchronously
-    Thread.sleep(5000)
     objects.foreach(obj => s3Client.putObject(testBucket, obj, ""))
     testCode(testBucket).andThen {
       case _ =>
