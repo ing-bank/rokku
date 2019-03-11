@@ -47,14 +47,14 @@ keytool -export -keystore ranger-admin-keystore.jks -alias rangeradmin -file ran
 * Create Client keystore and export certificate
 
 ```
-keytool -genkey -keyalg RSA -alias gargoyles3plugin -keystore ranger-plugin-keystore.jks -storepass securep -validity 360 -keysize 2048
-keytool -export -keystore ranger-plugin-keystore.jks -alias gargoyles3plugin -file gargoyles3plugin.cer -storepass securep
+keytool -genkey -keyalg RSA -alias airlocks3plugin -keystore ranger-plugin-keystore.jks -storepass securep -validity 360 -keysize 2048
+keytool -export -keystore ranger-plugin-keystore.jks -alias airlocks3plugin -file airlocks3plugin.cer -storepass securep
 ```
 
 * Cross import certificates (create truststores)   
 
 ```
-keytool -import -file gargoyles3plugin.cer -alias gargoyles3plugin -keystore ranger-admin-truststore.jks -storepass securep
+keytool -import -file airlocks3plugin.cer -alias airlocks3plugin -keystore ranger-admin-truststore.jks -storepass securep
 keytool -import -file rangeradmin.cer -alias rangeradmin -keystore ranger-plugin-truststore.jks -storepass securep
 ```
 
