@@ -30,7 +30,7 @@ trait EventProducer extends LazyLogging {
       ProducerConfig.MAX_BLOCK_MS_CONFIG -> kafkaSettings.maxblock
     )
 
-  def kafkaProducer: KafkaProducer[String, String] = new KafkaProducer(config.asJava, new StringSerializer, new StringSerializer)
+  private val kafkaProducer: KafkaProducer[String, String] = new KafkaProducer(config.asJava, new StringSerializer, new StringSerializer)
 
   def sendSingleMessage(event: String, topic: String): Future[Done] = {
     kafkaProducer
