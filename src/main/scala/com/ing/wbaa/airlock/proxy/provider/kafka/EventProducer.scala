@@ -3,14 +3,17 @@ package com.ing.wbaa.airlock.proxy.provider.kafka
 import akka.Done
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.airlock.proxy.config.KafkaSettings
-import com.typesafe.scalalogging.LazyLogging
+import com.ing.wbaa.airlock.proxy.data.RequestId
+import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.{ KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata }
 import org.apache.kafka.common.serialization.StringSerializer
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-trait EventProducer extends LazyLogging {
+trait EventProducer {
+
+  private val logger = new LoggerHandlerWithId
 
   import scala.collection.JavaConverters._
 
@@ -32,12 +35,14 @@ trait EventProducer extends LazyLogging {
 
   private lazy val kafkaProducer: KafkaProducer[String, String] = new KafkaProducer(config.asJava, new StringSerializer, new StringSerializer)
 
-  def sendSingleMessage(event: String, topic: String): Future[Done] = {
+  def sendSingleMessage(event: String, topic: String)(implicit id: RequestId): Future[Done] = {
     kafkaProducer
       .send(new ProducerRecord[String, String](topic, event), (metadata: RecordMetadata, exception: Exception) => {
         exception match {
-          case e: Exception => throw new Exception(e)
-          case _            => logger.info("Event notification sent to kafka, offset " + metadata.offset())
+          case e: Exception =>
+            logger.error("error in sending event {} to topic {}, error={}", event, topic, e)
+            throw new Exception(e)
+          case _ => logger.debug("Event notification sent {} to kafka, offset {}", event, metadata.offset())
         }
       }) match {
         case _ => Future(Done)

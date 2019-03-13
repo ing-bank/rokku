@@ -3,7 +3,7 @@ package com.ing.wbaa.airlock.proxy.api
 import akka.Done
 import akka.http.scaladsl.model._
 import com.ing.wbaa.airlock.proxy.config.{ AtlasSettings, KafkaSettings }
-import com.ing.wbaa.airlock.proxy.data.{ LineageResponse, S3Request, User }
+import com.ing.wbaa.airlock.proxy.data.{ LineageResponse, RequestId, S3Request, User }
 
 import scala.concurrent.Future
 import scala.util.matching.Regex
@@ -17,7 +17,7 @@ trait PostRequestActions {
 
   protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineageResponse]
 
-  protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String): Future[Done]
+  protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String)(implicit id: RequestId): Future[Done]
 
   protected[this] def setDefaultBucketPolicy(bucketName: String): Future[Unit]
 
@@ -27,7 +27,7 @@ trait PostRequestActions {
       createLineageFromRequest(httpRequest, userSTS, clientIPAddress)
 
   private[this] def createBucketNotification(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request,
-      userSTS: User): Future[Done] =
+      userSTS: User)(implicit id: RequestId): Future[Done] =
     httpRequest.method match {
       case HttpMethods.POST | HttpMethods.PUT | HttpMethods.DELETE if kafkaSettings.kafkaEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent) =>
         emitEvent(s3Request, httpRequest.method, userSTS.userName.value)
@@ -42,12 +42,12 @@ trait PostRequestActions {
     }
   }
 
-  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit = {
+  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit = {
+
     createAtlasLineage(response, httpRequest, userSTS, s3Request.clientIPAddress)
     createBucketNotification(response, httpRequest, s3Request, userSTS)
     updateBucketPolicy(httpRequest, s3Request)
   }
-
 }
 
 object PostRequestActions {

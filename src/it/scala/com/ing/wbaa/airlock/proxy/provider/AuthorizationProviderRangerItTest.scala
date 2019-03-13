@@ -13,6 +13,8 @@ import scala.concurrent.Future
 class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAssertions {
   final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
+  implicit val requestId: RequestId = RequestId("test")
+
   val s3Request = S3Request(
     AwsRequestCredential(AwsAccessKey("accesskey"), Some(AwsSessionToken("sessiontoken"))),
     Some("/demobucket"),
