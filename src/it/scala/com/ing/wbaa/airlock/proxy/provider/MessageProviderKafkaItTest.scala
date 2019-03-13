@@ -33,7 +33,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
       withRunningKafka {
         val createEventsTopic = "create_events"
         createCustomTopic(createEventsTopic)
-
+        Thread.sleep(3000)
         emitEvent(s3Request, HttpMethods.PUT, "testUser")
         val result = consumeFirstStringMessageFrom(createEventsTopic)
         assert(result.contains("s3:ObjectCreated:PUT"))
@@ -46,7 +46,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
       withRunningKafka {
         val deleteEventsTopic = "delete_events"
         createCustomTopic(deleteEventsTopic)
-
+        Thread.sleep(3000)
         emitEvent(s3Request, HttpMethods.DELETE, "testUser")
         assert(consumeFirstStringMessageFrom(deleteEventsTopic).contains("s3:ObjectRemoved:DELETE"))
       }
