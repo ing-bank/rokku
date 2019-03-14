@@ -2,6 +2,7 @@ package com.ing.wbaa.airlock.proxy.api
 
 import java.net.InetAddress
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
@@ -33,7 +34,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
     override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
 
-    override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit = ()
+    override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Future[Done] = Future.successful(Done)
     override protected[this] def listAllBuckets: Seq[String] = List("bucket1", "bucket2")
 
   }
