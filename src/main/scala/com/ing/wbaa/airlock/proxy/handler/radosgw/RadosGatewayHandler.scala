@@ -36,8 +36,7 @@ trait RadosGatewayHandler extends LazyLogging {
         Map(
           "display-name" -> userName.value,
           "access-key" -> awsAccessKey.value,
-          "secret-key" -> awsSecretKey.value,
-          "system" -> "true"
+          "secret-key" -> awsSecretKey.value
         ).asJava
       )
     } match {
