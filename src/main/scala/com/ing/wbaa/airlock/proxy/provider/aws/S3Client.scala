@@ -3,16 +3,14 @@ package com.ing.wbaa.airlock.proxy.provider.aws
 import com.amazonaws.auth.{ AWSStaticCredentialsProvider, BasicAWSCredentials }
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.regions.Regions
+import com.amazonaws.services.s3.model.{ AccessControlList, GroupGrantee, Permission }
 import com.amazonaws.services.s3.{ AmazonS3, AmazonS3ClientBuilder }
 import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
 
 import scala.concurrent.Future
-import scala.io.Source
 
 trait S3Client {
   import scala.concurrent.ExecutionContext.Implicits.global
-
-  private[this] val defaultBucketPolicy: String = Source.fromResource("default-bucket-policy.json").getLines().mkString
 
   protected[this] def storageS3Settings: StorageS3Settings
 
@@ -33,16 +31,19 @@ trait S3Client {
   }
 
   /**
-   * Sets the default bucket policy
+   * Sets the default bucket ACL
    * @param bucketName The name of the bucket to set the policy
    * @return A future which completes when the policy is set
    */
-  protected[this] def setDefaultBucketPolicy(bucketName: String): Future[Unit] = Future {
-    s3Client.setBucketPolicy(bucketName, defaultBucketPolicy)
+  protected[this] def setDefaultBucketAcl(bucketName: String): Future[Unit] = Future {
+    val acl = s3Client.getBucketAcl(bucketName)
+    acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Read)
+    acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Write)
+    s3Client.setBucketAcl(bucketName, acl)
   }
 
-  def getBucketPolicy(bucketName: String): Future[String] = Future {
-    s3Client.getBucketPolicy(bucketName).getPolicyText
+  def getBucketAcl(bucketName: String): Future[AccessControlList] = Future {
+    s3Client.getBucketAcl(bucketName)
   }
 
 }

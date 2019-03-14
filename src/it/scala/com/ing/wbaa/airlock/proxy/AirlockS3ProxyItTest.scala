@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri.{Authority, Host}
 import akka.stream.ActorMaterializer
 import com.amazonaws.auth.BasicSessionCredentials
 import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.model.{GroupGrantee, Permission}
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
 import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest
 import com.ing.wbaa.airlock.proxy.config._
@@ -18,7 +19,6 @@ import com.ing.wbaa.testkit.oauth.{KeycloackToken, OAuth2TokenRequest}
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.io.Source
 
 class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   with S3SdkHelpers
@@ -27,8 +27,6 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   with OAuth2TokenRequest {
 
   import scala.collection.JavaConverters._
-
-  private[this] val defaultBucketPolicy: String = Source.fromResource("default-bucket-policy.json").getLines().mkString
 
   override implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
@@ -138,12 +136,12 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       }
     }
 
-    "set the default bucket policy on bucket creation" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
+    "set the default bucket ACL on bucket creation" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
       retrieveKeycloackToken(validKeycloakCredentialsTestuser) flatMap { keycloackToken =>
         val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
 
 
-        s3Client.createBucket("policytest")
+        s3Client.createBucket("acltest")
 
         // This pause is necessary because the policy is set asynchronously
         Thread.sleep(5000)
@@ -153,9 +151,16 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
         }
 
         import scala.concurrent.duration._
-        val testBucketPolicy = Await.result(radosS3client.getBucketPolicy("policytest"), 5.seconds)
+        val testBucketPolicy = Await.result(radosS3client.getBucketAcl("acltest"), 5.seconds)
 
-        assertResult(defaultBucketPolicy)(testBucketPolicy)
+        val grants = testBucketPolicy.getGrantsAsList.asScala
+
+        grants.foreach(g => println(s"${g.getGrantee.getIdentifier} - ${g.getPermission}"))
+
+        assert(!grants.exists(g => GroupGrantee.AllUsers.equals(g.getGrantee) && Permission.Read == g.getPermission))
+        assert(!grants.exists(g => GroupGrantee.AllUsers.equals(g.getGrantee) && Permission.Write == g.getPermission))
+        assert(grants.exists(g => GroupGrantee.AuthenticatedUsers.equals(g.getGrantee) && Permission.Read == g.getPermission))
+        assert(grants.exists(g => GroupGrantee.AuthenticatedUsers.equals(g.getGrantee) && Permission.Write == g.getPermission))
       }
     }
   }
