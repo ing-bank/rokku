@@ -1,6 +1,5 @@
 package com.ing.wbaa.airlock.proxy.api
 
-import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
@@ -36,7 +35,7 @@ trait ProxyService extends LazyLogging {
   // Authorization methods
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
 
-  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Future[Done]
+  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit
 
   val proxyServiceRoute: Route =
     metricDuration {
