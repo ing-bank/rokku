@@ -3,7 +3,7 @@ import com.typesafe.sbt.packager.docker.ExecCmd
 import scalariform.formatter.preferences._
 
 name := "airlock"
-version := "0.1.17"
+version := "0.1.18"
 
 scalaVersion := "2.12.8"
 
