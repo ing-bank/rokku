@@ -4,12 +4,15 @@ import akka.Done
 import akka.http.scaladsl.model._
 import com.ing.wbaa.airlock.proxy.config.{ AtlasSettings, KafkaSettings }
 import com.ing.wbaa.airlock.proxy.data.{ LineageResponse, S3Request, User }
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.Future
+import scala.util.Failure
 import scala.util.matching.Regex
 
-trait PostRequestActions {
+trait PostRequestActions extends LazyLogging {
   import PostRequestActions._
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   protected[this] def atlasSettings: AtlasSettings
 
@@ -19,12 +22,15 @@ trait PostRequestActions {
 
   protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String): Future[Done]
 
-  protected[this] def setDefaultBucketPolicy(bucketName: String): Future[Unit]
+  protected[this] def setDefaultBucketAcl(bucketName: String): Future[Unit]
 
-  private[this] def createAtlasLineage(response: HttpResponse, httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Unit =
-    if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent))
+  private[this] def createAtlasLineage(response: HttpResponse, httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[Done] =
+    if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent)) {
       // delete on AWS response 204
-      createLineageFromRequest(httpRequest, userSTS, clientIPAddress)
+      createLineageFromRequest(httpRequest, userSTS, clientIPAddress) map (_ => Done)
+    } else {
+      Future.successful(Done)
+    }
 
   private[this] def createBucketNotification(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request,
       userSTS: User): Future[Done] =
@@ -34,18 +40,31 @@ trait PostRequestActions {
       case _ => Future.successful(Done)
     }
 
-  private[this] def updateBucketPolicy(httpRequest: HttpRequest, s3Request: S3Request): Unit = {
+  private[this] def updateBucketPermissions(httpRequest: HttpRequest, s3Request: S3Request): Future[Done] = {
     lazy val bucketName = bucketRegex findFirstMatchIn httpRequest.uri.path.toString() map (_.group(1))
     if (httpRequest.method == HttpMethods.PUT &&
       bucketName.isDefined) {
-      setDefaultBucketPolicy(bucketName.get)
+      setDefaultBucketAcl(bucketName.get) map (_ => Done)
+    } else {
+      Future.successful(Done)
     }
   }
 
   protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit = {
-    createAtlasLineage(response, httpRequest, userSTS, s3Request.clientIPAddress)
-    createBucketNotification(response, httpRequest, s3Request, userSTS)
-    updateBucketPolicy(httpRequest, s3Request)
+    val lineage = createAtlasLineage(response, httpRequest, userSTS, s3Request.clientIPAddress)
+    val notification = createBucketNotification(response, httpRequest, s3Request, userSTS)
+    val permissions = updateBucketPermissions(httpRequest, s3Request)
+
+    // Set handlers to log errors
+    lineage.andThen({
+      case Failure(err) => logger.error(s"Error during lineage creation: ${err}")
+    })
+    notification.andThen({
+      case Failure(err) => logger.error(s"Error while emitting bucket notification: ${err}")
+    })
+    permissions.andThen({
+      case Failure(err) => logger.error(s"Error while setting bucket permissions: ${err}")
+    })
   }
 
 }
