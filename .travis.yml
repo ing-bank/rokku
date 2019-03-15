@@ -25,6 +25,7 @@ before_script:
     echo "Starting dependent containers for testing";
     docker-compose up -d atlas ;
     docker-compose up -d ceph postgres-server mariadb ranger-admin airlock-sts keycloak;
+    pip install --user awscli;
     echo "Compile the project while containers are starting up";
     sbt ++$TRAVIS_SCALA_VERSION clean compile;
     echo "Wait for containers to be up and running";
