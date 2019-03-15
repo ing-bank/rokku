@@ -50,8 +50,7 @@ trait PostRequestActions extends LazyLogging {
     }
   }
 
-  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Future[Done] = {
-    // Start futures concurrently
+  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit = {
     val lineage = createAtlasLineage(response, httpRequest, userSTS, s3Request.clientIPAddress)
     val notification = createBucketNotification(response, httpRequest, s3Request, userSTS)
     val permissions = updateBucketPermissions(httpRequest, s3Request)
@@ -66,13 +65,6 @@ trait PostRequestActions extends LazyLogging {
     permissions.andThen({
       case Failure(err) => logger.error(s"Error while setting bucket permissions: ${err}")
     })
-
-    // Return cumulative future
-    for (
-      _ <- lineage;
-      _ <- notification;
-      _ <- permissions
-    ) yield Done
   }
 
 }

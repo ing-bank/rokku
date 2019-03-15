@@ -155,8 +155,6 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
 
         val grants = testBucketPolicy.getGrantsAsList.asScala
 
-        grants.foreach(g => println(s"${g.getGrantee.getIdentifier} - ${g.getPermission}"))
-
         assert(!grants.exists(g => GroupGrantee.AllUsers.equals(g.getGrantee) && Permission.Read == g.getPermission))
         assert(!grants.exists(g => GroupGrantee.AllUsers.equals(g.getGrantee) && Permission.Write == g.getPermission))
         assert(grants.exists(g => GroupGrantee.AuthenticatedUsers.equals(g.getGrantee) && Permission.Read == g.getPermission))

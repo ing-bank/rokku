@@ -2,7 +2,6 @@ package com.ing.wbaa.airlock.proxy.api
 
 import java.net.InetAddress
 
-import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
@@ -34,7 +33,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
     override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
 
-    override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Future[Done] = Future.successful(Done)
+    override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit = ()
   }
 
   private def testRequest(accessKey: String = "okAccessKey", path: String = "/okBucket") = HttpRequest(
