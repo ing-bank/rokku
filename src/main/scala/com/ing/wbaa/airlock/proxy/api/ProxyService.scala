@@ -4,9 +4,11 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
+import akka.stream.ActorMaterializer
 import com.ing.wbaa.airlock.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.provider.aws.AwsErrorCodes
+import com.ing.wbaa.airlock.proxy.handler.FilterRecursiveMultiDelete._
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -45,7 +47,12 @@ trait ProxyService extends LazyLogging {
             onComplete(areCredentialsActive(s3Request.credential)) {
               case Success(Some(userSTS: User)) =>
                 logger.debug(s"Credentials active for request, user retrieved: $userSTS")
-                processRequestForValidUser(httpRequest, s3Request, userSTS)
+                onComplete(processRequestForValidUser(httpRequest, s3Request, userSTS)) {
+                  case Success(r) => r
+                  case Failure(exception) =>
+                    logger.error(s"An error occurred while checking authentication", exception)
+                    complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+                }
               case Success(None) =>
                 val msg = s"Request not authenticated: $s3Request"
                 logger.warn(msg)
@@ -56,6 +63,22 @@ trait ProxyService extends LazyLogging {
             }
           }
         }
+      }
+    }
+
+  private def checkExtractedPostContents(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Future[Route] =
+    exctractMultideleteObjectsFlow(httpRequest.entity.dataBytes)(ActorMaterializer()).map { s3Objects =>
+      s3Objects.map { s3Object =>
+        val bucket = s3Request.s3BucketPath.getOrElse("")
+        isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some(s"$bucket/$s3Object"), s3Object = Some(s3Object)), userSTS)
+      }
+    }.map { permittedObjects =>
+      if (permittedObjects.length > 0 && permittedObjects.contains(false)) {
+        logger.debug("An error occurred, one of objects not allowed to be accessed")
+        complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+      } else {
+        logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
+        processAuthorizedRequest(httpRequest, s3Request, userSTS)
       }
     }
 
@@ -72,19 +95,23 @@ trait ProxyService extends LazyLogging {
   private def processRequestForValidUser(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User) = {
     if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
       logger.debug(s"Request authenticated: $httpRequest")
-
       if (isUserAuthorizedForRequest(s3Request, userSTS)) {
-        logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
-
-        processAuthorizedRequest(httpRequest, s3Request, userSTS)
-
+        // if request is multidelete post
+        if (httpRequest.entity.contentType.mediaType == MediaTypes.`application/xml` && httpRequest.method == HttpMethods.POST) {
+          checkExtractedPostContents(
+            httpRequest,
+            s3Request.copy(mediaType = MediaTypes.`application/xml`), userSTS)
+        } else {
+          logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
+          Future(processAuthorizedRequest(httpRequest, s3Request, userSTS))
+        }
       } else {
         logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")
-        complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+        Future.successful(complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden)))
       }
     } else {
       logger.warn(s"Request not authenticated: $httpRequest")
-      complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+      Future.successful(complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden)))
     }
   }
 }

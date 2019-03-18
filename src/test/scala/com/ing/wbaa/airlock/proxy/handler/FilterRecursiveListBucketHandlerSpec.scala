@@ -2,7 +2,7 @@ package com.ing.wbaa.airlock.proxy.handler
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ HttpMethods, RemoteAddress, Uri }
+import akka.http.scaladsl.model.{ HttpMethods, MediaTypes, RemoteAddress, Uri }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.ByteString
@@ -23,7 +23,7 @@ class FilterRecursiveListBucketHandlerSpec extends AsyncWordSpec with Diagrammed
       case User(userName, _, _, _) if userName.value == "admin" => true
       case User(userName, _, _, _) if userName.value == "user1" =>
         request match {
-          case S3Request(_, s3BucketPath, _, _, _, _) =>
+          case S3Request(_, s3BucketPath, _, _, _, _, _) =>
             if (s3BucketPath.get.startsWith("/demobucket/user/user2")) false else true
         }
       case _ => true
@@ -34,7 +34,7 @@ class FilterRecursiveListBucketHandlerSpec extends AsyncWordSpec with Diagrammed
 
   val adminUser = User(UserRawJson("admin", Set.empty[String], "a", "s"))
   val user1 = User(UserRawJson("user1", Set.empty[String], "a", "s"))
-  val s3Request = S3Request(AwsRequestCredential(AwsAccessKey(""), None), Uri.Path("/demobucket/user"), HttpMethods.GET, RemoteAddress.Unknown, HeaderIPs())
+  val s3Request = S3Request(AwsRequestCredential(AwsAccessKey(""), None), Uri.Path("/demobucket/user"), HttpMethods.GET, RemoteAddress.Unknown, HeaderIPs(), MediaTypes.`text/plain`)
   val data: Source[ByteString, NotUsed] = Source.single(ByteString.fromString(listBucketXmlResponse))
 
   "List bucket object response" should {
