@@ -89,9 +89,9 @@ before diving in here. That will introduce you to the various components used.
  
 4. Technically you're now able to use the aws cli to perform any commands through Airlock to S3. Airlock automatically
    creates the user on Ceph for you. Since the authorisation is completely handled by ranger, authorization in Ceph
-   should be removed to avoid conflicts. For this reason, ceph users need to have admin rights, granting them full
-   control over all buckets. Airlock creates new users with `system` roles automatically, but the Airlock NPA must be
-   manually configured as `system` user to be able to grant admin rights to other users:
+   should be removed to avoid conflicts. For this reason, Airlock sets the proper bucket ACL immediately after the
+   bucket creation, so that every authenticated user can perform read and write operations on each bucket.
+   In order to create new users and set the bucket ACL, the Airlock NPA must be manually configured as `system` user:
    
             docker-compose exec ceph radosgw-admin user modify --uid ceph-admin --system
             
