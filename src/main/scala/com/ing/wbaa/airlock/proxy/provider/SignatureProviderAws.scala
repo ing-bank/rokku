@@ -2,13 +2,15 @@ package com.ing.wbaa.airlock.proxy.provider
 
 import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.auth._
-import com.ing.wbaa.airlock.proxy.data.AwsSecretKey
+import com.ing.wbaa.airlock.proxy.data.{ AwsSecretKey, RequestId }
+import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.airlock.proxy.provider.aws.SignatureHelpers
-import com.typesafe.scalalogging.LazyLogging
 
-trait SignatureProviderAws extends LazyLogging with SignatureHelpers {
+trait SignatureProviderAws extends SignatureHelpers {
 
-  def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = {
+  private val logger = new LoggerHandlerWithId
+
+  def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = {
     val awsHeaders = getAWSHeaders(httpRequest)
     val credentials = new BasicAWSCredentials(awsHeaders.accessKey.getOrElse(""), awsSecretKey.value)
     val incomingRequest = getSignableRequest(httpRequest, awsHeaders.version)
@@ -17,7 +19,7 @@ trait SignatureProviderAws extends LazyLogging with SignatureHelpers {
 
     // generate new signature
     if (!credentials.getAWSAccessKeyId.isEmpty) {
-      signS3Request(incomingRequest, credentials, awsHeaders.version, awsHeaders.signedHeadersMap.get("X-Amz-Date").getOrElse(""))
+      signS3Request(incomingRequest, credentials, awsHeaders.version, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""))
       logger.debug("Signed Request:" + incomingRequest.getHeaders.toString)
     } else {
       logger.debug("Unable to create AWS signature to verify incoming request")

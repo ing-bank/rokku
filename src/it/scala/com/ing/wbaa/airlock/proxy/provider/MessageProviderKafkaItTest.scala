@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpMethods, RemoteAddress}
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.airlock.proxy.config.KafkaSettings
-import com.ing.wbaa.airlock.proxy.data.{AwsAccessKey, AwsRequestCredential, Read, S3Request}
+import com.ing.wbaa.airlock.proxy.data._
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.scalatest.{DiagrammedAssertions, WordSpecLike}
 import org.scalatest.RecoverMethods._
@@ -22,6 +22,8 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override implicit val executionContext: ExecutionContext = testSystem.dispatcher
+
+  implicit val requestId: RequestId = RequestId("test")
 
   val s3Request = S3Request(AwsRequestCredential(AwsAccessKey("a"), None), Some("demobucket"), Some("s3object"), Read)
     .copy(clientIPAddress = RemoteAddress(InetAddress.getByName("127.0.0.1")))

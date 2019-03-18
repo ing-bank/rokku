@@ -10,7 +10,7 @@ import com.amazonaws.services.s3.model.{AmazonS3Exception, DeleteObjectsRequest,
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
 import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest
 import com.ing.wbaa.airlock.proxy.config._
-import com.ing.wbaa.airlock.proxy.data.{S3Request, User}
+import com.ing.wbaa.airlock.proxy.data.{RequestId, S3Request, User}
 import com.ing.wbaa.airlock.proxy.handler.{FilterRecursiveListBucketHandler, RequestHandlerS3}
 import com.ing.wbaa.airlock.proxy.provider._
 import com.ing.wbaa.airlock.proxy.provider.aws.S3Client
@@ -83,7 +83,7 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
 
       override protected def rangerSettings: RangerSettings = RangerSettings(testSystem)
 
-      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = {
+      override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
         user match {
           case User(userName, _, _, _) if userName.value == "testuser" => true
           case _ => super.isUserAuthorizedForRequest(request, user)

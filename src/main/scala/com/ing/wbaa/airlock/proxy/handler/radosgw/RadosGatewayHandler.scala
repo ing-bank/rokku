@@ -3,14 +3,16 @@ package com.ing.wbaa.airlock.proxy.handler.radosgw
 import akka.actor.ActorSystem
 import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
-import com.ing.wbaa.airlock.proxy.data.{ AwsAccessKey, AwsSecretKey, User, UserName }
-import com.typesafe.scalalogging.LazyLogging
+import com.ing.wbaa.airlock.proxy.data._
+import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
 import org.twonote.rgwadmin4j.{ RgwAdmin, RgwAdminBuilder }
 
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success, Try }
 
-trait RadosGatewayHandler extends LazyLogging {
+trait RadosGatewayHandler {
+
+  private val logger = new LoggerHandlerWithId
 
   protected[this] implicit def system: ActorSystem
 
@@ -28,7 +30,7 @@ trait RadosGatewayHandler extends LazyLogging {
     .endpoint(s"http://${storageS3Settings.storageS3Authority.host.address()}:${storageS3Settings.storageS3Authority.port}/admin")
     .build
 
-  private[this] def createCredentialsOnCeph(userName: UserName, awsAccessKey: AwsAccessKey, awsSecretKey: AwsSecretKey): Boolean = {
+  private[this] def createCredentialsOnCeph(userName: UserName, awsAccessKey: AwsAccessKey, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = {
 
     Try {
       rgwAdmin.createUser(
@@ -54,7 +56,7 @@ trait RadosGatewayHandler extends LazyLogging {
     }
   }
 
-  private[this] def updateCredentialsOnCeph(userName: UserName, oldAccessKey: AwsAccessKey, newAccessKey: AwsAccessKey, newSecretKey: AwsSecretKey): Boolean = {
+  private[this] def updateCredentialsOnCeph(userName: UserName, oldAccessKey: AwsAccessKey, newAccessKey: AwsAccessKey, newSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = {
     Try {
       rgwAdmin.removeS3Credential(userName.value, oldAccessKey.value)
       rgwAdmin.createS3Credential(userName.value, newAccessKey.value, newSecretKey.value)
@@ -100,7 +102,7 @@ trait RadosGatewayHandler extends LazyLogging {
    * @param userSTS User as retrieved from STS
    * @return True if a change was done on RadosGw
    */
-  protected[this] def handleUserCreationRadosGw(userSTS: User): Boolean = {
+  protected[this] def handleUserCreationRadosGw(userSTS: User)(implicit id: RequestId): Boolean = {
     getUserOnCeph(userSTS.userName).map(_.credentials) match {
 
       // User doesn't yet exist on CEPH, create it

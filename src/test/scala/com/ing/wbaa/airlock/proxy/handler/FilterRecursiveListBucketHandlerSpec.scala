@@ -15,10 +15,11 @@ class FilterRecursiveListBucketHandlerSpec extends AsyncWordSpec with Diagrammed
 
   implicit val system: ActorSystem = ActorSystem.create("test-system")
   override implicit val executionContext: ExecutionContext = system.dispatcher
+  implicit val requestId: RequestId = RequestId("test")
 
   implicit def materializer: Materializer = ActorMaterializer()(system)
 
-  def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = {
+  def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
     user match {
       case User(userName, _, _, _) if userName.value == "admin" => true
       case User(userName, _, _, _) if userName.value == "user1" =>

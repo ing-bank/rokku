@@ -1,5 +1,7 @@
 package com.ing.wbaa.airlock.proxy.api
 
+import java.util.UUID
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
@@ -7,14 +9,16 @@ import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.airlock.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.airlock.proxy.data._
+import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.airlock.proxy.provider.aws.AwsErrorCodes
 import com.ing.wbaa.airlock.proxy.handler.FilterRecursiveMultiDelete._
-import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-trait ProxyService extends LazyLogging {
+trait ProxyService {
+
+  private val logger = new LoggerHandlerWithId
 
   // no validation of request currently
   // once we get comfortable with get/put/del we can add permCheck
@@ -26,21 +30,23 @@ trait ProxyService extends LazyLogging {
   protected[this] implicit def executionContext: ExecutionContext
 
   // Request Handler methods
-  protected[this] def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request): Future[HttpResponse]
+  protected[this] def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse]
 
   // Authentication methods
-  protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]]
+  protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]]
 
   // AWS Signature methods
-  protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean
+  protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean
 
   // Authorization methods
-  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
+  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean
 
-  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit
+  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit
 
   val proxyServiceRoute: Route =
+
     metricDuration {
+      implicit val requestId: RequestId = RequestId(UUID.randomUUID().toString)
       withoutSizeLimit {
         extractRequest { httpRequest =>
           extracts3Request { s3Request =>
@@ -66,7 +72,7 @@ trait ProxyService extends LazyLogging {
       }
     }
 
-  private def checkExtractedPostContents(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Future[Route] =
+  private def checkExtractedPostContents(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Future[Route] =
     exctractMultideleteObjectsFlow(httpRequest.entity.dataBytes)(ActorMaterializer()).map { s3Objects =>
       s3Objects.map { s3Object =>
         val bucket = s3Request.s3BucketPath.getOrElse("")
@@ -82,7 +88,7 @@ trait ProxyService extends LazyLogging {
       }
     }
 
-  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Route = {
+  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Route = {
     updateHeadersForRequest { newHttpRequest =>
       val httpResponse = executeRequest(newHttpRequest, userSTS, s3Request).andThen {
         case Success(response: HttpResponse) =>
@@ -92,7 +98,7 @@ trait ProxyService extends LazyLogging {
     }
   }
 
-  private def processRequestForValidUser(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User) = {
+  private def processRequestForValidUser(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId) = {
     if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
       logger.debug(s"Request authenticated: $httpRequest")
       if (isUserAuthorizedForRequest(s3Request, userSTS)) {

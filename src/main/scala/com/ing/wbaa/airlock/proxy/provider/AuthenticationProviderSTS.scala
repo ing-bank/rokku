@@ -6,12 +6,14 @@ import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, Uri }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import com.ing.wbaa.airlock.proxy.config.StsSettings
-import com.ing.wbaa.airlock.proxy.data.{ AwsRequestCredential, JsonProtocols, User, UserRawJson }
-import com.typesafe.scalalogging.LazyLogging
+import com.ing.wbaa.airlock.proxy.data._
+import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-trait AuthenticationProviderSTS extends JsonProtocols with LazyLogging {
+trait AuthenticationProviderSTS extends JsonProtocols {
+
+  private val logger = new LoggerHandlerWithId
 
   import AuthenticationProviderSTS.STSException
   import spray.json._
@@ -22,7 +24,7 @@ trait AuthenticationProviderSTS extends JsonProtocols with LazyLogging {
 
   protected[this] def stsSettings: StsSettings
 
-  protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = {
+  protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] = {
     val QueryParameters =
       Map("accessKey" -> awsRequestCredential.accessKey.value) ++
         awsRequestCredential.sessionToken.map(s => "sessionToken" -> s.value)

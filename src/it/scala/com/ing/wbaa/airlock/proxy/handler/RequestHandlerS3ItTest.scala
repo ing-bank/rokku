@@ -41,12 +41,12 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
       with FilterRecursiveListBucketHandler with MessageProviderKafka {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = airlockHttpSettings
-      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
+      override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = true
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
       override val atlasSettings: AtlasSettings = AtlasSettings(testSystem)
       override val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
-      override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] =
+      override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] =
         Future(Some(User(UserRawJson("userId", Set("group"), "accesskey", "secretkey"))))
 
       def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = Future.failed(LineageProviderAtlasException("Create lineage failed"))

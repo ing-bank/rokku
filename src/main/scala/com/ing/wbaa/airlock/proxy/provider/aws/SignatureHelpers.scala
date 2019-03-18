@@ -9,13 +9,15 @@ import com.amazonaws.DefaultRequest
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.http.HttpMethodName
 import com.amazonaws.util.DateUtils
-import com.ing.wbaa.airlock.proxy.data.AWSHeaderValues
-import com.typesafe.scalalogging.LazyLogging
+import com.ing.wbaa.airlock.proxy.data.{ AWSHeaderValues, RequestId }
+import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
-trait SignatureHelpers extends LazyLogging {
+trait SignatureHelpers {
+
+  private val logger = new LoggerHandlerWithId
 
   final val AWS_SIGN_V2 = "v2"
   final val AWS_SIGN_V4 = "v4"
@@ -92,7 +94,7 @@ trait SignatureHelpers extends LazyLogging {
   }
 
   // V2 is not using = after subresource
-  def buildV2QueryParams(params: util.Set[String]): String = {
+  def buildV2QueryParams(params: util.Set[String])(implicit id: RequestId): String = {
     // list of allowed AWS subresource parameters
     val signParameters = List(
       "acl", "torrent", "logging", "location", "policy", "requestPayment", "versioning",
@@ -207,7 +209,7 @@ trait SignatureHelpers extends LazyLogging {
   def getSignableRequest(
       httpRequest: HttpRequest,
       version: String,
-      request: DefaultRequest[_] = new DefaultRequest("s3")): DefaultRequest[_] = {
+      request: DefaultRequest[_] = new DefaultRequest("s3"))(implicit id: RequestId): DefaultRequest[_] = {
 
     request.setHttpMethod(httpRequest.method.value match {
       case "GET"    => HttpMethodName.GET
@@ -251,7 +253,7 @@ trait SignatureHelpers extends LazyLogging {
   }
 
   // for now we do not have any regions, we use default one
-  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1"): Unit = {
+  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
     val requestParams = request.getParameters.values()
 
     version match {

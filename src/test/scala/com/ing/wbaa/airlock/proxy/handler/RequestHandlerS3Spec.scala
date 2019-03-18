@@ -22,18 +22,20 @@ class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with 
 
   override val atlasSettings: AtlasSettings = new AtlasSettings(system.settings.config)
 
+  implicit val requestId: RequestId = RequestId("test")
+
   var numFiredRequests = 0
 
-  override def fireRequestToS3(request: HttpRequest): Future[HttpResponse] = {
+  override def fireRequestToS3(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
     numFiredRequests = numFiredRequests + 1
     Future.successful(HttpResponse(status = StatusCodes.Forbidden))
   }
 
-  override def handleUserCreationRadosGw(userSTS: User): Boolean = true
+  override def handleUserCreationRadosGw(userSTS: User)(implicit id: RequestId): Boolean = true
 
   def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
 
-  override protected def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse): HttpResponse = null
+  override protected def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse)(implicit id: RequestId): HttpResponse = null
 
   "Request Handler" should {
     "execute a request" that {

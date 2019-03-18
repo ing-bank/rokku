@@ -2,10 +2,12 @@ package com.ing.wbaa.airlock.proxy.provider
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
-import com.ing.wbaa.airlock.proxy.data.AwsSecretKey
+import com.ing.wbaa.airlock.proxy.data.{ AwsSecretKey, RequestId }
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
 class SignatureProviderAwsSpec extends WordSpec with DiagrammedAssertions with SignatureProviderAws {
+
+  implicit val requestId: RequestId = RequestId("test")
 
   def fakeIncomingHttpRequest(method: HttpMethod, path: String, headers: List[HttpHeader], queryString: String = "", destPort: Int = 8987): HttpRequest = {
 

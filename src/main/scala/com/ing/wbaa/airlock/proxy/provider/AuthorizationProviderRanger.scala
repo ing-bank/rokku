@@ -5,7 +5,7 @@ import java.net.URLDecoder
 import akka.http.scaladsl.model.MediaTypes
 import com.ing.wbaa.airlock.proxy.config.RangerSettings
 import com.ing.wbaa.airlock.proxy.data._
-import com.typesafe.scalalogging.LazyLogging
+import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
 import org.apache.ranger.plugin.service.RangerBasePlugin
 
@@ -14,7 +14,9 @@ import scala.util.{ Failure, Success, Try }
 /**
  * Interface for security provider implementations.
  */
-trait AuthorizationProviderRanger extends LazyLogging {
+trait AuthorizationProviderRanger {
+
+  private val logger = new LoggerHandlerWithId
 
   import AuthorizationProviderRanger.RangerException
 
@@ -44,7 +46,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
    *  Check authorization with Ranger. Operations like list-buckets or create, delete bucket must be
    *  enabled in configuration. They are disabled by default
    */
-  def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = {
+  def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
 
     def isAuthorisedByRanger(s3path: String): Boolean = {
       import scala.collection.JavaConverters._
@@ -69,7 +71,7 @@ trait AuthorizationProviderRanger extends LazyLogging {
       Try { rangerPlugin.isAccessAllowed(rangerRequest).getIsAllowed } match {
         case Success(authorization) => authorization
         case Failure(err) =>
-          logger.warn(s"Exception during authorization of the request: ${err}")
+          logger.warn(s"Exception during authorization of the request: $err")
           false
       }
     }

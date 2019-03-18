@@ -7,11 +7,10 @@ import com.ing.wbaa.airlock.proxy.config.AtlasSettings
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.provider.LineageProviderAtlas.LineageProviderAtlasException
 import com.ing.wbaa.airlock.proxy.provider.atlas.{ LineageHelpers, RestClient }
-import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-trait LineageProviderAtlas extends LazyLogging with RestClient with LineageHelpers {
+trait LineageProviderAtlas extends RestClient with LineageHelpers {
 
   protected[this] implicit def system: ActorSystem
   protected[this] implicit def executionContext: ExecutionContext
