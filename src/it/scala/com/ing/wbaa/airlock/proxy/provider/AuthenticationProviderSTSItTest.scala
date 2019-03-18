@@ -22,6 +22,8 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAsser
 
   override val stsSettings: StsSettings = StsSettings(testSystem)
 
+  implicit val requestId: RequestId = RequestId("test")
+
   private val validKeycloakCredentials = Map(
     "grant_type" -> "password",
     "username" -> "testuser",

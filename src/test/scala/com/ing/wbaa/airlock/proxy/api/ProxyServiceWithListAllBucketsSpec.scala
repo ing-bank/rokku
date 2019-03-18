@@ -22,18 +22,18 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
     implicit def materializer: Materializer = ActorMaterializer()
 
-    override def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request): Future[HttpResponse] =
+    override def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse] =
       Future(HttpResponse(status = StatusCodes.OK))
 
-    override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(
+    override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] = Future(
       Some(User(UserName("okUser"), Set(UserGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
     )
 
-    override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = true
+    override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = true
 
-    override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = true
+    override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = true
 
-    override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User): Unit = ()
+    override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit = ()
     override protected[this] def listAllBuckets: Seq[String] = List("bucket1", "bucket2")
 
   }
@@ -65,7 +65,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
   it should "return an accessDenied when the user credentials cannot be authenticated" in {
     testRequest("notOkAccessKey") ~> new ProxyServiceMock {
-      override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(None)
+      override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] = Future(None)
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
       val response = responseAs[String].replaceAll("\\s", "")
@@ -75,7 +75,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
   it should "return a serviceUnavailable when an exception occurs in authentication" in {
     testRequest() ~> new ProxyServiceMock {
-      override def areCredentialsActive(awsRequestCredential: AwsRequestCredential): Future[Option[User]] = Future(throw new Exception("BOOM"))
+      override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] = Future(throw new Exception("BOOM"))
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.InternalServerError)
       val response = responseAs[String].replaceAll("\\s", "")
@@ -86,7 +86,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
   it should "return an accessDenied when user is not authorized" in {
     testRequest() ~> new ProxyServiceMock {
-      override def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean = false
+      override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
       val response = responseAs[String].replaceAll("\\s", "")
@@ -96,7 +96,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
   it should "return an accessDenied when user is not authenticated" in {
     testRequest() ~> new ProxyServiceMock {
-      override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey): Boolean = false
+      override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
       val response = responseAs[String].replaceAll("\\s", "")

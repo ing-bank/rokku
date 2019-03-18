@@ -2,7 +2,7 @@ package com.ing.wbaa.airlock.proxy.handler
 
 import akka.actor.ActorSystem
 import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
-import com.ing.wbaa.airlock.proxy.data.{User, UserRawJson}
+import com.ing.wbaa.airlock.proxy.data.{RequestId, User, UserRawJson}
 import com.ing.wbaa.airlock.proxy.handler.radosgw.RadosGatewayHandler
 import com.ing.wbaa.airlock.proxy.provider.aws.S3Client
 import org.scalatest.{DiagrammedAssertions, WordSpec}
@@ -15,6 +15,8 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
   override protected[this] implicit def system: ActorSystem = ActorSystem("test-system")
 
   override protected[this] def storageS3Settings: StorageS3Settings = StorageS3Settings(system)
+
+  implicit val requestId: RequestId = RequestId("test")
 
   private[this] val rgwAdmin: RgwAdmin = new RgwAdminBuilder()
     .accessKey(storageS3Settings.storageS3AdminAccesskey)

@@ -8,8 +8,7 @@ import akka.stream.alpakka.xml.scaladsl.{ XmlParsing, XmlWriting }
 import akka.stream.alpakka.xml.{ EndElement, ParseEvent, StartElement, TextEvent }
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
-import com.ing.wbaa.airlock.proxy.data.{ Read, S3Request, User }
-import com.typesafe.scalalogging.LazyLogging
+import com.ing.wbaa.airlock.proxy.data.{ Read, RequestId, S3Request, User }
 
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
@@ -20,9 +19,9 @@ import scala.collection.mutable.ListBuffer
  * If there is a ranger policy only for "read" the bucket (non recursively) we need to check all subdirs of the bucket
  * in ranger as well
  */
-trait FilterRecursiveListBucketHandler extends LazyLogging {
+trait FilterRecursiveListBucketHandler {
 
-  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User): Boolean
+  protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean
 
   /**
    * for list objects in bucket we need filter response when --recursive is set
@@ -34,7 +33,7 @@ trait FilterRecursiveListBucketHandler extends LazyLogging {
    * @param response
    * @return for recursive request it returns filtered response for others the original response
    */
-  protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse): HttpResponse = {
+  protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse)(implicit id: RequestId): HttpResponse = {
     val noDelimiterWithReadAndNoObject =
       !request.uri.rawQueryString.getOrElse("").contains("delimiter") && s3request.accessType == Read && s3request.s3Object.isEmpty
     if (noDelimiterWithReadAndNoObject) {
@@ -51,7 +50,7 @@ trait FilterRecursiveListBucketHandler extends LazyLogging {
    * @param requestS3
    * @return xml as stream of bytes with only authorised resources
    */
-  protected[this] def filterRecursiveListObjects(user: User, requestS3: S3Request): Flow[ByteString, ByteString, NotUsed] = {
+  protected[this] def filterRecursiveListObjects(user: User, requestS3: S3Request)(implicit id: RequestId): Flow[ByteString, ByteString, NotUsed] = {
     def elementResult(allContentsElements: ListBuffer[ParseEvent], isContentsTag: Boolean, element: ParseEvent): immutable.Seq[ParseEvent] = {
       if (isContentsTag) {
         allContentsElements += element
@@ -61,10 +60,9 @@ trait FilterRecursiveListBucketHandler extends LazyLogging {
       }
     }
 
-    def isPathOkInRangerPolicy(path: String): Boolean = {
+    def isPathOkInRangerPolicy(path: String)(implicit id: RequestId): Boolean = {
       val pathToCheck = normalizePath(path)
       val isUserAuthorized = isUserAuthorizedForRequest(requestS3.copy(s3BucketPath = Some(pathToCheck)), user)
-      logger.debug("user {} isUserAuthorized for path {} = {}", user.userName, pathToCheck, isUserAuthorized)
       isUserAuthorized
     }
 
