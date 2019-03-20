@@ -92,8 +92,9 @@ trait AuthorizationProviderRanger {
       case S3Request(_, Some(s3path), None, accessType, _, _, _) if accessType == Read || accessType == Head =>
         isAuthorisedByRanger(s3path)
 
-      // multidelete with xml list of objects in post. Will catch also regular application/xml post requests
-      case S3Request(_, Some(s3path), None, accessType, _, _, mediaType) if accessType == Write && mediaType == MediaTypes.`application/xml` =>
+      // multidelete with xml list of objects in post
+      case S3Request(_, Some(s3path), None, accessType, _, _, mediaType) if accessType == Write &&
+        (mediaType == MediaTypes.`application/xml` || mediaType == MediaTypes.`application/octet-stream`) =>
         logger.debug(s"Passing ranger check for multi object deletion to check method")
         true
 
