@@ -315,4 +315,12 @@ AIRLOCK_KERBEROS_KEYTAB: "keytab_full_path"
 AIRLOCK_KERBEROS_PRINCIPAL: "user"
 ```
 
- 
+# Ranger Audit Log
+
+To enable the log set:
+
+```bash
+AIRLOCK_RANGER_ENABLED_AUDIT="true"
+``` 
+
+and provide on the classpath the ranger-s3-audit.xml configuration.

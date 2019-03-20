@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.MediaTypes
 import com.ing.wbaa.airlock.proxy.config.RangerSettings
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
+import org.apache.ranger.plugin.audit.RangerDefaultAuditHandler
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
 import org.apache.ranger.plugin.service.RangerBasePlugin
 
@@ -26,6 +27,7 @@ trait AuthorizationProviderRanger {
     try {
       val p = new RangerBasePlugin(rangerSettings.serviceType, rangerSettings.appId)
       p.init()
+      if (rangerSettings.auditEnabled) p.setResultProcessor(new RangerDefaultAuditHandler())
       p
     } catch {
       case ex: java.lang.NullPointerException =>

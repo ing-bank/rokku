@@ -9,6 +9,7 @@ class RangerSettings(config: Config) extends Extension {
   val listBucketsEnabled: Boolean = config.getBoolean("airlock.ranger.allow-list-buckets")
   val createBucketsEnabled: Boolean = config.getBoolean("airlock.ranger.allow-create-buckets")
   val userDomainPostfix: String = config.getString("airlock.ranger.user-domain-postfix")
+  val auditEnabled = config.getBoolean("airlock.ranger.enabled-audit")
 }
 
 object RangerSettings extends ExtensionId[RangerSettings] with ExtensionIdProvider {
