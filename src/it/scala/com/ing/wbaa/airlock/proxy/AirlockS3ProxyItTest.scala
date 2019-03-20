@@ -5,7 +5,8 @@ import akka.http.scaladsl.model.Uri.{Authority, Host}
 import akka.stream.ActorMaterializer
 import com.amazonaws.auth.BasicSessionCredentials
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model.{GroupGrantee, Permission}
+import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion
+import com.amazonaws.services.s3.model.{AmazonS3Exception, DeleteObjectsRequest, GroupGrantee, Permission}
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
 import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest
 import com.ing.wbaa.airlock.proxy.config._
@@ -111,6 +112,35 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   }
 
   "Airlock" should {
+    "not allow to multi delete others objects" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
+      retrieveKeycloackToken(validKeycloakCredentialsUserone) flatMap { keycloackToken =>
+        val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
+
+        import scala.collection.JavaConverters._
+        val deleteRequest = new DeleteObjectsRequest("home")
+        deleteRequest.setKeys(List(
+          new KeyVersion("userone/issue"),
+          new KeyVersion("testuser1/issue")
+        ).asJava)
+
+        assertThrows[AmazonS3Exception](s3Client.deleteObjects(deleteRequest))
+      }
+    }
+
+    "allow to multi delete own objects" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
+      retrieveKeycloackToken(validKeycloakCredentialsUserone) flatMap { keycloackToken =>
+        val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
+
+        import scala.collection.JavaConverters._
+        val deleteRequest = new DeleteObjectsRequest("home")
+        deleteRequest.setKeys(List(
+          new KeyVersion("userone/issue"),
+        ).asJava)
+
+        assert(s3Client.deleteObjects(deleteRequest).getDeletedObjects.asScala.length == 1)
+      }
+    }
+
     "create a home bucket and files for userone and user two - users can see only own objects" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
       retrieveKeycloackToken(validKeycloakCredentialsTestuser).flatMap { keycloakTokenTestuser =>
         val testuserS3 = getSdk(stsSdk, s3ProxyAuthority, keycloakTokenTestuser)
@@ -161,5 +191,6 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
         assert(grants.exists(g => GroupGrantee.AuthenticatedUsers.equals(g.getGrantee) && Permission.Write == g.getPermission))
       }
     }
+
   }
 }

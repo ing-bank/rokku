@@ -13,7 +13,7 @@ import scala.util.matching.Regex
 trait PostRequestActions {
   import PostRequestActions._
   import scala.concurrent.ExecutionContext.Implicits.global
-  
+
   private val logger = new LoggerHandlerWithId
 
   protected[this] def atlasSettings: AtlasSettings
