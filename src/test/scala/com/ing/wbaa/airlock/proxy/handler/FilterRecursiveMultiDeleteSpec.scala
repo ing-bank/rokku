@@ -18,8 +18,10 @@ class FilterRecursiveMultiDeleteSpec extends AsyncWordSpec with DiagrammedAssert
   implicit def materializer: ActorMaterializer = ActorMaterializer()(system)
 
   val multiDeleteRequestXml: String = scala.io.Source.fromResource("multiDeleteRequest.xml").mkString.stripMargin.trim
+  val multiDeleteRequestV4Xml: String = scala.io.Source.fromResource("multiDeleteRequestV4.xml").mkString.stripMargin.trim
   val multiPartComplete: String = scala.io.Source.fromResource("multipartUploadComplete.xml").mkString.stripMargin.trim
   val data: Source[ByteString, NotUsed] = Source.single(ByteString.fromString(multiDeleteRequestXml))
+  val dataV4: Source[ByteString, NotUsed] = Source.single(ByteString.fromString(multiDeleteRequestV4Xml))
   val otherData: Source[ByteString, NotUsed] = Source.single(ByteString.fromString(multiPartComplete))
 
   "multiDelete request" should {
@@ -28,6 +30,12 @@ class FilterRecursiveMultiDeleteSpec extends AsyncWordSpec with DiagrammedAssert
         assert(r.contains("testuser/file1"))
         assert(r.contains("testuser/file2"))
         assert(r.contains("testuser/file3"))
+      }
+    }
+    "v4 should be parsed to objects list" in {
+      exctractMultideleteObjectsFlow(dataV4).map { r =>
+        assert(r.contains("testuser/issue"))
+        assert(!r.contains("true"))
       }
     }
 

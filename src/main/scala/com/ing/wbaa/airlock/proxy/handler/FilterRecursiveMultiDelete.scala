@@ -19,14 +19,20 @@ object FilterRecursiveMultiDelete {
       .via(XmlParsing.parser)
       .statefulMapConcat(() => {
         val keys = new ListBuffer[String]
+        isKeyTag = false
+
         parseEvent =>
           parseEvent match {
-            case e: StartElement if e.localName == "Delete" =>
+            case e: StartElement if e.localName.startsWith("Delete") =>
               keys.clear()
               immutable.Seq.empty
 
             case e: StartElement if e.localName == "Key" =>
               isKeyTag = true
+              immutable.Seq.empty
+
+            case e: EndElement if e.localName == "Key" =>
+              isKeyTag = false
               immutable.Seq.empty
 
             case e: TextEvent =>
