@@ -2,6 +2,7 @@ package com.ing.wbaa.airlock.proxy.provider
 
 import java.net.URLDecoder
 
+import akka.http.scaladsl.model.MediaTypes
 import com.ing.wbaa.airlock.proxy.config.RangerSettings
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
@@ -79,25 +80,30 @@ trait AuthorizationProviderRanger {
 
     request match {
       // object operations, put / delete etc.
-      case S3Request(_, Some(s3path), Some(_), _, _, _) =>
+      case S3Request(_, Some(s3path), Some(_), _, _, _, _) =>
         isAuthorisedByRanger(s3path)
 
       // object operation as subfolder, in this case object can be empty
       // we need this to differentiate subfolder create/delete from bucket create/delete
-      case S3Request(_, Some(s3path), None, accessType, _, _) if s3path.endsWith("/") && (accessType == Delete || accessType == Write) =>
+      case S3Request(_, Some(s3path), None, accessType, _, _, _) if s3path.endsWith("/") && (accessType == Delete || accessType == Write) =>
         isAuthorisedByRanger(s3path)
 
       // list-objects in the bucket operation
-      case S3Request(_, Some(s3path), None, accessType, _, _) if accessType == Read || accessType == Head =>
+      case S3Request(_, Some(s3path), None, accessType, _, _, _) if accessType == Read || accessType == Head =>
         isAuthorisedByRanger(s3path)
 
+      // multidelete with xml list of objects in post. Will catch also regular application/xml post requests
+      case S3Request(_, Some(s3path), None, accessType, _, _, mediaType) if accessType == Write && mediaType == MediaTypes.`application/xml` =>
+        logger.debug(s"Passing ranger check for multi object deletion to check method")
+        true
+
       // create / delete bucket operation
-      case S3Request(_, Some(_), None, accessType, _, _) if (accessType == Write || accessType == Delete) && rangerSettings.createBucketsEnabled =>
+      case S3Request(_, Some(_), None, accessType, _, _, _) if (accessType == Write || accessType == Delete) && rangerSettings.createBucketsEnabled =>
         logger.debug(s"Skipping ranger for creation/deletion of bucket with request: $request")
         true
 
       // list buckets
-      case S3Request(_, None, None, accessType, _, _) if accessType == Read && rangerSettings.listBucketsEnabled =>
+      case S3Request(_, None, None, accessType, _, _, _) if accessType == Read && rangerSettings.listBucketsEnabled =>
         logger.debug(s"Skipping ranger for listing of buckets with request: $request")
         true
 

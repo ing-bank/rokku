@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Delete>
+  <Quiet>true</Quiet>
+  <Object>
+    <Key>testuser/file1</Key>
+  </Object>
+  <Object>
+    <Key>testuser/file2</Key>
+  </Object>
+  <Object>
+    <Key>testuser/file3</Key>
+  </Object>
+</Delete>

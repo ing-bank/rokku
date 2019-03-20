@@ -5,6 +5,7 @@ docker-compose exec ceph s3cmd put /etc/issue s3://demobucket/subdir/
 docker-compose exec ceph s3cmd mb s3://home
 docker-compose exec ceph s3cmd put /etc/issue s3://home/testuser/
 docker-compose exec ceph s3cmd put /etc/issue s3://home/testuser1/
+docker-compose exec ceph s3cmd put /etc/issue s3://home/userone/
 
 # configure ACLs
 export AWS_ACCESS_KEY_ID=accesskey
