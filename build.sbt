@@ -3,8 +3,7 @@ import com.typesafe.sbt.packager.docker.ExecCmd
 import scalariform.formatter.preferences._
 
 name := "airlock"
-version := "0.1.21"
-
+version := "0.1.22"
 scalaVersion := "2.12.8"
 
 scalacOptions += "-unchecked"
@@ -42,6 +41,7 @@ libraryDependencies ++= Seq(
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.0-M2",
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
     "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion,
+    "com.auth0"                    % "java-jwt"                % "3.8.0",
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",

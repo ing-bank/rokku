@@ -31,13 +31,14 @@ services:
     - "6080:6080"
 
   airlock-sts:
-    image: wbaa/airlock-sts:0.1.2
+    image: wbaa/airlock-sts:0.1.9
     environment:
     - STS_HOST=0.0.0.0
     - STS_PORT=12345
     - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
     - KEYCLOAK_URL=http://keycloak:8080
     - KEYCLOAK_CHECK_REALM_URL=false
+    - KEYCLOAK_CHECK_ISSUER_FOR_LIST=sts-airlock
     - MARIADB_URL=jdbc:mysql:loadbalance://mariadb:3306,mariadb:3306/airlock
     ports:
     - "12345:12345"

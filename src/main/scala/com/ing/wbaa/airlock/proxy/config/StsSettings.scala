@@ -7,6 +7,7 @@ import com.typesafe.config.Config
 class StsSettings(config: Config) extends Extension {
   private val stsUri: String = config.getString("airlock.sts.uri")
   val stsBaseUri: Uri = Uri(stsUri)
+  val encodeSecret: String = config.getString("airlock.sts.encodeSecret")
 }
 
 object StsSettings extends ExtensionId[StsSettings] with ExtensionIdProvider {

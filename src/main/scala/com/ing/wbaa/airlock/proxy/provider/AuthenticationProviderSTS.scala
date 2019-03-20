@@ -2,16 +2,18 @@ package com.ing.wbaa.airlock.proxy.provider
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, Uri }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import com.ing.wbaa.airlock.proxy.config.StsSettings
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.airlock.proxy.util.JwtToken
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-trait AuthenticationProviderSTS extends JsonProtocols {
+trait AuthenticationProviderSTS extends JsonProtocols with JwtToken {
 
   private val logger = new LoggerHandlerWithId
 
@@ -34,7 +36,9 @@ trait AuthenticationProviderSTS extends JsonProtocols {
       .withQuery(Uri.Query(QueryParameters))
 
     Http()
-      .singleRequest(HttpRequest(uri = uri))
+      .singleRequest(
+        HttpRequest(uri = uri).addHeader(RawHeader("Authorization", createInternalToken))
+      )
       .flatMap { response =>
         response.status match {
 
