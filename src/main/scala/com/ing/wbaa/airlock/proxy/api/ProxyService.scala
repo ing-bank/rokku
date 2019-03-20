@@ -102,11 +102,10 @@ trait ProxyService {
     if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
       logger.debug(s"Request authenticated: $httpRequest")
       if (isUserAuthorizedForRequest(s3Request, userSTS)) {
-        // if request is multidelete post
         val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
-        val isMultideletePost = httpRequest.entity.contentType.mediaType == MediaTypes.`application/xml`
+        val isMultideletePost = httpRequest.entity.contentType.mediaType == MediaTypes.`application/xml` && httpRequest.method == HttpMethods.POST
 
-        if (isMultideletePost && httpRequest.method == HttpMethods.POST && rawQueryString == "delete") {
+        if (isMultideletePost && rawQueryString == "delete") {
           checkExtractedPostContents(
             httpRequest,
             s3Request.copy(mediaType = MediaTypes.`application/xml`), userSTS)
