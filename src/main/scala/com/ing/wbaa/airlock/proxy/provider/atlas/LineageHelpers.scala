@@ -1,15 +1,18 @@
 package com.ing.wbaa.airlock.proxy.provider.atlas
 
-import akka.http.scaladsl.model.{ ContentType, HttpRequest, RemoteAddress }
+import akka.Done
+import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
 import com.ing.wbaa.airlock.proxy.data._
-import com.ing.wbaa.airlock.proxy.provider.LineageProviderAtlas.LineageProviderAtlasException
-import com.ing.wbaa.airlock.proxy.provider.atlas.Model._
-import com.typesafe.scalalogging.LazyLogging
-import spray.json.JsValue
+import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.airlock.proxy.provider.atlas.ModelKafka._
+import com.ing.wbaa.airlock.proxy.provider.kafka.EventProducer
 
 import scala.concurrent.Future
 
-trait LineageHelpers extends LazyLogging with RestClient {
+trait LineageHelpers extends EventProducer {
+
+  private val logger = new LoggerHandlerWithId
+
   val AWS_S3_OBJECT_TYPE = "aws_s3_object"
   val AWS_S3_BUCKET_TYPE = "aws_s3_bucket"
   val AWS_S3_PSEUDO_DIR_TYPE = "aws_s3_pseudo_dir"
@@ -20,9 +23,12 @@ trait LineageHelpers extends LazyLogging with RestClient {
   val AIRLOCK_STAGING_NODE = "staging_node"
   val EXTERNAL_OBJECT_IN = "external_object_in"
   val EXTERNAL_OBJECT_OUT = "external_object_out"
+  val ATLAS_HOOK_TOPIC = "ATLAS_HOOK"
+  val ENTITY_ACTIVE = "ACTIVE"
 
   private def timestamp: Long = System.currentTimeMillis()
 
+  /*
   private def serverEntities(userSTS: String, host: String, classification: String) =
     Entities(Seq(Server(
       AIRLOCK_SERVER_TYPE,
@@ -82,6 +88,7 @@ trait LineageHelpers extends LazyLogging with RestClient {
   private def processIn(inputGUID: String, inputType: String) = List(guidRef(inputGUID, inputType))
 
   private def processOut(outputGUID: String, outputType: String) = List(guidRef(outputGUID, outputType))
+*/
 
   private def extractClient(userAgent: String): Option[String] =
     """(\S+)/\S+""".r
@@ -120,24 +127,24 @@ trait LineageHelpers extends LazyLogging with RestClient {
   // for now it is just deleting file entity and no related objects like eg. aws_cli_script, which uploaded or downloaded
   // file to bucket. Once we delete aws_cli_script object we will lose track of whats has been deleted
   // We need to come up with process of tracking file delete
-  def deleteLineage(lh: LineageHeaders): Future[LineageGuidResponse] = {
+  /*def deleteLineage(lh: LineageHeaders): Future[LineageGuidResponse] = {
     logger.debug(s"Creating Delete lineage for request to ${lh.method} file ${lh.bucketObject} at ${lh.bucket} at $timestamp")
     for {
       entityGuidResponse <- getEntityGUID(AWS_S3_OBJECT_TYPE, lh.bucketObject.get)
       _ <- deleteEntity(entityGuidResponse.entityGUID)
 
     } yield entityGuidResponse
-  }
+  }*/
 
-  private def lineageGuidFuture(entity: String, entityType: String, entities: JsValue): Future[LineageGuidResponse] =
+  /* private def lineageGuidFuture(entity: String, entityType: String, entities: JsValue): Future[LineageGuidResponse] =
     for {
       guid <- getEntityGUID(entityType, entity)
       newGuid <- if (guid.entityGUID.isEmpty) {
         postData(entities)
       } else Future(guid)
-    } yield (newGuid)
+    } yield (newGuid)*/
 
-  def readOrWriteLineage(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress, externalFsPath: Option[String] = None): Future[LineagePostGuidResponse] = {
+  /* def readOrWriteLineage(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress, externalFsPath: Option[String] = None): Future[LineagePostGuidResponse] = {
     val userName = userSTS.userName.value
     val clientHost = clientIPAddress.getAddress().get().getHostAddress
     val clientType = lh.clientType.getOrElse("generic")
@@ -179,9 +186,34 @@ trait LineageHelpers extends LazyLogging with RestClient {
         case _ => Future.failed(LineageProviderAtlasException("Lineage method not supported"))
       }
     } yield LineagePostGuidResponse(serverGuid, bucketGuid, pseudoDirGuid, objectGuid, processGuid)
+  }*/
+
+  //todo: upload process and direction read/write etc
+  def kafkaReadOrWriteLineage(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress, externalFsPath: Option[String] = None)(implicit id: RequestId): Future[Done] = {
+    val userName = userSTS.userName.value
+    val clientHost = clientIPAddress.getAddress().get().getHostAddress
+    //    val clientType = lh.clientType.getOrElse("generic")
+    val bucketObject = lh.bucketObject.getOrElse("emptyObject")
+    val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
+
+    logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
+    val serverProps = serverValues(clientHost, userName)
+    val serverEntity = prepareEntity(userSTS, AIRLOCK_SERVER_TYPE, serverProps, ENTITY_ACTIVE, System.nanoTime())
+    val bucketGuid = System.nanoTime()
+    val pseudoDirGuid = System.nanoTime()
+    val bucketBaseValues = bucketValues(lh.bucket, userName)
+    val bucketEntity = prepareEntity(userSTS, AWS_S3_BUCKET_TYPE, bucketBaseValues, ENTITY_ACTIVE, bucketGuid)
+    val pseudoDirProps = psedudoDirValues(pseudoDir, lh.bucket, bucketGuid, userName, AWS_S3_BUCKET_TYPE)
+    val psedudoDirEntity = prepareEntity(userSTS, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirProps, ENTITY_ACTIVE, pseudoDirGuid)
+    val s3ObjectProps = s3ObjectValues(bucketObject, pseudoDir, pseudoDirGuid, userName, AWS_S3_PSEUDO_DIR_TYPE, lh.contentType.toString())
+    val s3ObjectEntity = prepareEntity(userSTS, AWS_S3_OBJECT_TYPE, s3ObjectProps, ENTITY_ACTIVE, System.nanoTime())
+
+    println("debug ---- " + prepareEntityFullCreateMessage(userSTS, Vector(bucketEntity, psedudoDirEntity, s3ObjectEntity)).toString)
+
+    sendSingleMessage(prepareEntityFullCreateMessage(userSTS, Vector(serverEntity, bucketEntity, psedudoDirEntity, s3ObjectEntity)).toString, ATLAS_HOOK_TOPIC)
   }
 
-  def lineageForCopyOperation(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = {
+  /* def lineageForCopyOperation(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = {
     val userName = userSTS.userName.value
     val clientHost = clientIPAddress.getAddress().get().getHostAddress
     val clientType = lh.clientType.getOrElse("generic")
@@ -216,5 +248,5 @@ trait LineageHelpers extends LazyLogging with RestClient {
       ).toJson)
         .map(r => r.entityGUID)
     } yield LineagePostGuidResponse(serverGuid, destBucketGuid, destPseudoDirGuid, destObjectGuid, processGuid)
-  }
+  }*/
 }
