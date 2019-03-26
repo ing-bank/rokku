@@ -2,6 +2,7 @@ package com.ing.wbaa.airlock.proxy.handler
 
 import java.io.File
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.{Authority, Host}
 import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
@@ -10,7 +11,6 @@ import com.amazonaws.services.s3.model.{CopyObjectRequest, ObjectMetadata}
 import com.ing.wbaa.airlock.proxy.AirlockS3Proxy
 import com.ing.wbaa.airlock.proxy.config.{AtlasSettings, HttpSettings, KafkaSettings, StorageS3Settings}
 import com.ing.wbaa.airlock.proxy.data._
-import com.ing.wbaa.airlock.proxy.provider.LineageProviderAtlas.LineageProviderAtlasException
 import com.ing.wbaa.airlock.proxy.provider.{MessageProviderKafka, SignatureProviderAws}
 import com.ing.wbaa.testkit.AirlockFixtures
 import org.scalatest._
@@ -49,7 +49,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] =
         Future(Some(User(UserRawJson("userId", Set("group"), "accesskey", "secretkey"))))
 
-      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = Future.failed(LineageProviderAtlasException("Create lineage failed"))
+      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] = Future.successful(Done)
     }
     proxy.startup.map { binding =>
       try testCode(getAmazonS3(
