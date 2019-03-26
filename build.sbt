@@ -2,8 +2,10 @@ import com.typesafe.sbt.packager.docker
 import com.typesafe.sbt.packager.docker.ExecCmd
 import scalariform.formatter.preferences._
 
+val airlockVersion = scala.sys.env.getOrElse("AIRLOCK_VERSION", "SNAPSHOT")
+
 name := "airlock"
-version := "0.1.23"
+version := airlockVersion
 scalaVersion := "2.12.8"
 
 scalacOptions += "-unchecked"
@@ -17,7 +19,7 @@ scalacOptions += "-Xfatal-warnings"
 // Experimental: improved update resolution.
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
-val akkaHttpVersion       = "10.1.7"
+val akkaHttpVersion = "10.1.7"
 val akkaVersion = "2.5.21"
 val logbackJson = "0.1.5"
 val metricVersion = "4.0.5"
@@ -72,10 +74,7 @@ javaOptions += "-Djava.awt.headless=true"
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
-dockerAlias        := docker.DockerAlias(Some("docker.io"),
-                                         Some("wbaa"),
-                                         "airlock",
-                                         Option(System.getenv("DOCKER_TAG")))
+dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("wbaa"), "airlock", Some(airlockVersion))
 
 scalariformPreferences := scalariformPreferences.value
     .setPreference(AlignSingleLineCaseStatements, true)
