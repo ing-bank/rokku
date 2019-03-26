@@ -5,11 +5,11 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, RemoteAddress }
 import com.ing.wbaa.airlock.proxy.config.AtlasSettings
 import com.ing.wbaa.airlock.proxy.data._
-import com.ing.wbaa.airlock.proxy.provider.atlas.{ LineageHelpers, RestClient }
+import com.ing.wbaa.airlock.proxy.provider.atlas.LineageHelpers
 
 import scala.concurrent.Future
 
-trait LineageProviderAtlas extends RestClient with LineageHelpers {
+trait LineageProviderAtlas extends LineageHelpers {
 
   protected[this] implicit def system: ActorSystem
   protected[this] implicit def atlasSettings: AtlasSettings
@@ -35,18 +35,18 @@ trait LineageProviderAtlas extends RestClient with LineageHelpers {
 
         // put object - copy
         // if contains header x-amz-copy-source
-        case HttpMethods.PUT if lineageHeaders.copySource.getOrElse("").length > 0 => Future.successful(Done)
+        case HttpMethods.PUT if lineageHeaders.copySource.getOrElse("").length > 0 => lineageForCopyOperation(lineageHeaders, userSTS, Write, clientIPAddress)
 
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
         case HttpMethods.POST if lineageHeaders.queryParams.getOrElse("").contains("uploadId") => kafkaReadOrWriteLineage(lineageHeaders, userSTS, Write, clientIPAddress)
 
         // delete object
-        case HttpMethods.DELETE if lineageHeaders.queryParams.isEmpty => Future.successful(Done)
+        case HttpMethods.DELETE if lineageHeaders.queryParams.isEmpty => deleteEntityLineage(lineageHeaders, userSTS)
 
         // delete on abort multipart
         // DELETE /ObjectName?uploadId=UploadId
-        case HttpMethods.DELETE if lineageHeaders.queryParams.getOrElse("").contains("uploadId") => Future.successful(Done)
+        case HttpMethods.DELETE if lineageHeaders.queryParams.getOrElse("").contains("uploadId") => deleteEntityLineage(lineageHeaders, userSTS)
 
         case _ => Future.successful(Done)
       }
@@ -57,7 +57,6 @@ trait LineageProviderAtlas extends RestClient with LineageHelpers {
 }
 
 object LineageProviderAtlas {
-
   final case class LineageProviderAtlasException(private val message: String, private val cause: Throwable = None.orNull)
     extends Exception(message, cause)
 
