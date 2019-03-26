@@ -6,6 +6,7 @@ import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.airlock.proxy.provider.atlas.ModelKafka._
 import com.ing.wbaa.airlock.proxy.provider.kafka.EventProducer
+import spray.json.JsObject
 
 import scala.concurrent.Future
 
@@ -19,8 +20,6 @@ trait LineageHelpers extends EventProducer {
   val HADOOP_FS_PATH = "fs_path"
   val AIRLOCK_CLIENT_TYPE = "airlock_client"
   val AIRLOCK_SERVER_TYPE = "server"
-  val AIRLOCK_PII = "customer_PII"
-  val AIRLOCK_STAGING_NODE = "staging_node"
   val EXTERNAL_OBJECT_IN = "external_object_in"
   val EXTERNAL_OBJECT_OUT = "external_object_out"
   val ATLAS_HOOK_TOPIC = "ATLAS_HOOK"
@@ -28,67 +27,7 @@ trait LineageHelpers extends EventProducer {
 
   private def timestamp: Long = System.currentTimeMillis()
 
-  /*
-  private def serverEntities(userSTS: String, host: String, classification: String) =
-    Entities(Seq(Server(
-      AIRLOCK_SERVER_TYPE,
-      userSTS,
-      ServerAttributes(host, host, host, host),
-      Seq(Classification(classification)))))
-
-  private def bucketEntities(bucket: String, classification: String) =
-    Entities(Seq(Bucket(
-      AWS_S3_BUCKET_TYPE,
-      BucketAttributes(bucket, bucket),
-      Seq(Classification(classification)))))
-
-  private def pseudoDirEntities(bucketGuid: String, pseudoDir: String) =
-    Entities(Seq(PseudoDir(
-      AWS_S3_PSEUDO_DIR_TYPE,
-      PseudoDirAttributes(pseudoDir, pseudoDir, pseudoDir, guidRef(bucketGuid, AWS_S3_BUCKET_TYPE))
-    )))
-
-  private def bucketObjectEntities(
-      pseudoDirGuid: String,
-      bucketObject: String,
-      contentType: ContentType,
-      classification: String) = {
-    Entities(Seq(BucketObject(
-      AWS_S3_OBJECT_TYPE,
-      BucketObjectAttributes(bucketObject, bucketObject, contentType.mediaType.value,
-        guidRef(pseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE),
-        Seq(Classification(classification))))))
-  }
-
-  private def processEntities(
-      serverGuid: String,
-      bucketGuid: String,
-      fileGuid: String,
-      userSTS: String,
-      method: String,
-      inputs: List[guidRef],
-      outputs: List[guidRef],
-      clientType: String,
-      timestamp: Long) = {
-    Entities(Seq(ClientProcess(
-      AIRLOCK_CLIENT_TYPE,
-      userSTS,
-      ClientProcessAttributes(s"${clientType}_$timestamp", s"${clientType}_$timestamp", method, userSTS,
-        guidRef(serverGuid, AIRLOCK_SERVER_TYPE),
-        inputs,
-        outputs))))
-  }
-
-  private def fsPathEntities(path: String) =
-    Entities(Seq(FsPath(
-      HADOOP_FS_PATH,
-      FsPathAttributes(path, path, path)
-    )))
-
-  private def processIn(inputGUID: String, inputType: String) = List(guidRef(inputGUID, inputType))
-
-  private def processOut(outputGUID: String, outputType: String) = List(guidRef(outputGUID, outputType))
-*/
+  private def newGuid = System.nanoTime()
 
   private def extractClient(userAgent: String): Option[String] =
     """(\S+)/\S+""".r
@@ -123,97 +62,84 @@ trait LineageHelpers extends EventProducer {
     )
   }
 
-  // file entity delete
+  // file/object entity delete
   // for now it is just deleting file entity and no related objects like eg. aws_cli_script, which uploaded or downloaded
   // file to bucket. Once we delete aws_cli_script object we will lose track of whats has been deleted
   // We need to come up with process of tracking file delete
-  /*def deleteLineage(lh: LineageHeaders): Future[LineageGuidResponse] = {
+  def deleteEntityLineage(lh: LineageHeaders, userSTS: User, entityType: String = AWS_S3_OBJECT_TYPE)(implicit id: RequestId): Future[Done] = {
     logger.debug(s"Creating Delete lineage for request to ${lh.method} file ${lh.bucketObject} at ${lh.bucket} at $timestamp")
-    for {
-      entityGuidResponse <- getEntityGUID(AWS_S3_OBJECT_TYPE, lh.bucketObject.get)
-      _ <- deleteEntity(entityGuidResponse.entityGUID)
+    sendSingleMessage(prepareEntityDeleteMessage(userSTS, lh.bucketObject.getOrElse(""), entityType).toString(), ATLAS_HOOK_TOPIC)
+  }
 
-    } yield entityGuidResponse
-  }*/
+  private def generateGuids = LineageObjectGuids(newGuid, newGuid, newGuid, newGuid, newGuid, newGuid)
 
-  /* private def lineageGuidFuture(entity: String, entityType: String, entities: JsValue): Future[LineageGuidResponse] =
-    for {
-      guid <- getEntityGUID(entityType, entity)
-      newGuid <- if (guid.entityGUID.isEmpty) {
-        postData(entities)
-      } else Future(guid)
-    } yield (newGuid)*/
-
-  /* def readOrWriteLineage(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress, externalFsPath: Option[String] = None): Future[LineagePostGuidResponse] = {
+  //todo: upload process and direction read/write etc
+  def kafkaReadOrWriteLineage(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress, externalFsPath: Option[String] = None, guids: LineageObjectGuids = generateGuids)(implicit id: RequestId): Future[Done] = {
     val userName = userSTS.userName.value
     val clientHost = clientIPAddress.getAddress().get().getHostAddress
     val clientType = lh.clientType.getOrElse("generic")
     val bucketObject = lh.bucketObject.getOrElse("emptyObject")
     val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
+    val externalPath = externalFsPath.getOrElse("")
 
-    logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
-    for {
-      serverGuid <- lineageGuidFuture(clientHost, AIRLOCK_SERVER_TYPE, serverEntities(userName, clientHost, AIRLOCK_STAGING_NODE).toJson).map(_.entityGUID)
-      bucketGuid <- lineageGuidFuture(lh.bucket, AWS_S3_BUCKET_TYPE, bucketEntities(lh.bucket, AIRLOCK_PII).toJson).map(_.entityGUID)
-      pseudoDirGuid <- lineageGuidFuture(pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(bucketGuid, pseudoDir).toJson).map(_.entityGUID)
-      objectGuid <- lineageGuidFuture(bucketObject, AWS_S3_OBJECT_TYPE, bucketObjectEntities(pseudoDirGuid, bucketObject, lh.contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
-      fsPathGuid <- externalFsPath match {
-        case Some(fsPath) => lineageGuidFuture(fsPath, HADOOP_FS_PATH, fsPathEntities(fsPath).toJson).map(_.entityGUID)
-        case None         => Future.successful("")
-      }
-      processGuid <- method match {
-        case Read =>
-          postData(
-            processEntities(
-              serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(fsPathGuid, HADOOP_FS_PATH), clientType, timestamp
-            ).toJson)
-            .map(r => r.entityGUID)
+    // entity definitions
+    val serverEntity = prepareEntity(userSTS, AIRLOCK_SERVER_TYPE, serverValues(clientHost, userName), ENTITY_ACTIVE, guids.serverGuid)
+    val bucketEntity = prepareEntity(userSTS, AWS_S3_BUCKET_TYPE, bucketValues(lh.bucket, userName), ENTITY_ACTIVE, guids.bucketGuid)
+    val pseudoDirEntity = prepareEntity(userSTS, AWS_S3_PSEUDO_DIR_TYPE,
+      psedudoDirValues(pseudoDir, lh.bucket, guids.bucketGuid, userName, AWS_S3_BUCKET_TYPE), ENTITY_ACTIVE, guids.pseudoDir)
+    val s3ObjectEntity = prepareEntity(userSTS, AWS_S3_OBJECT_TYPE,
+      s3ObjectValues(bucketObject, pseudoDir, guids.pseudoDir, userName, AWS_S3_PSEUDO_DIR_TYPE, lh.contentType.toString()), ENTITY_ACTIVE, guids.objectGuid)
+    val externalPathEntity = prepareEntity(userSTS, HADOOP_FS_PATH,
+      fsPathValues(externalPath, userName, externalPath), ENTITY_ACTIVE, guids.externalPathGuid)
+    val userProcessEntity: JsObject => JsObject = procProps => prepareEntity(userSTS, AIRLOCK_CLIENT_TYPE, procProps, ENTITY_ACTIVE, System.nanoTime())
 
-        case Write if fsPathGuid.length > 0 =>
-          postData(
-            processEntities(
-              serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(fsPathGuid, HADOOP_FS_PATH), processOut(objectGuid, AWS_S3_OBJECT_TYPE), clientType, timestamp
-            ).toJson)
-            .map(r => r.entityGUID)
+    method match {
+      case Read =>
+        logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
+        println("readProces ------ : " + userProcessEntity(processValues(s"${clientType}_$timestamp", userName, method.rangerName,
+          clientHost, AIRLOCK_SERVER_TYPE, guids.serverGuid,
+          bucketObject, AWS_S3_OBJECT_TYPE, guids.objectGuid,
+          externalPath, HADOOP_FS_PATH, guids.externalPathGuid)))
 
-        case Write =>
-          postData(
-            processEntities(
-              serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(pseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE), clientType, timestamp
-            ).toJson)
-            .map(r => r.entityGUID)
+        sendSingleMessage(
+          prepareEntityFullCreateMessage(userSTS, Vector(serverEntity, bucketEntity, pseudoDirEntity, s3ObjectEntity, externalPathEntity,
+            userProcessEntity(processValues(s"${clientType}_$timestamp", userName, method.rangerName,
+              clientHost, AIRLOCK_SERVER_TYPE, guids.serverGuid,
+              bucketObject, AWS_S3_OBJECT_TYPE, guids.objectGuid,
+              externalPath, HADOOP_FS_PATH, guids.externalPathGuid))))
+            .toString, ATLAS_HOOK_TOPIC)
 
-        case _ => Future.failed(LineageProviderAtlasException("Lineage method not supported"))
-      }
-    } yield LineagePostGuidResponse(serverGuid, bucketGuid, pseudoDirGuid, objectGuid, processGuid)
-  }*/
+      case Write if externalPath.length > 0 =>
+        logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
 
-  //todo: upload process and direction read/write etc
-  def kafkaReadOrWriteLineage(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress, externalFsPath: Option[String] = None)(implicit id: RequestId): Future[Done] = {
-    val userName = userSTS.userName.value
-    val clientHost = clientIPAddress.getAddress().get().getHostAddress
-    //    val clientType = lh.clientType.getOrElse("generic")
-    val bucketObject = lh.bucketObject.getOrElse("emptyObject")
-    val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
+        println("writeProcess -------: " + userProcessEntity(processValues(s"${clientType}_$timestamp", userName, method.rangerName,
+          clientHost, AIRLOCK_SERVER_TYPE, guids.serverGuid,
+          externalPath, HADOOP_FS_PATH, guids.externalPathGuid,
+          pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, guids.pseudoDir)))
 
-    logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
-    val serverProps = serverValues(clientHost, userName)
-    val serverEntity = prepareEntity(userSTS, AIRLOCK_SERVER_TYPE, serverProps, ENTITY_ACTIVE, System.nanoTime())
-    val bucketGuid = System.nanoTime()
-    val pseudoDirGuid = System.nanoTime()
-    val bucketBaseValues = bucketValues(lh.bucket, userName)
-    val bucketEntity = prepareEntity(userSTS, AWS_S3_BUCKET_TYPE, bucketBaseValues, ENTITY_ACTIVE, bucketGuid)
-    val pseudoDirProps = psedudoDirValues(pseudoDir, lh.bucket, bucketGuid, userName, AWS_S3_BUCKET_TYPE)
-    val psedudoDirEntity = prepareEntity(userSTS, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirProps, ENTITY_ACTIVE, pseudoDirGuid)
-    val s3ObjectProps = s3ObjectValues(bucketObject, pseudoDir, pseudoDirGuid, userName, AWS_S3_PSEUDO_DIR_TYPE, lh.contentType.toString())
-    val s3ObjectEntity = prepareEntity(userSTS, AWS_S3_OBJECT_TYPE, s3ObjectProps, ENTITY_ACTIVE, System.nanoTime())
+        sendSingleMessage(
+          prepareEntityFullCreateMessage(userSTS, Vector(serverEntity, bucketEntity, pseudoDirEntity, s3ObjectEntity, externalPathEntity,
+            userProcessEntity(processValues(s"${clientType}_$timestamp", userName, method.rangerName,
+              clientHost, AIRLOCK_SERVER_TYPE, guids.serverGuid,
+              externalPath, HADOOP_FS_PATH, guids.externalPathGuid,
+              pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, guids.pseudoDir))))
+            .toString, ATLAS_HOOK_TOPIC)
 
-    println("debug ---- " + prepareEntityFullCreateMessage(userSTS, Vector(bucketEntity, psedudoDirEntity, s3ObjectEntity)).toString)
+      case Write => // todo: check if used?
+        logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
+        sendSingleMessage(
+          prepareEntityFullCreateMessage(userSTS, Vector(serverEntity, bucketEntity, pseudoDirEntity, s3ObjectEntity, externalPathEntity,
+            userProcessEntity(processValues(s"${clientType}_$timestamp", userName, method.rangerName,
+              clientHost, AIRLOCK_SERVER_TYPE, guids.serverGuid,
+              bucketObject, AWS_S3_OBJECT_TYPE, guids.objectGuid,
+              pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, guids.pseudoDir))))
+            .toString, ATLAS_HOOK_TOPIC)
 
-    sendSingleMessage(prepareEntityFullCreateMessage(userSTS, Vector(serverEntity, bucketEntity, psedudoDirEntity, s3ObjectEntity)).toString, ATLAS_HOOK_TOPIC)
+      case _ => Future(Done)
+    }
   }
 
-  /* def lineageForCopyOperation(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress): Future[LineagePostGuidResponse] = {
+  def lineageForCopyOperation(lh: LineageHeaders, userSTS: User, method: AccessType, clientIPAddress: RemoteAddress, srcGuids: LineageObjectGuids = generateGuids)(implicit id: RequestId): Future[Done] = {
     val userName = userSTS.userName.value
     val clientHost = clientIPAddress.getAddress().get().getHostAddress
     val clientType = lh.clientType.getOrElse("generic")
@@ -223,30 +149,49 @@ trait LineageHelpers extends EventProducer {
     val bucketNameFromCopySrc = lh.copySource.get.split("/").head
     val pseudoDirFromCopySrc = {
       val pathArray = lh.copySource.get.split("/").dropRight(1)
-      if (pathArray.length > 2)
+      if (pathArray.length >= 2)
         pathArray.mkString("/")
       else
         pathArray.mkString + "/"
     }
+    val destGuids = generateGuids
+    val serverEntity = prepareEntity(userSTS, AIRLOCK_SERVER_TYPE, serverValues(clientHost, userName), ENTITY_ACTIVE, srcGuids.serverGuid)
 
-    for {
-      serverGuid <- lineageGuidFuture(clientHost, AIRLOCK_SERVER_TYPE, serverEntities(userName, clientHost, AIRLOCK_STAGING_NODE).toJson).map(_.entityGUID)
-      // source objects
-      srcBucketGuid <- lineageGuidFuture(bucketNameFromCopySrc, AWS_S3_BUCKET_TYPE, bucketEntities(bucketNameFromCopySrc, AIRLOCK_PII).toJson).map(_.entityGUID)
-      srcPseudoDirGuid <- lineageGuidFuture(pseudoDirFromCopySrc, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(srcBucketGuid, pseudoDirFromCopySrc).toJson).map(_.entityGUID)
-      srcObject <- lineageGuidFuture(objectNameFromCopySrc, AWS_S3_OBJECT_TYPE, bucketObjectEntities(srcPseudoDirGuid, objectNameFromCopySrc, lh.contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
-      // destination objects
-      destBucketGuid <- lineageGuidFuture(lh.bucket, AWS_S3_BUCKET_TYPE, bucketEntities(lh.bucket, AIRLOCK_PII).toJson).map(_.entityGUID)
-      destPseudoDirGuid <- lineageGuidFuture(pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirEntities(destBucketGuid, pseudoDir).toJson).map(_.entityGUID)
-      destObjectGuid <- lineageGuidFuture(bucketObject, AWS_S3_OBJECT_TYPE, bucketObjectEntities(destPseudoDirGuid, bucketObject, lh.contentType, AIRLOCK_PII).toJson).map(_.entityGUID)
-      // process
-      processGuid <- postData(processEntities(
-        serverGuid, destBucketGuid, destObjectGuid, userName, method.rangerName,
-        processIn(srcObject, AWS_S3_OBJECT_TYPE),
-        processOut(destObjectGuid, AWS_S3_OBJECT_TYPE),
-        clientType, timestamp
-      ).toJson)
-        .map(r => r.entityGUID)
-    } yield LineagePostGuidResponse(serverGuid, destBucketGuid, destPseudoDirGuid, destObjectGuid, processGuid)
-  }*/
+    val srcBucketEntity = prepareEntity(userSTS, AWS_S3_BUCKET_TYPE, bucketValues(bucketNameFromCopySrc, userName), ENTITY_ACTIVE, srcGuids.bucketGuid)
+    val srcPseudoDirEntity = prepareEntity(userSTS, AWS_S3_PSEUDO_DIR_TYPE,
+      psedudoDirValues(pseudoDirFromCopySrc, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, AWS_S3_BUCKET_TYPE), ENTITY_ACTIVE, srcGuids.pseudoDir)
+    val srcS3ObjectEntity = prepareEntity(userSTS, AWS_S3_OBJECT_TYPE,
+      s3ObjectValues(objectNameFromCopySrc, pseudoDirFromCopySrc, srcGuids.pseudoDir, userName, AWS_S3_PSEUDO_DIR_TYPE, lh.contentType.toString()), ENTITY_ACTIVE, srcGuids.objectGuid)
+
+    val destBucketEntity = prepareEntity(userSTS, AWS_S3_BUCKET_TYPE, bucketValues(lh.bucket, userName), ENTITY_ACTIVE, destGuids.bucketGuid)
+    val destPseudoDirEntity =
+      if (bucketNameFromCopySrc == lh.bucket) {
+        prepareEntity(userSTS, AWS_S3_PSEUDO_DIR_TYPE,
+          psedudoDirValues(pseudoDir, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, AWS_S3_BUCKET_TYPE), ENTITY_ACTIVE, destGuids.pseudoDir)
+      } else {
+        prepareEntity(userSTS, AWS_S3_PSEUDO_DIR_TYPE,
+          psedudoDirValues(pseudoDir, lh.bucket, destGuids.bucketGuid, userName, AWS_S3_BUCKET_TYPE), ENTITY_ACTIVE, destGuids.pseudoDir)
+      }
+    val destS3ObjectEntity = prepareEntity(userSTS, AWS_S3_OBJECT_TYPE,
+      s3ObjectValues(bucketObject, pseudoDir, destGuids.pseudoDir, userName, AWS_S3_PSEUDO_DIR_TYPE, lh.contentType.toString()), ENTITY_ACTIVE, destGuids.objectGuid)
+
+    val copyProcessEntity = prepareEntity(userSTS, AIRLOCK_CLIENT_TYPE,
+      processValues(s"${clientType}_$timestamp", userName, method.rangerName, clientHost, AIRLOCK_SERVER_TYPE, srcGuids.serverGuid,
+        objectNameFromCopySrc, AWS_S3_OBJECT_TYPE, srcGuids.objectGuid,
+        bucketObject, AWS_S3_OBJECT_TYPE, destGuids.objectGuid), ENTITY_ACTIVE, destGuids.processGuid)
+
+    if (bucketNameFromCopySrc == lh.bucket) {
+      sendSingleMessage(
+        prepareEntityFullCreateMessage(
+          userSTS,
+          Vector(serverEntity, srcBucketEntity, srcPseudoDirEntity, srcS3ObjectEntity, destPseudoDirEntity, destS3ObjectEntity, copyProcessEntity)).toString(),
+        ATLAS_HOOK_TOPIC)
+    } else {
+      sendSingleMessage(
+        prepareEntityFullCreateMessage(
+          userSTS,
+          Vector(serverEntity, srcBucketEntity, srcPseudoDirEntity, srcS3ObjectEntity, destBucketEntity, destPseudoDirEntity, destS3ObjectEntity, copyProcessEntity)).toString(),
+        ATLAS_HOOK_TOPIC)
+    }
+  }
 }

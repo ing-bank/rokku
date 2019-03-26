@@ -2,8 +2,8 @@ package com.ing.wbaa.airlock.proxy.handler
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.stream.{ ActorMaterializer, Materializer }
-import com.ing.wbaa.airlock.proxy.config.{ AtlasSettings, StorageS3Settings }
+import akka.stream.ActorMaterializer
+import com.ing.wbaa.airlock.proxy.config.{ AtlasSettings, KafkaSettings, StorageS3Settings }
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.provider.LineageProviderAtlas
 import org.scalatest.{ AsyncWordSpec, DiagrammedAssertions }
@@ -18,7 +18,8 @@ class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with 
     override val storageS3Authority: Uri.Authority = Uri.Authority(Uri.Host("1.2.3.4"), 1234)
   }
 
-  override implicit def materializer: Materializer = ActorMaterializer()(system)
+  override implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  override val kafkaSettings: KafkaSettings = new KafkaSettings(system.settings.config)
 
   override val atlasSettings: AtlasSettings = new AtlasSettings(system.settings.config)
 
