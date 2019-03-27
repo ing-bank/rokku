@@ -1,8 +1,9 @@
 package com.ing.wbaa.airlock.proxy.provider.atlas
 
 import com.ing.wbaa.airlock.proxy.data.User
-import spray.json.{ JsArray, JsNumber, JsObject, JsString }
+import spray.json.{JsArray, JsNumber, JsObject, JsString}
 import spray.json._
+import com.ing.wbaa.airlock.proxy.data.LineageLiterals._
 
 object ModelKafka extends DefaultJsonProtocol {
 
@@ -45,7 +46,7 @@ object ModelKafka extends DefaultJsonProtocol {
       "name" -> JsString(name)
     )
 
-  def prepareEntity(userSTS: User, typeName: String, typeValues: JsObject, entityState: String, guid: Long) =
+  def prepareEntity(userName: String, typeName: String, typeValues: JsObject, entityState: String, guid: Long): JsObject =
     JsObject(
       "jsonClass" -> JsString("org.apache.atlas.typesystem.json.InstanceSerialization$_Reference"),
       "id" -> JsObject(
@@ -61,42 +62,52 @@ object ModelKafka extends DefaultJsonProtocol {
       "traits" -> JsObject() // not used at the moment by airlock
     )
 
-  def bucketValues(name: String, userName: String): JsObject = baseEntityValues(name, userName)
+  def bucketEntity(name: String, userName: String, guid: Long): JsObject =
+    prepareEntity(userName, AWS_S3_BUCKET_TYPE, baseEntityValues(name, userName), ENTITY_ACTIVE, guid)
 
-  def psedudoDirValues(name: String, bucketName: String, bucketGuid: Long, userName: String, bucketType: String, entityState: String = "ACTIVE"): JsObject =
-    JsObject(baseEntityValues(name, userName).fields ++
-      Map(
-        "objectPrefix" -> JsString(name),
-        "bucket" -> referencedObject(bucketName, bucketType, bucketGuid, entityState)))
+  def pseudoDirEntity(name: String, bucketName: String, bucketGuid: Long, userName: String, guid: Long, entityState: String = "ACTIVE"): JsObject =
+    prepareEntity(userName, AWS_S3_PSEUDO_DIR_TYPE,
+      JsObject(baseEntityValues(name, userName).fields ++
+        Map(
+          "objectPrefix" -> JsString(name),
+          "bucket" -> referencedObject(bucketName, AWS_S3_BUCKET_TYPE, bucketGuid, entityState))
+      ), ENTITY_ACTIVE, guid)
 
-  def s3ObjectValues(name: String, pseudoDir: String, pseudoDirGuid: Long, userName: String, pseudoDirType: String, dataType: String, entityState: String = "ACTIVE"): JsObject =
-    JsObject(baseEntityValues(name, userName).fields ++
-      Map(
-        "dataType" -> JsString(dataType),
-        "pseudoDirectory" -> referencedObject(pseudoDir, pseudoDirType, pseudoDirGuid, entityState)))
+  def s3ObjectEntity(name: String, pseudoDir: String, pseudoDirGuid: Long, userName: String, dataType: String, guid: Long, entityState: String = "ACTIVE"): JsObject =
+    prepareEntity(userName, AWS_S3_OBJECT_TYPE,
+      JsObject(baseEntityValues(name, userName).fields ++
+        Map(
+          "dataType" -> JsString(dataType),
+          "pseudoDirectory" -> referencedObject(pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirGuid, entityState))
+      ), ENTITY_ACTIVE, guid)
 
-  def serverValues(host: String, userName: String) =
-    JsObject(baseEntityValues(host, userName).fields ++
-      Map(
-        "server_name" -> JsString(host),
-        "ip_address" -> JsString(host)))
+  def serverEntity(host: String, userName: String, guid: Long): JsObject =
+    prepareEntity(userName, AIRLOCK_SERVER_TYPE,
+      JsObject(baseEntityValues(host, userName).fields ++
+        Map(
+          "server_name" -> JsString(host),
+          "ip_address" -> JsString(host))
+      ), ENTITY_ACTIVE, guid)
 
-  def fsPathValues(name: String, userName: String, path: String) =
-    JsObject(baseEntityValues(name, userName).fields ++
-      Map(
-        "path" -> JsString(path)))
+  def fsPathEntity(name: String, userName: String, path: String, guid: Long): JsObject =
+    prepareEntity(userName, HADOOP_FS_PATH,
+      JsObject(baseEntityValues(name, userName).fields ++
+        Map(
+          "path" -> JsString(path))
+      ), ENTITY_ACTIVE, guid)
 
-  def processValues(name: String, userName: String, operation: String, host: String, hostType: String, serverGuid: Long,
-      inName: String, inType: String, inGuid: Long, outName: String, outType: String, outGuid: Long, entityState: String = "ACTIVE") =
-    JsObject(baseEntityValues(name, userName).fields ++
-      Map(
-        "operation" -> JsString(operation),
-        "run_as" -> JsString(userName),
-        "server" -> referencedObject(host, hostType, serverGuid, entityState),
-        "inputs" -> JsArray(referencedObject(inName, inType, inGuid, entityState)),
-        "outputs" -> JsArray(referencedObject(outName, outType, outGuid, entityState))
-      )
-    )
+  def processEntity(name: String, userName: String, operation: String, host: String, serverGuid: Long,
+                    inName: String, inType: String, inGuid: Long, outName: String, outType: String, outGuid: Long, guid: Long, entityState: String = "ACTIVE"): JsObject =
+    prepareEntity(userName, AIRLOCK_CLIENT_TYPE,
+      JsObject(baseEntityValues(name, userName).fields ++
+        Map(
+          "operation" -> JsString(operation),
+          "run_as" -> JsString(userName),
+          "server" -> referencedObject(host, AIRLOCK_SERVER_TYPE, serverGuid, entityState),
+          "inputs" -> JsArray(referencedObject(inName, inType, inGuid, entityState)),
+          "outputs" -> JsArray(referencedObject(outName, outType, outGuid, entityState))
+        )
+      ), ENTITY_ACTIVE, guid)
 
   def prepareEntityFullCreateMessage(userSTS: User, entityList: Vector[JsObject]): JsValue = {
     rootMessage(

@@ -1,7 +1,7 @@
 package com.ing.wbaa.airlock.proxy.provider
 
 import com.ing.wbaa.airlock.proxy.data._
-import com.ing.wbaa.airlock.proxy.provider.atlas.ModelKafka.{ bucketValues, fsPathValues, prepareEntity, processValues, psedudoDirValues, s3ObjectValues, serverValues }
+import com.ing.wbaa.airlock.proxy.provider.atlas.ModelKafka.{ bucketEntity, fsPathEntity, processEntity, pseudoDirEntity, s3ObjectEntity, serverEntity }
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 import spray.json.DefaultJsonProtocol
 
@@ -10,7 +10,7 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
   import spray.json._
 
   val timestamp = System.currentTimeMillis()
-  val userSTS = User(UserName("testuser"), Set(), AwsAccessKey("a"), AwsSecretKey("s"))
+  val userName = "testuser"
   val localhost = "127.0.0.1"
   val bucket = "user"
   val pseudoDir = "user/testuser"
@@ -28,8 +28,7 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json serverEntities" should {
     "match current schema" in {
-      val testServerEntities =
-        prepareEntity(userSTS, AIRLOCK_SERVER_TYPE, serverValues(localhost, userSTS.userName.value), ENTITY_ACTIVE, 100).toJson
+      val testServerEntities = serverEntity(localhost, userName, 100)
       val jsonEntities =
         """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"server","values":{"description":"Request via Airlock","ip_address":"127.0.0.1","name":"127.0.0.1","owner":"testuser","qualifiedName":"127.0.0.1","server_name":"127.0.0.1"}}"""
 
@@ -39,8 +38,7 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json bucketEntities" should {
     "match current schema" in {
-      val testBucketEntities =
-        prepareEntity(userSTS, AWS_S3_BUCKET_TYPE, bucketValues(bucket, userSTS.userName.value), ENTITY_ACTIVE, 100).toJson
+      val testBucketEntities = bucketEntity(bucket, userName, 100)
       val jsonEntities =
         """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_bucket","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_bucket","values":{"description":"Request via Airlock","name":"user","owner":"testuser","qualifiedName":"user"}}"""
 
@@ -50,9 +48,7 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json file Entities" should {
     "match current schema" in {
-      val testFileEntities =
-        prepareEntity(userSTS, AWS_S3_OBJECT_TYPE,
-          s3ObjectValues(s3Object, pseudoDir, 200, userSTS.userName.value, AWS_S3_PSEUDO_DIR_TYPE, dataType), ENTITY_ACTIVE, 100).toJson
+      val testFileEntities = s3ObjectEntity(s3Object, pseudoDir, 200, userName, dataType, 100).toJson
       val jsonEntities =
         """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_object","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_object","values":{"dataType":"application/octet-stream","description":"Request via Airlock","name":"user/testuser/file1.txt","owner":"testuser","pseudoDirectory":{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0},"qualifiedName":"user/testuser/file1.txt"}}"""
 
@@ -62,9 +58,7 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json fsPathEntities" should {
     "match current schema" in {
-      val testFsPathEntities =
-        prepareEntity(userSTS, HADOOP_FS_PATH,
-          fsPathValues(externalPath, userSTS.userName.value, "external_object_in/file1.txt"), ENTITY_ACTIVE, 100).toJson
+      val testFsPathEntities = fsPathEntity(externalPath, userName, "external_object_in/file1.txt", 100).toJson
       val jsonEntities =
         """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"fs_path","values":{"description":"Request via Airlock","name":"external_object_in/file1.txt","owner":"testuser","path":"external_object_in/file1.txt","qualifiedName":"external_object_in/file1.txt"}}"""
       assert(testFsPathEntities == jsonEntities.parseJson)
@@ -73,9 +67,7 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json pseudoDirEntities" should {
     "match current schema" in {
-      val pseudoDirEntities =
-        prepareEntity(userSTS, AWS_S3_PSEUDO_DIR_TYPE,
-          psedudoDirValues(pseudoDir, bucket, 200, userSTS.userName.value, AWS_S3_BUCKET_TYPE), ENTITY_ACTIVE, 100).toJson
+      val pseudoDirEntities = pseudoDirEntity(pseudoDir, bucket, 200, userName, 100).toJson
       val jsonEntities =
         """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_pseudo_dir","values":{"bucket":{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_bucket","version":0},"description":"Request via Airlock","name":"user/testuser","objectPrefix":"user/testuser","owner":"testuser","qualifiedName":"user/testuser"}}"""
       assert(pseudoDirEntities == jsonEntities.parseJson)
@@ -84,12 +76,10 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json process to Read Entities" should {
     "match current schema" in {
-      val readProcess =
-        prepareEntity(userSTS, AIRLOCK_CLIENT_TYPE,
-          processValues("aws-cli_500", userSTS.userName.value, Read.rangerName,
-            localhost, AIRLOCK_SERVER_TYPE, 100,
-            s3Object, AWS_S3_OBJECT_TYPE, 200,
-            externalPath, HADOOP_FS_PATH, 300), ENTITY_ACTIVE, 400).toJson
+      val readProcess = processEntity("aws-cli_500", userName, Read.rangerName,
+        localhost, 100,
+        s3Object, AWS_S3_OBJECT_TYPE, 200,
+        externalPath, HADOOP_FS_PATH, 300, 400).toJson
       val jsonEntities =
         """ {"id":{"id":"-400","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"airlock_client","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"airlock_client","values":{"description":"Request via Airlock","inputs":[{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_object","version":0}],"name":"aws-cli_500","operation":"read","outputs":[{"id":"-300","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0}],"owner":"testuser","qualifiedName":"aws-cli_500","run_as":"testuser","server":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0}}}"""
       assert(readProcess == jsonEntities.parseJson)
@@ -98,11 +88,10 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json process to PUT Entities" should {
     "match current schema" in {
-      val writeProcess =
-        prepareEntity(userSTS, AIRLOCK_CLIENT_TYPE, processValues("aws-cli_500", userSTS.userName.value, Write.rangerName,
-          localhost, AIRLOCK_SERVER_TYPE, 100,
-          externalPath, HADOOP_FS_PATH, 200,
-          pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, 300), ENTITY_ACTIVE, 400).toJson
+      val writeProcess = processEntity("aws-cli_500", userName, Write.rangerName,
+        localhost, 100,
+        externalPath, HADOOP_FS_PATH, 200,
+        pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, 300, 400).toJson
       val jsonEntities =
         """{"id":{"id":"-400","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"airlock_client","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"airlock_client","values":{"description":"Request via Airlock","inputs":[{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0}],"name":"aws-cli_500","operation":"write","outputs":[{"id":"-300","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0}],"owner":"testuser","qualifiedName":"aws-cli_500","run_as":"testuser","server":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0}}}"""
       assert(writeProcess == jsonEntities.parseJson)
