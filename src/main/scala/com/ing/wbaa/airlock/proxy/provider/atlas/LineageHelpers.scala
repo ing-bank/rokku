@@ -155,21 +155,21 @@ trait LineageHelpers extends LazyLogging with RestClient {
         case None         => Future.successful("")
       }
       processGuid <- method match {
-        case Read =>
+        case Read(_) =>
           postData(
             processEntities(
               serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(fsPathGuid, HADOOP_FS_PATH), clientType, timestamp
             ).toJson)
             .map(r => r.entityGUID)
 
-        case Write if fsPathGuid.length > 0 =>
+        case Write(_) if fsPathGuid.length > 0 =>
           postData(
             processEntities(
               serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(fsPathGuid, HADOOP_FS_PATH), processOut(objectGuid, AWS_S3_OBJECT_TYPE), clientType, timestamp
             ).toJson)
             .map(r => r.entityGUID)
 
-        case Write =>
+        case Write(_) =>
           postData(
             processEntities(
               serverGuid, bucketGuid, objectGuid, userName, method.rangerName, processIn(objectGuid, AWS_S3_OBJECT_TYPE), processOut(pseudoDirGuid, AWS_S3_PSEUDO_DIR_TYPE), clientType, timestamp

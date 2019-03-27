@@ -1,9 +1,10 @@
 package com.ing.wbaa.airlock.proxy.data
 
-sealed class AccessType(val rangerName: String)
+sealed class AccessType(val rangerName: String, val auditAction: String)
 
-case object Read extends AccessType("read")
-case object Head extends AccessType("read")
-case object Write extends AccessType("write")
-case object Delete extends AccessType("write")
-case object NoAccess extends AccessType("noAccess")
+case class Read(override val auditAction: String = "") extends AccessType("read", auditAction)
+case class Head(override val auditAction: String = "") extends AccessType("read", auditAction)
+case class Write(override val auditAction: String = "") extends AccessType("write", auditAction)
+case class Delete(override val auditAction: String = "") extends AccessType("write", auditAction)
+case object NoAccess extends AccessType("noAccess", "noAccess")
+
