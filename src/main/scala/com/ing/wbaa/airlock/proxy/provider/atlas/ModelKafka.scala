@@ -1,7 +1,7 @@
 package com.ing.wbaa.airlock.proxy.provider.atlas
 
 import com.ing.wbaa.airlock.proxy.data.User
-import spray.json.{JsArray, JsNumber, JsObject, JsString}
+import spray.json.{ JsArray, JsNumber, JsObject, JsString }
 import spray.json._
 import com.ing.wbaa.airlock.proxy.data.LineageLiterals._
 
@@ -97,7 +97,7 @@ object ModelKafka extends DefaultJsonProtocol {
       ), ENTITY_ACTIVE, guid)
 
   def processEntity(name: String, userName: String, operation: String, host: String, serverGuid: Long,
-                    inName: String, inType: String, inGuid: Long, outName: String, outType: String, outGuid: Long, guid: Long, entityState: String = "ACTIVE"): JsObject =
+      inName: String, inType: String, inGuid: Long, outName: String, outType: String, outGuid: Long, guid: Long, entityState: String = "ACTIVE"): JsObject =
     prepareEntity(userName, AIRLOCK_CLIENT_TYPE,
       JsObject(baseEntityValues(name, userName).fields ++
         Map(
