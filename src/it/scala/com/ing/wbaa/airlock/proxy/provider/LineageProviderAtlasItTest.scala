@@ -47,18 +47,18 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
       override val kafkaSettings: KafkaSettings = KafkaSettings(system)
     })
 
+  val createEventsTopic = "ATLAS_HOOK"
 
   "LineageProviderAtlas" should {
     "create Write lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
       implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
       withRunningKafka {
-        val createEventsTopic = "ATLAS_HOOK1"
         createCustomTopic(createEventsTopic)
-        Thread.sleep(3000)
+        Thread.sleep(1000)
 
         apr.createLineageFromRequest(
           fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
-        Thread.sleep(3000)
+        Thread.sleep(1000)
 
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("external_object_in/fakeObject"))
@@ -68,13 +68,10 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
     "create Read lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
       implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
       withRunningKafka {
-        val createEventsTopic = "ATLAS_HOOK2"
-        createCustomTopic(createEventsTopic)
-        Thread.sleep(3000)
 
         apr.createLineageFromRequest(
           fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
-        Thread.sleep(3000)
+        Thread.sleep(1000)
 
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("external_object_out/fakeObject"))
@@ -84,13 +81,10 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
     "create Delete lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
       implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
       withRunningKafka {
-        val createEventsTopic = "ATLAS_HOOK3"
-        createCustomTopic(createEventsTopic)
 
-        Thread.sleep(3000)
         apr.createLineageFromRequest(
           fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
-        Thread.sleep(3000)
+        Thread.sleep(1000)
 
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("fakeObject"))
