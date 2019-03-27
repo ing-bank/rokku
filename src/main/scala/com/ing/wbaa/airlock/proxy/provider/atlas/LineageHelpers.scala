@@ -66,7 +66,7 @@ trait LineageHelpers extends EventProducer {
   def createSingleEntity(entityName: String, userSTS: User, entityValues: JsObject, entityType: String)(implicit id: RequestId): Future[Done] = {
     logger.debug(s"Creating lineage for request, $entityName at $timestamp")
     sendSingleMessage(
-      prepareEntityFullCreateMessage(userSTS, Vector(bucketEntity(entityName, userSTS.userName.value, newGuid))).toString,
+      prepareEntityFullCreateMessage(userSTS, Vector(entityValues)).toString,
       ATLAS_HOOK_TOPIC)
   }
 
