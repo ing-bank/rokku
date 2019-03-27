@@ -93,7 +93,7 @@ trait LineageHelpers extends EventProducer {
     val externalPathEntityJs = fsPathEntity(externalPath, userName, externalPath, guids.externalPathGuid)
 
     method match {
-      case Read =>
+      case Read(_) =>
         logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
         sendSingleMessage(
           prepareEntityFullCreateMessage(userSTS, Vector(serverEntityJs, bucketEntityJs, pseudoDirEntityJs, s3ObjectEntityJs, externalPathEntityJs,
@@ -103,7 +103,7 @@ trait LineageHelpers extends EventProducer {
               externalPath, HADOOP_FS_PATH, guids.externalPathGuid, guids.processGuid)))
             .toString, ATLAS_HOOK_TOPIC)
 
-      case Write if externalPath.length > 0 =>
+      case Write(_) if externalPath.length > 0 =>
         logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
         sendSingleMessage(
           prepareEntityFullCreateMessage(userSTS, Vector(serverEntityJs, bucketEntityJs, pseudoDirEntityJs, s3ObjectEntityJs, externalPathEntityJs,

@@ -35,7 +35,7 @@ trait FilterRecursiveListBucketHandler {
    */
   protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse)(implicit id: RequestId): HttpResponse = {
     val noDelimiterWithReadAndNoObject =
-      !request.uri.rawQueryString.getOrElse("").contains("delimiter") && s3request.accessType == Read && s3request.s3Object.isEmpty
+      !request.uri.rawQueryString.getOrElse("").contains("delimiter") && s3request.accessType.isInstanceOf[Read] && s3request.s3Object.isEmpty
     if (noDelimiterWithReadAndNoObject) {
       response.transformEntityDataBytes(filterRecursiveListObjects(userSTS, s3request))
     } else {

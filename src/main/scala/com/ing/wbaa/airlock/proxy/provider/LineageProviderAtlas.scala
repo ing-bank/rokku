@@ -34,22 +34,22 @@ trait LineageProviderAtlas extends LineageHelpers {
         // get object
         case HttpMethods.GET if lineageHeaders.queryParams.isEmpty || lineageHeaders.queryParams.contains("encoding-type") && !bucketObject.isEmpty =>
           val externalObject = s"$EXTERNAL_OBJECT_OUT/${bucketObject.split("/").takeRight(1).mkString}"
-          kafkaReadOrWriteLineage(lineageHeaders, userSTS, Read, clientIPAddress, Some(externalObject))
+          kafkaReadOrWriteLineage(lineageHeaders, userSTS, Read(), clientIPAddress, Some(externalObject))
 
         // put object from outside of ceph
         case HttpMethods.PUT if lineageHeaders.queryParams.isEmpty && lineageHeaders.copySource.isEmpty && !bucketObject.isEmpty =>
           val externalObject = s"$EXTERNAL_OBJECT_IN/${bucketObject.split("/").takeRight(1).mkString}"
-          kafkaReadOrWriteLineage(lineageHeaders, userSTS, Write, clientIPAddress, Some(externalObject))
+          kafkaReadOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress, Some(externalObject))
 
         // put object - copy
         // if contains header x-amz-copy-source
         case HttpMethods.PUT if lineageHeaders.copySource.getOrElse("").length > 0 && !bucketObject.isEmpty =>
-          lineageForCopyOperation(lineageHeaders, userSTS, Write, clientIPAddress)
+          lineageForCopyOperation(lineageHeaders, userSTS, Write(), clientIPAddress)
 
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
         case HttpMethods.POST if lineageHeaders.queryParams.getOrElse("").contains("uploadId") && !bucketObject.isEmpty =>
-          kafkaReadOrWriteLineage(lineageHeaders, userSTS, Write, clientIPAddress)
+          kafkaReadOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress)
 
         // delete object
         case HttpMethods.DELETE if lineageHeaders.queryParams.isEmpty && !bucketObject.isEmpty =>

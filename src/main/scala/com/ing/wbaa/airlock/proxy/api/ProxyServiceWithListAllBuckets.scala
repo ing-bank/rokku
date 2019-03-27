@@ -20,7 +20,7 @@ trait ProxyServiceWithListAllBuckets extends ProxyService with ScalaXmlSupport {
   override protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Route = {
     s3Request match {
       //only when list buckets is requested we show all buckets
-      case S3Request(_, None, None, accessType, _, _, _) if accessType == Read =>
+      case S3Request(_, None, None, accessType, _, _, _) if accessType.isInstanceOf[Read] =>
         complete(getListAllMyBucketsXml())
       case _ => super.processAuthorizedRequest(httpRequest, s3Request, userSTS)
     }

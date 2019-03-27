@@ -25,7 +25,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
 
   implicit val requestId: RequestId = RequestId("test")
 
-  val s3Request = S3Request(AwsRequestCredential(AwsAccessKey("a"), None), Some("demobucket"), Some("s3object"), Read)
+  val s3Request = S3Request(AwsRequestCredential(AwsAccessKey("a"), None), Some("demobucket"), Some("s3object"), Read())
     .copy(clientIPAddress = RemoteAddress(InetAddress.getByName("127.0.0.1")))
 
   "KafkaMessageProvider" should {

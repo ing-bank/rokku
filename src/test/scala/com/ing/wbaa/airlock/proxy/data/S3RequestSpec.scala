@@ -9,32 +9,32 @@ class S3RequestSpec extends FlatSpec with DiagrammedAssertions {
 
   "S3Request" should "parse an S3 request from an http Path and Method" in {
     val result = S3Request(testCred, Uri.Path("/demobucket"), HttpMethods.GET, RemoteAddress.Unknown, HeaderIPs(), MediaTypes.`text/plain`)
-    assert(result == S3Request(testCred, Some("/demobucket"), None, Read))
+    assert(result == S3Request(testCred, Some("/demobucket"), None, Read("GET")))
   }
 
   it should "parse an S3 request from an http Path with object and Method" in {
     val result = S3Request(testCred, Uri.Path("/demobucket/demoobject"), HttpMethods.GET, RemoteAddress.Unknown, HeaderIPs(), MediaTypes.`text/plain`)
-    assert(result == S3Request(testCred, Some("/demobucket/demoobject"), Some("demoobject"), Read))
+    assert(result == S3Request(testCred, Some("/demobucket/demoobject"), Some("demoobject"), Read("GET")))
   }
 
   it should "parse an S3 request from an http Path with subfolder and Method" in {
     val result = S3Request(testCred, Uri.Path("/demobucket/subfolder1/"), HttpMethods.GET, RemoteAddress.Unknown, HeaderIPs(), MediaTypes.`text/plain`)
-    assert(result == S3Request(testCred, Some("/demobucket/subfolder1/"), None, Read))
+    assert(result == S3Request(testCred, Some("/demobucket/subfolder1/"), None, Read("GET")))
   }
 
   it should "parse none for bucket if path is only root" in {
     val result = S3Request(testCred, Uri.Path("/"), HttpMethods.GET, RemoteAddress.Unknown, HeaderIPs(), MediaTypes.`text/plain`)
-    assert(result == S3Request(testCred, None, None, Read))
+    assert(result == S3Request(testCred, None, None, Read("GET")))
   }
 
   it should "parse none for bucket if path is empty" in {
     val result = S3Request(testCred, Uri.Path(""), HttpMethods.GET, RemoteAddress.Unknown, HeaderIPs(), MediaTypes.`text/plain`)
-    assert(result == S3Request(testCred, None, None, Read))
+    assert(result == S3Request(testCred, None, None, Read("GET")))
   }
 
   it should "set access to write for anything but GET" in {
     val result = S3Request(testCred, Uri.Path("/demobucket"), HttpMethods.POST, RemoteAddress.Unknown, HeaderIPs(), MediaTypes.`text/plain`)
-    assert(result == S3Request(testCred, Some("/demobucket"), None, Write))
+    assert(result == S3Request(testCred, Some("/demobucket"), None, Write("POST")))
   }
 
 }
