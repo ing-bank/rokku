@@ -49,7 +49,8 @@ trait LineageProviderAtlas extends LineageHelpers {
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
         case HttpMethods.POST if lineageHeaders.queryParams.getOrElse("").contains("uploadId") && !bucketObject.isEmpty =>
-          kafkaReadOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress)
+          val externalObject = s"$EXTERNAL_OBJECT_IN/${bucketObject.split("/").takeRight(1).mkString}"
+          kafkaReadOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress, Some(externalObject))
 
         // delete object
         case HttpMethods.DELETE if lineageHeaders.queryParams.isEmpty && !bucketObject.isEmpty =>
