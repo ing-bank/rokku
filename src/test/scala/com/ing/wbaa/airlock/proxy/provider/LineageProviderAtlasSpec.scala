@@ -76,7 +76,7 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json process to Read Entities" should {
     "match current schema" in {
-      val readProcess = processEntity("aws-cli_500", userName, Read.rangerName,
+      val readProcess = processEntity("aws-cli_500", userName, Read().rangerName,
         localhost, 100,
         s3Object, AWS_S3_OBJECT_TYPE, 200,
         externalPath, HADOOP_FS_PATH, 300, 400).toJson
@@ -88,7 +88,7 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json process to PUT Entities" should {
     "match current schema" in {
-      val writeProcess = processEntity("aws-cli_500", userName, Write.rangerName,
+      val writeProcess = processEntity("aws-cli_500", userName, Write().rangerName,
         localhost, 100,
         externalPath, HADOOP_FS_PATH, 200,
         pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, 300, 400).toJson
