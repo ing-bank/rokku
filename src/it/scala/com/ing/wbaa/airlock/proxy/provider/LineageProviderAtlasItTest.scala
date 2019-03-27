@@ -50,7 +50,7 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
 
   "LineageProviderAtlas" should {
     "create Write lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
-      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9027)
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
       withRunningKafka {
         val createEventsTopic = "ATLAS_HOOK"
         createCustomTopic(createEventsTopic)
@@ -66,7 +66,7 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
     }
 
     "create Read lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
-      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9027)
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
       withRunningKafka {
         val createEventsTopic = "ATLAS_HOOK"
         createCustomTopic(createEventsTopic)
@@ -82,7 +82,7 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
     }
 
     "create Delete lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
-      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9027)
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
       withRunningKafka {
         val createEventsTopic = "ATLAS_HOOK"
         createCustomTopic(createEventsTopic)
