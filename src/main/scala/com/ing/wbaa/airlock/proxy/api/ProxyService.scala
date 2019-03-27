@@ -79,7 +79,7 @@ trait ProxyService {
         isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some(s"$bucket/$s3Object"), s3Object = Some(s3Object)), userSTS)
       }
     }.map { permittedObjects =>
-      if (permittedObjects.length > 0 && permittedObjects.contains(false)) {
+      if (permittedObjects.nonEmpty && permittedObjects.contains(false)) {
         logger.debug("An error occurred, one of objects not allowed to be accessed")
         complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
       } else {
@@ -110,7 +110,7 @@ trait ProxyService {
         if (isMultideletePost) {
           checkExtractedPostContents(
             httpRequest,
-            s3Request.copy(mediaType = MediaTypes.`application/xml`), userSTS)
+            s3Request.copy(mediaType = MediaTypes.`application/xml`, accessType = Write("MULTIDELETE POST")), userSTS)
         } else {
           logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
           Future(processAuthorizedRequest(httpRequest, s3Request, userSTS))

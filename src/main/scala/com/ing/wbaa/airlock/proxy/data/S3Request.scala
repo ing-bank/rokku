@@ -38,11 +38,11 @@ object S3Request extends LazyLogging {
     val s3Object = extractObject(pathString)
 
     val accessType = httpMethod.value match {
-      case "GET"    => Read
-      case "HEAD"   => Head
-      case "PUT"    => Write
-      case "POST"   => Write
-      case "DELETE" => Delete
+      case "GET"    => Read(httpMethod.value)
+      case "HEAD"   => Head(httpMethod.value)
+      case "PUT"    => Write(httpMethod.value)
+      case "POST"   => Write(httpMethod.value)
+      case "DELETE" => Delete(httpMethod.value)
       case _ =>
         logger.debug("HttpMethod not supported")
         NoAccess
