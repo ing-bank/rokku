@@ -28,7 +28,7 @@ trait PostRequestActions {
   protected[this] def setDefaultBucketAcl(bucketName: String): Future[Unit]
 
   private[this] def createAtlasLineage(response: HttpResponse, httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] =
-    if (atlasSettings.atlasEnabled && kafkaSettings.kafkaEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent)) {
+    if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent)) {
       // delete on AWS response 204
       logger.debug("Atlas integration enabled, about to create Lineage for the request")
       createLineageFromRequest(httpRequest, userSTS, clientIPAddress) map (_ => Done)
@@ -39,7 +39,7 @@ trait PostRequestActions {
   private[this] def createBucketNotification(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request,
       userSTS: User)(implicit id: RequestId): Future[Done] =
     httpRequest.method match {
-      case HttpMethods.POST | HttpMethods.PUT | HttpMethods.DELETE if kafkaSettings.kafkaEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent) =>
+      case HttpMethods.POST | HttpMethods.PUT | HttpMethods.DELETE if kafkaSettings.bucketNotificationEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent) =>
         emitEvent(s3Request, httpRequest.method, userSTS.userName.value)
       case _ => Future.successful(Done)
     }

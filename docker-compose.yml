@@ -55,7 +55,7 @@ services:
     - "8080:8080"
 
   atlas:
-    image: wbaa/airlock-dev-apache-atlas:0.0.6
+    image: wbaa/airlock-dev-apache-atlas:0.0.5
     ports:
     - "21000:21000"
     - "9026:9026"

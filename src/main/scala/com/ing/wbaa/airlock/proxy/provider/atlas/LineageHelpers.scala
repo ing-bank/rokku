@@ -129,7 +129,7 @@ trait LineageHelpers extends EventProducer {
     val objectNameFromCopySrc = lh.copySource.getOrElse("")
     val bucketNameFromCopySrc = lh.copySource.getOrElse("").split("/").head
     val pseudoDirFromCopySrc = {
-      val pathArray = lh.copySource.get.split("/").dropRight(1)
+      val pathArray = lh.copySource.getOrElse("").split("/").dropRight(1)
       if (pathArray.length >= 2)
         pathArray.mkString("/")
       else
