@@ -4,7 +4,6 @@ import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProv
 import com.typesafe.config.Config
 
 class KafkaSettings(config: Config) extends Extension {
-  val bucketNotificationEnabled: Boolean = config.getBoolean("kafka.producer.bucketNotificationEnabled")
   val bootstrapServers: String = config.getString("kafka.producer.bootstrapServers")
   val createEventsTopic: String = config.getString("kafka.producer.createTopic")
   val deleteEventsTopic: String = config.getString("kafka.producer.deleteTopic")
