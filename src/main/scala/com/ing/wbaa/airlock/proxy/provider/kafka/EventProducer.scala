@@ -42,7 +42,7 @@ trait EventProducer {
           case e: Exception =>
             logger.error("error in sending event {} to topic {}, error={}", event, topic, e)
             throw new Exception(e)
-          case _ => logger.debug("Event notification sent {} to kafka, offset {}", event, metadata.offset())
+          case _ => logger.debug("Message sent {} to kafka, offset {}", event, metadata.offset())
         }
       }) match {
         case _ => Future(Done)

@@ -28,7 +28,7 @@ trait PostRequestActions {
   protected[this] def setDefaultBucketAcl(bucketName: String): Future[Unit]
 
   private[this] def createAtlasLineage(response: HttpResponse, httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] =
-    if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent)) {
+    if (atlasSettings.atlasEnabled && kafkaSettings.kafkaEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent)) {
       // delete on AWS response 204
       logger.debug("Atlas integration enabled, about to create Lineage for the request")
       createLineageFromRequest(httpRequest, userSTS, clientIPAddress) map (_ => Done)

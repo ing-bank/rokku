@@ -17,10 +17,6 @@ trait LineageHelpers extends EventProducer {
 
   private def timestamp: Long = System.currentTimeMillis()
 
-  def newGuid: Long = System.nanoTime()
-
-  private def generateGuids = LineageObjectGuids(newGuid, newGuid, newGuid, newGuid, newGuid, newGuid)
-
   private def extractClient(userAgent: String): Option[String] =
     """(\S+)/\S+""".r
       .findFirstMatchIn(userAgent)
@@ -60,23 +56,23 @@ trait LineageHelpers extends EventProducer {
   // We need to come up with process of tracking file delete
   def deleteEntityLineage(entityName: String, userSTS: User, entityType: String = AWS_S3_OBJECT_TYPE)(implicit id: RequestId): Future[Done] = {
     logger.debug(s"Creating Delete lineage for entity $entityName at $timestamp")
-    sendSingleMessage(prepareEntityDeleteMessage(userSTS, entityName, entityType).toString(), ATLAS_HOOK_TOPIC)
+    sendSingleMessage(prepareEntityDeleteMessage(userSTS, entityName, entityType).toString, ATLAS_HOOK_TOPIC)
   }
 
-  def createSingleEntity(entityName: String, userSTS: User, entityValues: JsObject, entityType: String)(implicit id: RequestId): Future[Done] = {
+  def createSingleEntity(entityName: String, userSTS: User, entityValues: JsObject)(implicit id: RequestId): Future[Done] = {
     logger.debug(s"Creating lineage for request, $entityName at $timestamp")
     sendSingleMessage(
       prepareEntityFullCreateMessage(userSTS, Vector(entityValues)).toString,
       ATLAS_HOOK_TOPIC)
   }
 
-  def kafkaReadOrWriteLineage(
+  def readOrWriteLineage(
       lh: LineageHeaders,
       userSTS: User,
       method: AccessType,
       clientIPAddress: RemoteAddress,
       externalFsPath: Option[String] = None,
-      guids: LineageObjectGuids = generateGuids)(implicit id: RequestId): Future[Done] = {
+      guids: LineageObjectGuids = LineageObjectGuids())(implicit id: RequestId): Future[Done] = {
 
     val userName = userSTS.userName.value
     val clientHost = clientIPAddress.getAddress().get().getHostAddress
@@ -122,16 +118,16 @@ trait LineageHelpers extends EventProducer {
       userSTS: User,
       method: AccessType,
       clientIPAddress: RemoteAddress,
-      srcGuids: LineageObjectGuids = generateGuids,
-      destGuids: LineageObjectGuids = generateGuids)(implicit id: RequestId): Future[Done] = {
+      srcGuids: LineageObjectGuids = LineageObjectGuids(),
+      destGuids: LineageObjectGuids = LineageObjectGuids())(implicit id: RequestId): Future[Done] = {
 
     val userName = userSTS.userName.value
     val clientHost = clientIPAddress.getAddress().get().getHostAddress
     val clientType = lh.clientType.getOrElse("generic")
     val bucketObject = lh.bucketObject.getOrElse("emptyObject")
     val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
-    val objectNameFromCopySrc = lh.copySource.get
-    val bucketNameFromCopySrc = lh.copySource.get.split("/").head
+    val objectNameFromCopySrc = lh.copySource.getOrElse("")
+    val bucketNameFromCopySrc = lh.copySource.getOrElse("").split("/").head
     val pseudoDirFromCopySrc = {
       val pathArray = lh.copySource.get.split("/").dropRight(1)
       if (pathArray.length >= 2)

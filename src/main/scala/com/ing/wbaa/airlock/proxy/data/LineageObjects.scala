@@ -8,3 +8,7 @@ case class LineageObjectGuids(
     processGuid: Long,
     externalPathGuid: Long
 )
+
+object LineageObjectGuids {
+  def apply(): LineageObjectGuids = LineageObjectGuids(System.nanoTime(), System.nanoTime(), System.nanoTime(), System.nanoTime(), System.nanoTime(), System.nanoTime())
+}
