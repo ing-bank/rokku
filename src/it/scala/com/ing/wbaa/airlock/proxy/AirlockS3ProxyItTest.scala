@@ -78,7 +78,6 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       override val httpSettings: HttpSettings = airlockHttpSettings
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
       override val stsSettings: StsSettings = StsSettings(testSystem)
-      override val atlasSettings: AtlasSettings = AtlasSettings(testSystem)
       override val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
       override protected def rangerSettings: RangerSettings = RangerSettings(testSystem)

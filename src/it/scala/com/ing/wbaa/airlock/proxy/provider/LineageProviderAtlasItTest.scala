@@ -5,7 +5,7 @@ import java.net.InetAddress
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
-import com.ing.wbaa.airlock.proxy.config.{AtlasSettings, KafkaSettings}
+import com.ing.wbaa.airlock.proxy.config.KafkaSettings
 import com.ing.wbaa.airlock.proxy.data._
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.scalatest.{Assertion, DiagrammedAssertions, WordSpecLike}
@@ -34,13 +34,11 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
 
   val userSTS = User(UserName("fakeUser"), Set.empty[UserGroup], AwsAccessKey("a"), AwsSecretKey("k"))
 
-  def withLineageProviderAtlas(atlasTestSettings: AtlasSettings = AtlasSettings(testSystem))(testCode: LineageProviderAtlas => Assertion) =
+  def withLineageProviderAtlas()(testCode: LineageProviderAtlas => Assertion) =
     testCode(new LineageProviderAtlas {
       override protected[this] implicit def system: ActorSystem = ActorSystem.create("test-system")
 
       override protected[this] implicit val executionContext: ExecutionContext = system.dispatcher
-
-      override protected[this] implicit def atlasSettings: AtlasSettings = atlasTestSettings
 
       override protected[this] implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
 

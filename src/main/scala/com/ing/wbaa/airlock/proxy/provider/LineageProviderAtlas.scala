@@ -4,19 +4,17 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, MediaTypes, RemoteAddress }
 import akka.stream.ActorMaterializer
-import com.ing.wbaa.airlock.proxy.config.AtlasSettings
+import com.ing.wbaa.airlock.proxy.data.LineageLiterals._
 import com.ing.wbaa.airlock.proxy.data._
+import com.ing.wbaa.airlock.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
 import com.ing.wbaa.airlock.proxy.provider.atlas.LineageHelpers
 import com.ing.wbaa.airlock.proxy.provider.atlas.ModelKafka.bucketEntity
-import com.ing.wbaa.airlock.proxy.data.LineageLiterals._
-import com.ing.wbaa.airlock.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
 
 import scala.concurrent.Future
 
 trait LineageProviderAtlas extends LineageHelpers {
 
   protected[this] implicit def system: ActorSystem
-  protected[this] implicit def atlasSettings: AtlasSettings
 
   def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] = {
     val lineageHeaders = getLineageHeaders(httpRequest)
