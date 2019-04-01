@@ -16,7 +16,6 @@ object Server extends App {
     override val rangerSettings: RangerSettings = RangerSettings(system)
     override val storageS3Settings: StorageS3Settings = StorageS3Settings(system)
     override val stsSettings: StsSettings = StsSettings(system)
-    override val atlasSettings: AtlasSettings = AtlasSettings(system)
     override val kafkaSettings: KafkaSettings = KafkaSettings(system)
 
     // Force Ranger plugin to initialise on startup

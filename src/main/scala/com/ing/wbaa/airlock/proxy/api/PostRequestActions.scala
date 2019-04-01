@@ -2,9 +2,9 @@ package com.ing.wbaa.airlock.proxy.api
 
 import akka.Done
 import akka.http.scaladsl.model._
-import com.ing.wbaa.airlock.proxy.config.{ AtlasSettings, KafkaSettings }
-import com.ing.wbaa.airlock.proxy.data.{ LineageResponse, RequestId, S3Request, User }
+import com.ing.wbaa.airlock.proxy.data.{ RequestId, S3Request, User }
 import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
 import scala.util.Failure
@@ -12,23 +12,24 @@ import scala.util.matching.Regex
 
 trait PostRequestActions {
   import PostRequestActions._
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   private val logger = new LoggerHandlerWithId
 
-  protected[this] def atlasSettings: AtlasSettings
+  private[this] def bucketNotificationEnabled = ConfigFactory.load().getBoolean("airlock.bucketNotificationEnabled")
+  private[this] def atlasEnabled = ConfigFactory.load().getBoolean("airlock.atlas.enabled")
 
-  protected[this] def kafkaSettings: KafkaSettings
-
-  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[LineageResponse]
+  protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done]
 
   protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String)(implicit id: RequestId): Future[Done]
 
   protected[this] def setDefaultBucketAcl(bucketName: String): Future[Unit]
 
-  private[this] def createAtlasLineage(response: HttpResponse, httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress): Future[Done] =
-    if (atlasSettings.atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent)) {
+  private[this] def createAtlasLineage(response: HttpResponse, httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] =
+    if (atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent)) {
       // delete on AWS response 204
+      logger.debug("Atlas integration enabled, about to create Lineage for the request")
       createLineageFromRequest(httpRequest, userSTS, clientIPAddress) map (_ => Done)
     } else {
       Future.successful(Done)
@@ -37,7 +38,7 @@ trait PostRequestActions {
   private[this] def createBucketNotification(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request,
       userSTS: User)(implicit id: RequestId): Future[Done] =
     httpRequest.method match {
-      case HttpMethods.POST | HttpMethods.PUT | HttpMethods.DELETE if kafkaSettings.kafkaEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent) =>
+      case HttpMethods.POST | HttpMethods.PUT | HttpMethods.DELETE if bucketNotificationEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent) =>
         emitEvent(s3Request, httpRequest.method, userSTS.userName.value)
       case _ => Future.successful(Done)
     }

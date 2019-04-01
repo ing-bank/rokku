@@ -19,9 +19,6 @@ function airlockStsIsReady() {
 function keycloakIsReady() {
   docker-compose logs keycloak | grep "Admin console listening"
 }
-function atlasIsReady() {
-  docker-compose logs atlas | grep "Done setting up Atlas types"
-}
 function mariadbIsReady() {
   docker-compose logs mariadb | grep "Version: '10.3.9-MariaDB-1:10.3.9+maria~bionic'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  mariadb.org binary distribution"
 }
@@ -43,8 +40,6 @@ function waitUntilServiceIsReady() {
   fi
 }
 
-# atlas is heavy at startup, so moving to first place in sequence. It should be up by time it:test starts
-waitUntilServiceIsReady atlasIsReady "Atlas"
 waitUntilServiceIsReady airlockStsIsReady "Airlock STS"
 waitUntilServiceIsReady cephIsReady "Ceph"
 waitUntilServiceIsReady rangerAdminIsReady "Ranger Admin"

@@ -4,17 +4,18 @@ import java.net.InetAddress
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.stream.{ActorMaterializer, Materializer}
-import com.ing.wbaa.airlock.proxy.config.AtlasSettings
+import akka.stream.ActorMaterializer
+import com.ing.wbaa.airlock.proxy.config.KafkaSettings
 import com.ing.wbaa.airlock.proxy.data._
-import com.ing.wbaa.airlock.proxy.provider.atlas.RestClient.RestClientException
-import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
+import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
+import org.scalatest.{Assertion, DiagrammedAssertions, WordSpecLike}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
-class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions  {
+class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions with EmbeddedKafka {
 
   implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
+  implicit val requestId: RequestId = RequestId("test")
 
   def fakeIncomingHttpRequest(method: HttpMethod, path: String) = {
     val uri = Uri(
@@ -28,73 +29,64 @@ class LineageProviderAtlasItTest extends AsyncWordSpec with DiagrammedAssertions
       case _ => HttpRequest(method, uri, Nil)
     }
   }
+
   val remoteClientIP = RemoteAddress(InetAddress.getByName("127.0.0.1"))
 
   val userSTS = User(UserName("fakeUser"), Set.empty[UserGroup], AwsAccessKey("a"), AwsSecretKey("k"))
 
-  def withLineageProviderAtlas(atlasTestSettings: AtlasSettings = AtlasSettings(testSystem))(testCode: LineageProviderAtlas => Future[Assertion]) =
+  def withLineageProviderAtlas()(testCode: LineageProviderAtlas => Assertion) =
     testCode(new LineageProviderAtlas {
       override protected[this] implicit def system: ActorSystem = ActorSystem.create("test-system")
 
-      override protected[this] implicit def executionContext: ExecutionContext = system.dispatcher
+      override protected[this] implicit val executionContext: ExecutionContext = system.dispatcher
 
-      override protected[this] implicit def atlasSettings: AtlasSettings = atlasTestSettings
+      override protected[this] implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
 
-      override protected[this] implicit def materializer: Materializer = ActorMaterializer()(system)
+      override val kafkaSettings: KafkaSettings = KafkaSettings(system)
     })
 
+  val createEventsTopic = "ATLAS_HOOK"
 
   "LineageProviderAtlas" should {
     "create Write lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
+      withRunningKafka {
+        createCustomTopic(createEventsTopic)
+        Thread.sleep(1000)
 
-      val createLineageResult  = apr.createLineageFromRequest(
-        fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
+        apr.createLineageFromRequest(
+          fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
+        Thread.sleep(1000)
 
-      createLineageResult.map { result =>
-          val postResult = result.asInstanceOf[LineagePostGuidResponse]
-            assert( postResult.serverGuid.length > 0 )
-            assert( postResult.bucketGuid.length > 0 )
-            assert( postResult.pseudoDir.length > 0 )
-            assert( postResult.fileGuid.length > 0 )
-            assert( postResult.processGuid.length > 0 )
-        }
-    }
-
-    "create Read lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
-
-      val createLineageResult  = apr.createLineageFromRequest(
-        fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
-
-      createLineageResult.map { result =>
-        val postResult = result.asInstanceOf[LineagePostGuidResponse]
-            assert( postResult.serverGuid.length > 0 )
-            assert( postResult.bucketGuid.length > 0 )
-            assert( postResult.pseudoDir.length > 0 )
-            assert( postResult.fileGuid.length > 0 )
-            assert( postResult.processGuid.length > 0 )
-        }
-    }
-
-    "create Delete lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
-
-      val createLineageResult  = apr.createLineageFromRequest(
-        fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
-
-      createLineageResult.map { result =>
-        val postResult = result.asInstanceOf[LineageGuidResponse]
-            assert( postResult.entityGUID.length > 0 )
+        val message = consumeFirstStringMessageFrom(createEventsTopic)
+        assert(message.contains("external_object_in/fakeObject"))
       }
     }
 
-    "fail on incorrect Settings" in withLineageProviderAtlas(new AtlasSettings(testSystem.settings.config) {
-      override val atlasApiHost: String = "fakeHost"
-      override val atlasApiPort: Int = 21001
-      override def atlasBaseUri: Uri = Uri(
-        scheme = "http",
-        authority = Uri.Authority(host = Uri.Host(atlasApiHost), port = atlasApiPort)
-      )
-    }) { apr =>
-      recoverToSucceededIf[RestClientException](apr.createLineageFromRequest(fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS, remoteClientIP))
+    "create Read lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
+      withRunningKafka {
+
+        apr.createLineageFromRequest(
+          fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
+        Thread.sleep(1000)
+
+        val message = consumeFirstStringMessageFrom(createEventsTopic)
+        assert(message.contains("external_object_out/fakeObject"))
+      }
+    }
+
+    "create Delete lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
+      withRunningKafka {
+
+        apr.createLineageFromRequest(
+          fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
+        Thread.sleep(1000)
+
+        val message = consumeFirstStringMessageFrom(createEventsTopic)
+        assert(message.contains("fakeObject"))
+      }
     }
   }
 }
