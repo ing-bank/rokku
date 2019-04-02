@@ -34,13 +34,19 @@ We've added a small description on how to setup the AWS CLI [here](#setting-up-a
 
         sbt run
 
-> for windows docker runs on different it so you need to:
+> for windows docker runs on different ip so you need to:
 > set environmental variables:
 > * AIRLOCK_STS_HOST
 > * AIRLOCK_STORAGE_S3_HOST
 > * AIRLOCK_KEYCLOAK_TOKEN_URL
 > * change AIRLOCK_KEYCLOAK_URL in the docker-compose.yml
 > * change the ranger.plugin.s3.policy.rest.url in ranger-s3-security.xml
+
+if you want to use atlas or notifications before running `sbt run` set `kafka` and `zookeeper` as a host name in `/etc/hosts`:
+```
+127.0.0.1   localhost kafka zookeeper
+```
+thanks to that you will be able to write lineage to kafka.
 
 
 ## Proxy as docker image
@@ -194,13 +200,16 @@ Currently, two types are emitted:
 - s3:ObjectCreated:*
 - s3:ObjectRemoved:*
 
-In order to enable update application.conf, mainly:
+In order to enable update application.conf, set to true:
 
 ```
-        enabled = ${?AIRLOCK_KAFKA_ENABLED}
-        bootstrapServers = ${?AIRLOCK_KAFKA_BOOTSTRAP_SERVERS}
-        createTopic = ${?AIRLOCK_KAFKA_CREATE_TOPIC}
-        deleteTopic = ${?AIRLOCK_KAFKA_DELETE_TOPIC}
+        bucketNotificationEnabled = ${?AIRLOCK_BUCKET_NOTIFY_ENABLED}
+```
+and configure kafka and topic names:
+```
+        kafka.producer.bootstrapServers = ${?AIRLOCK_KAFKA_BOOTSTRAP_SERVERS}
+        kafka.producer.createTopic = ${?AIRLOCK_KAFKA_CREATE_TOPIC}
+        kafka.producer.deleteTopic = ${?AIRLOCK_KAFKA_DELETE_TOPIC}
 ```
 
 # Setting Up AWS CLI
