@@ -25,45 +25,66 @@ services:
     stdin_open: true
     tty: true
     depends_on:
-    - "postgres-server"
-    - "ceph"
+      - "postgres-server"
+      - "ceph"
     ports:
-    - "6080:6080"
+      - "6080:6080"
 
   airlock-sts:
     image: wbaa/airlock-sts:0.1.9
     environment:
-    - STS_HOST=0.0.0.0
-    - STS_PORT=12345
-    - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
-    - KEYCLOAK_URL=http://keycloak:8080
-    - KEYCLOAK_CHECK_REALM_URL=false
-    - KEYCLOAK_CHECK_ISSUER_FOR_LIST=sts-airlock
-    - MARIADB_URL=jdbc:mysql:loadbalance://mariadb:3306,mariadb:3306/airlock
+      - STS_HOST=0.0.0.0
+      - STS_PORT=12345
+      - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_CHECK_REALM_URL=false
+      - KEYCLOAK_CHECK_ISSUER_FOR_LIST=sts-airlock
+      - MARIADB_URL=jdbc:mysql:loadbalance://mariadb:3306,mariadb:3306/airlock
     ports:
-    - "12345:12345"
+      - "12345:12345"
     depends_on:
-    - "keycloak"
-    - "mariadb"
+      - "keycloak"
+      - "mariadb"
 
   keycloak:
     image: wbaa/airlock-dev-keycloak:0.0.4
     environment:
-    - KEYCLOAK_USER=admin
-    - KEYCLOAK_PASSWORD=admin
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
     ports:
-    - "8080:8080"
+      - "8080:8080"
 
   atlas:
-    image: wbaa/airlock-dev-apache-atlas:0.0.5
+    image: wbaa/airlock-dev-apache-atlas:0.0.7
     ports:
-    - "21000:21000"
-    - "9026:9026"
-    - "9027:9027"
+      - "21000:21000"
+    depends_on:
+      - "zookeeper"
+      - "kafka"
 
   mariadb:
     image: wbaa/airlock-dev-mariadb:0.0.2
     environment:
-    - MYSQL_ROOT_PASSWORD=admin
+      - MYSQL_ROOT_PASSWORD=admin
     ports:
-    - 3307:3306
+      - 3307:3306
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    container_name: kafka
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"
+    hostname: kafka
+    environment:
+      KAFKA_CREATE_TOPICS: "create_events:1:1,delete_events:1:1,ATLAS_HOOK:1:1"
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    depends_on:
+      - zookeeper

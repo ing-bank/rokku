@@ -34,6 +34,8 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
 
   val userSTS = User(UserName("fakeUser"), Set.empty[UserGroup], AwsAccessKey("a"), AwsSecretKey("k"))
 
+  private val testKafkaPort = 9093
+
   def withLineageProviderAtlas()(testCode: LineageProviderAtlas => Assertion) =
     testCode(new LineageProviderAtlas {
       override protected[this] implicit def system: ActorSystem = ActorSystem.create("test-system")
@@ -42,48 +44,43 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
 
       override protected[this] implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
 
-      override val kafkaSettings: KafkaSettings = KafkaSettings(system)
+      override val kafkaSettings: KafkaSettings = new KafkaSettings(testSystem.settings.config) {
+        override val bootstrapServers: String = s"localhost:$testKafkaPort"
+      }
     })
 
   val createEventsTopic = "ATLAS_HOOK"
 
   "LineageProviderAtlas" should {
     "create Write lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
-      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = testKafkaPort)
       withRunningKafka {
+        Thread.sleep(2000)
         createCustomTopic(createEventsTopic)
-        Thread.sleep(1000)
-
         apr.createLineageFromRequest(
           fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
-        Thread.sleep(1000)
-
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("external_object_in/fakeObject"))
       }
     }
 
     "create Read lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
-      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = testKafkaPort)
       withRunningKafka {
-
+        Thread.sleep(2000)
         apr.createLineageFromRequest(
           fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
-        Thread.sleep(1000)
-
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("external_object_out/fakeObject"))
       }
     }
 
     "create Delete lineage from HttpRequest" in withLineageProviderAtlas() { apr =>
-      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = testKafkaPort)
       withRunningKafka {
-
+        Thread.sleep(2000)
         apr.createLineageFromRequest(
           fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
-        Thread.sleep(1000)
-
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("fakeObject"))
       }

@@ -8,8 +8,8 @@ import akka.stream.ActorMaterializer
 import com.ing.wbaa.airlock.proxy.config.KafkaSettings
 import com.ing.wbaa.airlock.proxy.data._
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
-import org.scalatest.{DiagrammedAssertions, WordSpecLike}
 import org.scalatest.RecoverMethods._
+import org.scalatest.{DiagrammedAssertions, WordSpecLike}
 
 import scala.concurrent.ExecutionContext
 
@@ -17,7 +17,11 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
 
   implicit val testSystem: ActorSystem = ActorSystem("kafkaTest")
 
-  override implicit val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
+  private val testKafkaPort = 9093
+
+  override implicit val kafkaSettings: KafkaSettings = new KafkaSettings(testSystem.settings.config) {
+    override val bootstrapServers: String = s"localhost:$testKafkaPort"
+  }
 
   override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -30,12 +34,12 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
 
   "KafkaMessageProvider" should {
     "Send message to correct topic with Put or Post" in {
-      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = testKafkaPort)
 
       withRunningKafka {
+        Thread.sleep(2000)
         val createEventsTopic = "create_events"
         createCustomTopic(createEventsTopic)
-        Thread.sleep(3000)
         emitEvent(s3Request, HttpMethods.PUT, "testUser")
         val result = consumeFirstStringMessageFrom(createEventsTopic)
         assert(result.contains("s3:ObjectCreated:PUT"))
@@ -43,12 +47,12 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
     }
 
     "Send message to correct topic with Delete" in {
-      implicit val config = EmbeddedKafkaConfig(kafkaPort = 9092)
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = testKafkaPort)
 
       withRunningKafka {
+        Thread.sleep(2000)
         val deleteEventsTopic = "delete_events"
         createCustomTopic(deleteEventsTopic)
-        Thread.sleep(3000)
         emitEvent(s3Request, HttpMethods.DELETE, "testUser")
         assert(consumeFirstStringMessageFrom(deleteEventsTopic).contains("s3:ObjectRemoved:DELETE"))
       }
