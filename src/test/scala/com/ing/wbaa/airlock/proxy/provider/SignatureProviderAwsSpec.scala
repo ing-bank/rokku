@@ -93,7 +93,7 @@ class SignatureProviderAwsSpec extends WordSpec with DiagrammedAssertions with S
       val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket", Nil, "acl")
       val expectedResult = Map("acl" -> List.empty[String].asJava).asJava
 
-      assert(extractRequestParameters(request, "v2") == expectedResult)
+      assert(extractRequestParametersV2(request, "v2") == expectedResult)
     }
 
     "extractRequestParameters from RawQueryString with single key value pair" in {
@@ -154,9 +154,9 @@ class SignatureProviderAwsSpec extends WordSpec with DiagrammedAssertions with S
       )
       val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket/", headers)
 
-      assert(getAWSHeaders(request).requestDate.getOrElse("") == "Tue, 09 Oct 2018 07:15:24 GMT")
-      assert(getAWSHeaders(request).contentMD5.getOrElse("") == "")
-      assert(getAWSHeaders(request).securityToken.getOrElse("") == "OfgzeOi5NOluFSWXv0acLTwvFkGamdzJ")
+      assert(getAWSHeadersV2(request).requestDate.getOrElse("") == "Tue, 09 Oct 2018 07:15:24 GMT")
+      assert(getAWSHeadersV2(request).contentMD5.getOrElse("") == "")
+      assert(getAWSHeadersV2(request).securityToken.getOrElse("") == "OfgzeOi5NOluFSWXv0acLTwvFkGamdzJ")
     }
 
     "getAWSHeaders from request for v4" in {
