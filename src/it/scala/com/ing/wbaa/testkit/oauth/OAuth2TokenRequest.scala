@@ -33,7 +33,7 @@ trait OAuth2TokenRequest {
     Http().singleRequest(HttpRequest(
       uri = Uri(airlockKeycloakTokenUrl),
       method = HttpMethods.POST,
-      entity = akka.http.scaladsl.model.FormData(formData).toEntity(HttpCharsets.`UTF-8`)))
+      entity = akka.http.scaladsl.model.FormData(formData).toEntity))
   }
 
   protected[this] def retrieveKeycloackToken(formData: Map[String, String]): Future[KeycloackToken] =

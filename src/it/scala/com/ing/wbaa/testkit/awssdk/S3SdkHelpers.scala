@@ -9,24 +9,26 @@ import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.amazonaws.services.s3.transfer.model.UploadResult
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import com.typesafe.config.ConfigFactory
 
 import scala.collection.JavaConverters._
 
 
 trait S3SdkHelpers {
+  private val awsRegion = ConfigFactory.load().getString("airlock.storage.s3.region")
+
   def getAmazonS3(awsSignerType: String,
                   authority: Authority,
                   credentials: AWSCredentials = new BasicSessionCredentials("accesskey", "secretkey", "token")
                  ): AmazonS3 = {
     val cliConf = new ClientConfiguration()
     cliConf.setMaxErrorRetry(1)
-    cliConf.setSignerOverride(awsSignerType)
 
     AmazonS3ClientBuilder
       .standard()
       .withClientConfiguration(cliConf)
       .withCredentials(new AWSStaticCredentialsProvider(credentials))
-      .withEndpointConfiguration(new EndpointConfiguration(s"http://${authority.host.address}:${authority.port}", "us-west-2"))
+      .withEndpointConfiguration(new EndpointConfiguration(s"http://${authority.host.address}:${authority.port}", awsRegion))
       .build()
   }
 

@@ -11,6 +11,7 @@ class StorageS3Settings(config: Config) extends Extension {
 
   val storageS3AdminAccesskey: String = config.getString("airlock.storage.s3.admin.accesskey")
   val storageS3AdminSecretkey: String = config.getString("airlock.storage.s3.admin.secretkey")
+  val awsRegion: String = config.getString("airlock.storage.s3.region")
 }
 
 object StorageS3Settings extends ExtensionId[StorageS3Settings] with ExtensionIdProvider {
