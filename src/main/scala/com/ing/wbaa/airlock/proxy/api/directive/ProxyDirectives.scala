@@ -30,7 +30,7 @@ object ProxyDirectives extends LazyLogging {
   private[this] def extractAuthorizationS3(httpHeader: HttpHeader): Option[AwsAccessKey] =
     if (httpHeader.is(AUTHORIZATION_HTTP_HEADER_NAME)) {
       val signerType = httpHeader.value().split(" ").headOption
-      logger.debug(s"Signertype used: $signerType")
+      logger.debug("Signertype used: {}", signerType)
 
       signerType match {
         case Some("AWS4-HMAC-SHA256") =>
@@ -50,18 +50,17 @@ object ProxyDirectives extends LazyLogging {
           accessKey.map(AwsAccessKey)
 
         case _ =>
-          logger.warn(s"The necessary information couldn't be extracted from the authorization header, " +
-            s"this could be caused by a signer type that we don't support yet...: $httpHeader")
+          logger.warn("The necessary information couldn't be extracted from the authorization header, " +
+            s"this could be caused by a signer type that we don't support yet...: {}", httpHeader)
           None
       }
     } else None
 
   val extracts3Request: Directive1[S3Request] =
     extractClientIP tflatMap { case Tuple1(clientIPAddress) =>
-      logger.debug(s"Extracted Client IP: " +
-        s"${clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")}")
+      logger.debug(s"Extracted Client IP: {}", clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown"))
       extractHeaderIPs tflatMap { case Tuple1(headerIPs) =>
-        logger.debug(s"Extracted headers IPs: $headerIPs")
+        logger.debug(s"Extracted headers IPs : {}", headerIPs)
         extractRequest tflatMap { case Tuple1(httpRequest) =>
           optionalHeaderValueByName("x-amz-security-token") tflatMap {
             case Tuple1(optionalSessionToken) =>
@@ -102,7 +101,7 @@ object ProxyDirectives extends LazyLogging {
                   httpRequest.entity.contentType.mediaType
                 )
 
-                logger.debug(s"Extracted S3 Request: $s3Request")
+                logger.debug(s"Extracted S3 Request: {}", s3Request)
                 s3Request
               }
           }
@@ -169,7 +168,7 @@ object ProxyDirectives extends LazyLogging {
         case ipv4Regex(ip, _, port) =>
           RemoteAddress(InetAddress.getByName(ip), Option(port).map(_.toInt))
         case _ =>
-          logger.warn(s"Unable to parse IP address ${address}")
+          logger.warn("Unable to parse IP address {}", address)
           RemoteAddress.Unknown
       }
     } getOrElse RemoteAddress.Unknown
