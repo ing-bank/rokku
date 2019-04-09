@@ -35,6 +35,7 @@
   <logger name="com.ing" level="DEBUG" />
   <logger name="org.apache.ranger" level="ERROR" />
   <logger name="org.apache.hadoop" level="ERROR" />
+  <logger name="akka.actor.ActorSystemImpl" level="ERROR" />
   <!-- To enable V2 debug on signature uncomment below section -->
   <!--<logger name="com.amazonaws.services.s3.internal" level="DEBUG" />-->
 

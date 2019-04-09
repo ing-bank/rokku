@@ -70,6 +70,7 @@ fork := true
 // Some default options at runtime: the G1 garbage collector, and headless mode.
 javaOptions += "-XX:+UseG1GC"
 javaOptions += "-Djava.awt.headless=true"
+javaOptions += "-Dlogback.configurationFile=/etc/airlock/logback.xml"
 
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")

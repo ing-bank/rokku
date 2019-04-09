@@ -34,7 +34,6 @@ trait AirlockFixtures extends S3SdkHelpers {
   /**
     * Fixture that creates a bucket for a test and deletes it after
     *
-    * @param sdk An Amazon S3 sdk object pointed to a running cluster
     * @param testCode Code that accepts the bucket name that was created
     * @return Assertion
     */
@@ -63,7 +62,6 @@ trait AirlockFixtures extends S3SdkHelpers {
     testCode(testBucket).andThen {
       case _ =>
       cleanBucket(s3Client, testBucket)
-      s3Client.deleteBucket(testBucket)
     }
   }
 

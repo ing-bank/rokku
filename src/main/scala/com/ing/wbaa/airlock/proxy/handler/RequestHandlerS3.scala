@@ -53,10 +53,10 @@ trait RequestHandlerS3 extends RadosGatewayHandler with S3Client {
    * @return response from S3
    */
   protected[this] def fireRequestToS3(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
-    logger.debug(s"Request to send to Ceph: $request")
+    logger.info(s"Request sent to Ceph: {}", request)
     Http()
       .singleRequest(request)
-      .andThen { case Success(r) => logger.debug(s"Received response from Ceph: ${r.status}") }
+      .andThen { case Success(r) => logger.info(s"Received response from Ceph: {}", r.status) }
       .map(r => r.withEntity(r.entity.withoutSizeLimit()))
   }
 }
