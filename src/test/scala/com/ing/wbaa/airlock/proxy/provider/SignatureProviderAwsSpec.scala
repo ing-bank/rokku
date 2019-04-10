@@ -2,12 +2,17 @@ package com.ing.wbaa.airlock.proxy.provider
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
+import com.ing.wbaa.airlock.proxy.config.StorageS3Settings
 import com.ing.wbaa.airlock.proxy.data.{ AwsSecretKey, RequestId }
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
 class SignatureProviderAwsSpec extends WordSpec with DiagrammedAssertions with SignatureProviderAws {
 
   implicit val requestId: RequestId = RequestId("test")
+  override val storageS3Settings: StorageS3Settings = new StorageS3Settings(ConfigFactory.load()) {
+    override val v2SignatureEnabled: Boolean = true
+  }
 
   def fakeIncomingHttpRequest(method: HttpMethod, path: String, headers: List[HttpHeader], queryString: String = "", destPort: Int = 8987): HttpRequest = {
 

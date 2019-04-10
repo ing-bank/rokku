@@ -12,18 +12,14 @@ import scala.collection.JavaConverters._
 
 trait SignatureHelpersV4 extends SignatureHelpersCommon {
 
+  private def fixHeaderCapitals(header: String): String = {
+    header.split("-").map { h =>
+      h(0).toUpper + h.substring(1).toLowerCase
+    }.mkString("-")
+  }
+
   // java Map[String, util.List[String]] is need by AWS4Signer
   def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {
-    def splitQueryToJavaMap(queryString: String): util.Map[String, util.List[String]] =
-      queryString.split("&").map { paramAndValue =>
-        paramAndValue.split("=")
-          .grouped(2)
-          .map {
-            case Array(k, v) => (k, List(cleanURLEncoding(v)).asJava)
-            case Array(k)    => (k, List("").asJava)
-          }
-      }.toList.flatten.toMap.asJava
-
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
 
     if (rawQueryString.length > 1) {
@@ -52,7 +48,7 @@ trait SignatureHelpersV4 extends SignatureHelpersCommon {
       .map(_ group 1).getOrElse("")
 
   def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues = {
-    implicit val ht = httpRequest
+    implicit val hr = httpRequest
     val authorization: Option[String] = extractHeaderOption("authorization")
     val signature = authorization.map(auth => getSignatureFromAuthorization(auth))
     val accessKey = authorization.map(auth => getCredentialFromAuthorization(auth))

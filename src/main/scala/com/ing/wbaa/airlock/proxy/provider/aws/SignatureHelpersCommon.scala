@@ -18,9 +18,9 @@ trait SignatureHelpersCommon {
   final val AWS_SIGN_V2 = "v2"
   final val AWS_SIGN_V4 = "v4"
 
-  def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]]
+  protected[this] def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]]
 
-  def extractRequestParametersV2(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]]
+  protected[this] def extractRequestParametersV2(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]]
 
   private val asciiEncodingTable = Map(
     "%2A" -> "*",
@@ -67,12 +67,6 @@ trait SignatureHelpersCommon {
       Some(httpRequest.getHeader(header).get().value())
     else None
 
-  def fixHeaderCapitals(header: String): String = {
-    header.split("-").map { h =>
-      h(0).toUpper + h.substring(1).toLowerCase
-    }.mkString("-")
-  }
-
   // we have different extract pattern for V2 and V4
   def getSignatureFromAuthorization(authorization: String): String =
     if (authorization.contains("AWS4")) {
@@ -84,6 +78,16 @@ trait SignatureHelpersCommon {
         .findFirstMatchIn(authorization)
         .map(_ group 2).getOrElse("")
     }
+
+  def splitQueryToJavaMap(queryString: String): util.Map[String, util.List[String]] =
+    queryString.split("&").map { paramAndValue =>
+      paramAndValue.split("=")
+        .grouped(2)
+        .map {
+          case Array(k, v) => (k, List(cleanURLEncoding(v)).asJava)
+          case Array(k)    => (k, List("").asJava)
+        }
+    }.toList.flatten.toMap.asJava
 
   // we have different extract pattern for V2 and V4
   def getCredentialFromAuthorization(authorization: String): String =

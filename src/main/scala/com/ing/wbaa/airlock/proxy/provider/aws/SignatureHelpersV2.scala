@@ -14,16 +14,6 @@ trait SignatureHelpersV2 extends SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId
 
   def extractRequestParametersV2(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {
-    def splitQueryToJavaMap(queryString: String): util.Map[String, util.List[String]] =
-      queryString.split("&").map { paramAndValue =>
-        paramAndValue.split("=")
-          .grouped(2)
-          .map {
-            case Array(k, v) => (k, List(cleanURLEncoding(v)).asJava)
-            case Array(k)    => (k, List("").asJava)
-          }
-      }.toList.flatten.toMap.asJava
-
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
 
     if (rawQueryString.length > 1) {
@@ -46,7 +36,7 @@ trait SignatureHelpersV2 extends SignatureHelpersCommon {
   }
 
   def getAWSHeadersV2(httpRequest: HttpRequest): AWSHeaderValues = {
-    implicit val ht = httpRequest
+    implicit val hr = httpRequest
 
     val authorization: Option[String] = extractHeaderOption("authorization")
 
