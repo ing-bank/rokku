@@ -97,5 +97,6 @@ trait SignatureHelpersV2 extends SignatureHelpersCommon {
     awsHeaders.requestDate.foreach(date => request.addHeader("Date", date))
     awsHeaders.securityToken.foreach(token => request.addHeader("X-Amz-Security-Token", token))
     awsHeaders.contentMD5.foreach(contentMD5 => request.addHeader("Content-MD5", contentMD5))
+    awsHeaders.signedHeadersMap.foreach { case (k, v) => request.addHeader(k, v) }
   }
 }
