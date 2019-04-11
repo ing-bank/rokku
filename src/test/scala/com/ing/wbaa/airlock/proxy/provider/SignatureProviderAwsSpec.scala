@@ -93,7 +93,7 @@ class SignatureProviderAwsSpec extends WordSpec with DiagrammedAssertions with S
       val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket", v4Authheader, "acl")
       val expectedResult = Map("acl" -> List[String]("").asJava).asJava
 
-      assert(awsVersion(request).extractRequestParameters(request, "v4") == expectedResult)
+      assert(awsVersion(request).extractRequestParameters(request) == expectedResult)
     }
 
     "extractRequestParameters from RawQueryString with single subresource and subpath (v4)" in {
@@ -101,38 +101,38 @@ class SignatureProviderAwsSpec extends WordSpec with DiagrammedAssertions with S
       val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket/object", v4Authheader, "uploads")
       val expectedResult = Map("uploads" -> List[String]("").asJava).asJava
 
-      assert(awsVersion(request).extractRequestParameters(request, "v4") == expectedResult)
+      assert(awsVersion(request).extractRequestParameters(request) == expectedResult)
     }
 
     "extractRequestParameters from RawQueryString with single subresource (v2)" in {
       val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket", v2Authheader, "acl")
       val expectedResult = Map("acl" -> List.empty[String].asJava).asJava
 
-      assert(awsVersion(request).extractRequestParameters(request, "v2") == expectedResult)
+      assert(awsVersion(request).extractRequestParameters(request) == expectedResult)
     }
 
-    "extractRequestParameters from RawQueryString with single key value pair" in {
+    "extractRequestParameters from RawQueryString with single key value pair (v4)" in {
       val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket", v4Authheader, "type=cool")
       val expectedResult = Map("type" -> List[String]("cool").asJava).asJava
 
-      assert(awsVersion(request).extractRequestParameters(request, "v4") == expectedResult)
+      assert(awsVersion(request).extractRequestParameters(request) == expectedResult)
     }
 
-    "extractRequestParameters from RawQueryString with multiple key value pairs" in {
+    "extractRequestParameters from RawQueryString with multiple key value pairs (v4)" in {
       val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket", v4Authheader, "type=cool&test=ok")
       val expectedResult = Map("type" -> List[String]("cool").asJava, "test" -> List[String]("ok").asJava).asJava
 
-      assert(awsVersion(request).extractRequestParameters(request, "v4") == expectedResult)
+      assert(awsVersion(request).extractRequestParameters(request) == expectedResult)
     }
 
-    "extractRequestParameters from RawQueryString with multiple key value pairs and Int" in {
+    "extractRequestParameters from RawQueryString with multiple key value pairs and Int (v4)" in {
       val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket", v4Authheader, "list-type=2&prefix=&encoding-type=url")
       val expectedResult = Map(
         "list-type" -> List[String]("2").asJava,
         "prefix" -> List[String]("").asJava,
         "encoding-type" -> List[String]("url").asJava).asJava
 
-      assert(awsVersion(request).extractRequestParameters(request, "v4") == expectedResult)
+      assert(awsVersion(request).extractRequestParameters(request) == expectedResult)
     }
 
     "getSignatureFromAuthorization v2 from authorization header" in {

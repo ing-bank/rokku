@@ -7,10 +7,10 @@ import com.amazonaws.auth.BasicAWSCredentials
 import com.ing.wbaa.airlock.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.airlock.proxy.provider.aws.NoSignerSupport.SignatureNotSupported
 
-class NoSignerSupport extends SignatureHelpersCommon {
-  private val exceptionMsg = "Signature version not supported"
+class NoSignerSupport(authorization: String) extends SignatureHelpersCommon {
+  private val exceptionMsg = "Signature version not supported: " + authorization
 
-  override def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] =
+  override def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]] =
     throw new SignatureNotSupported(exceptionMsg)
 
   override def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues = throw new SignatureNotSupported(exceptionMsg)
@@ -18,7 +18,7 @@ class NoSignerSupport extends SignatureHelpersCommon {
   override def addHeadersToRequest(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit =
     throw new SignatureNotSupported(exceptionMsg)
 
-  override def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String)(implicit id: RequestId): Unit =
+  override def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, date: String, region: String)(implicit id: RequestId): Unit =
     throw new SignatureNotSupported(exceptionMsg)
 
   def getSignedHeaders(authorization: String): String = throw new Exception("V2 signature protocol doesn't support SignedHeaders")

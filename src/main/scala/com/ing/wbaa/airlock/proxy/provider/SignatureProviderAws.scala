@@ -17,11 +17,11 @@ trait SignatureProviderAws {
     val awsHeaders = awsSignature.getAWSHeaders(httpRequest)
 
     val credentials = new BasicAWSCredentials(awsHeaders.accessKey.getOrElse(""), awsSecretKey.value)
-    val incomingRequest = awsSignature.getSignableRequest(httpRequest, awsHeaders.version)
+    val incomingRequest = awsSignature.getSignableRequest(httpRequest)
 
     if (!credentials.getAWSAccessKeyId.isEmpty) {
       awsSignature.addHeadersToRequest(incomingRequest, awsHeaders, httpRequest.entity.contentType.mediaType.value)
-      awsSignature.signS3Request(incomingRequest, credentials, awsHeaders.version, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""), storageS3Settings.awsRegion)
+      awsSignature.signS3Request(incomingRequest, credentials, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""), storageS3Settings.awsRegion)
       logger.debug("Signed Request:" + incomingRequest.getHeaders.toString)
     }
 

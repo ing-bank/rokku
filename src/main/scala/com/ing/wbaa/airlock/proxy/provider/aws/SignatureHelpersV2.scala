@@ -13,16 +13,15 @@ import scala.collection.JavaConverters._
 
 class SignatureHelpersV2 extends SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId
-  final val AWS_SIGN_V2 = "v2"
 
   def getSignedHeaders(authorization: String): String = throw new Exception("V2 signature protocol doesn't support SignedHeaders")
 
-  def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {
+  def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]] = {
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
 
     if (rawQueryString.length > 1) {
       rawQueryString match {
-        case queryString if queryString.length > 1 && !queryString.contains("=") && version == AWS_SIGN_V2 =>
+        case queryString if queryString.length > 1 && !queryString.contains("=") =>
           // v2 doesn't append = in signature - /demobucket/?acl"
           Map(queryString -> List.empty[String].asJava).asJava
 
@@ -53,7 +52,7 @@ class SignatureHelpersV2 extends SignatureHelpersCommon {
     val possibleAWSHeaders = httpRequest.headers.filter(_.lowercaseName().contains("x-amz"))
       .map { h => (h.name(), h.value()) }.toMap
 
-    AWSHeaderValues(accessKey, possibleAWSHeaders, signature, requestDate, securityToken, AWS_SIGN_V2, contentMD5)
+    AWSHeaderValues(accessKey, possibleAWSHeaders, signature, requestDate, securityToken, contentMD5)
   }
 
   // V2 is not using = after subresource
@@ -77,7 +76,7 @@ class SignatureHelpersV2 extends SignatureHelpersCommon {
   }
 
   // for now we do not have any regions, we use default one
-  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
+  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
     logger.debug("Using version 2 signer")
 
     val requestParams = request.getParameters.values()

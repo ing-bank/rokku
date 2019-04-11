@@ -6,5 +6,4 @@ case class AWSHeaderValues(
     signature: Option[String],
     requestDate: Option[String],
     securityToken: Option[String],
-    version: String,
     contentMD5: Option[String])

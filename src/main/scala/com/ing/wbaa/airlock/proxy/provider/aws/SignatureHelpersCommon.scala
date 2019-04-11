@@ -17,9 +17,9 @@ import scala.collection.JavaConverters._
 trait SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId
 
-  def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]]
+  def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]]
   def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues
-  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit
+  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit
   def addHeadersToRequest(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit
   def getSignedHeaders(authorization: String): String
 
@@ -98,7 +98,6 @@ trait SignatureHelpersCommon {
 
   def getSignableRequest(
       httpRequest: HttpRequest,
-      version: String,
       request: DefaultRequest[_] = new DefaultRequest("s3"))(implicit id: RequestId): DefaultRequest[_] = {
 
     request.setHttpMethod(httpRequest.method.value match {
@@ -115,7 +114,7 @@ trait SignatureHelpersCommon {
     request.setResourcePath(resourcePath)
     request.setEndpoint(new URI(s"http://${httpRequest.uri.authority.toString()}"))
 
-    val requestParameters = extractRequestParameters(httpRequest, version)
+    val requestParameters = extractRequestParameters(httpRequest)
 
     httpRequest.method.value match {
       case "POST" if !requestParameters.isEmpty =>
@@ -154,7 +153,7 @@ object SignatureHelpersCommon {
     extractHeaderOption("authorization").map {
       case a if a.contains("AWS4") => new SignatureHelpersV4
       case a if a.contains("AWS")  => new SignatureHelpersV2
-      case _                       => new NoSignerSupport
+      case a                       => new NoSignerSupport(a)
     }.getOrElse { throw new Exception("Unable to determine AWS signature version") }
   }
 

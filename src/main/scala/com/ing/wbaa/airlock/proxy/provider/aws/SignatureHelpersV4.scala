@@ -14,7 +14,6 @@ import scala.collection.JavaConverters._
 
 class SignatureHelpersV4 extends SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId
-  final val AWS_SIGN_V4 = "v4"
 
   private def fixHeaderCapitals(header: String): String = {
     header.split("-").map { h =>
@@ -23,13 +22,13 @@ class SignatureHelpersV4 extends SignatureHelpersCommon {
   }
 
   // java Map[String, util.List[String]] is need by AWS4Signer
-  def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {
+  def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]] = {
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
 
     if (rawQueryString.length > 1) {
       rawQueryString match {
         // for aws subresource ?acl etc.
-        case queryString if queryString.length > 1 && !queryString.contains("=") && version == AWS_SIGN_V4 =>
+        case queryString if queryString.length > 1 && !queryString.contains("=") =>
           // aws uses subresource= during signature generation, so we add empty string to list - /demobucket/?acl="
           Map(queryString -> List[String]("").asJava).asJava
 
@@ -75,11 +74,11 @@ class SignatureHelpersV4 extends SignatureHelpersCommon {
         }
       }.toMap
 
-    AWSHeaderValues(accessKey, signedHeadersMap, signature, None, None, AWS_SIGN_V4, None)
+    AWSHeaderValues(accessKey, signedHeadersMap, signature, None, None, None)
   }
 
   // for now we do not have any regions, we use default one
-  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
+  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
     logger.debug("Using version 4 signer")
 
     val signer = new CustomV4Signer()
