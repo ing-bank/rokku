@@ -6,8 +6,9 @@ import java.util
 
 import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.DefaultRequest
+import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.http.HttpMethodName
-import com.ing.wbaa.airlock.proxy.data.RequestId
+import com.ing.wbaa.airlock.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
 
 import scala.annotation.tailrec
@@ -15,12 +16,12 @@ import scala.collection.JavaConverters._
 
 trait SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId
-  final val AWS_SIGN_V2 = "v2"
-  final val AWS_SIGN_V4 = "v4"
 
-  protected[this] def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]]
-
-  protected[this] def extractRequestParametersV2(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]]
+  def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]]
+  def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues
+  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit
+  def addHeadersToRequest(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit
+  def getSignedHeaders(authorization: String): String
 
   private val asciiEncodingTable = Map(
     "%2A" -> "*",
@@ -53,19 +54,6 @@ trait SignatureHelpersCommon {
         cleanURLEncoding(newParam, t)
       case Nil => param
     }
-
-  val awsVersion: HttpRequest => String = { implicit request =>
-    extractHeaderOption("authorization").map(auth => if (auth.contains("AWS4")) {
-      AWS_SIGN_V4
-    } else {
-      AWS_SIGN_V2
-    }).getOrElse("")
-  }
-
-  def extractHeaderOption(header: String)(implicit httpRequest: HttpRequest): Option[String] =
-    if (httpRequest.getHeader(header).isPresent)
-      Some(httpRequest.getHeader(header).get().value())
-    else None
 
   // we have different extract pattern for V2 and V4
   def getSignatureFromAuthorization(authorization: String): String =
@@ -127,9 +115,7 @@ trait SignatureHelpersCommon {
     request.setResourcePath(resourcePath)
     request.setEndpoint(new URI(s"http://${httpRequest.uri.authority.toString()}"))
 
-    val requestParameters =
-      if (version == AWS_SIGN_V4) extractRequestParameters(httpRequest, version)
-      else extractRequestParametersV2(httpRequest, version)
+    val requestParameters = extractRequestParameters(httpRequest, version)
 
     httpRequest.method.value match {
       case "POST" if !requestParameters.isEmpty =>
@@ -154,6 +140,22 @@ trait SignatureHelpersCommon {
         request.setResourcePath(resourcePath)
     }
     request
+  }
+
+}
+
+object SignatureHelpersCommon {
+  def extractHeaderOption(header: String)(implicit httpRequest: HttpRequest): Option[String] =
+    if (httpRequest.getHeader(header).isPresent)
+      Some(httpRequest.getHeader(header).get().value())
+    else None
+
+  val awsVersion: HttpRequest => SignatureHelpersCommon = { implicit request =>
+    extractHeaderOption("authorization").map {
+      case a if a.contains("AWS4") => new SignatureHelpersV4
+      case a if a.contains("AWS")  => new SignatureHelpersV2
+      case _                       => new NoSignerSupport
+    }.getOrElse { throw new Exception("Unable to determine AWS signature version") }
   }
 
 }

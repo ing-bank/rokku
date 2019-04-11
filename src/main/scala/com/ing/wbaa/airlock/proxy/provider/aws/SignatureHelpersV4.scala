@@ -6,11 +6,15 @@ import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.DefaultRequest
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.util.DateUtils
-import com.ing.wbaa.airlock.proxy.data.AWSHeaderValues
+import com.ing.wbaa.airlock.proxy.data.{ AWSHeaderValues, RequestId }
+import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.airlock.proxy.provider.aws.SignatureHelpersCommon.extractHeaderOption
 
 import scala.collection.JavaConverters._
 
-trait SignatureHelpersV4 extends SignatureHelpersCommon {
+class SignatureHelpersV4 extends SignatureHelpersCommon {
+  private val logger = new LoggerHandlerWithId
+  final val AWS_SIGN_V4 = "v4"
 
   private def fixHeaderCapitals(header: String): String = {
     header.split("-").map { h =>
@@ -75,7 +79,9 @@ trait SignatureHelpersV4 extends SignatureHelpersCommon {
   }
 
   // for now we do not have any regions, we use default one
-  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1"): Unit = {
+  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
+    logger.debug("Using version 4 signer")
+
     val signer = new CustomV4Signer()
     signer.setRegionName(region)
     signer.setServiceName(request.getServiceName)

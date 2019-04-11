@@ -7,13 +7,17 @@ import com.amazonaws.DefaultRequest
 import com.amazonaws.auth.BasicAWSCredentials
 import com.ing.wbaa.airlock.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.airlock.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.airlock.proxy.provider.aws.SignatureHelpersCommon.extractHeaderOption
 
 import scala.collection.JavaConverters._
 
-trait SignatureHelpersV2 extends SignatureHelpersCommon {
+class SignatureHelpersV2 extends SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId
+  final val AWS_SIGN_V2 = "v2"
 
-  def extractRequestParametersV2(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {
+  def getSignedHeaders(authorization: String): String = throw new Exception("V2 signature protocol doesn't support SignedHeaders")
+
+  def extractRequestParameters(httpRequest: HttpRequest, version: String): util.Map[String, util.List[String]] = {
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
 
     if (rawQueryString.length > 1) {
@@ -35,7 +39,7 @@ trait SignatureHelpersV2 extends SignatureHelpersCommon {
     }
   }
 
-  def getAWSHeadersV2(httpRequest: HttpRequest): AWSHeaderValues = {
+  def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues = {
     implicit val hr = httpRequest
 
     val authorization: Option[String] = extractHeaderOption("authorization")
@@ -53,7 +57,7 @@ trait SignatureHelpersV2 extends SignatureHelpersCommon {
   }
 
   // V2 is not using = after subresource
-  private def buildQueryParamsV2(params: util.Set[String])(implicit id: RequestId): String = {
+  private def buildQueryParams(params: util.Set[String])(implicit id: RequestId): String = {
     // list of allowed AWS subresource parameters
     val signParameters = List(
       "acl", "torrent", "logging", "location", "policy", "requestPayment", "versioning",
@@ -73,14 +77,15 @@ trait SignatureHelpersV2 extends SignatureHelpersCommon {
   }
 
   // for now we do not have any regions, we use default one
-  def signS3RequestV2(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
-    val requestParams = request.getParameters.values()
+  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, version: String, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
+    logger.debug("Using version 2 signer")
 
+    val requestParams = request.getParameters.values()
     val resourcePath = {
       // this is case where we need to append subresource to resourcePath
       // original S3Signer expects key=value params pair to parse
       if (requestParams.size() > 0 && requestParams.asScala.head.isEmpty) {
-        val queryParams = buildQueryParamsV2(request.getParameters.keySet())
+        val queryParams = buildQueryParams(request.getParameters.keySet())
         request.getResourcePath + queryParams
       } else {
         request.getResourcePath
@@ -88,11 +93,10 @@ trait SignatureHelpersV2 extends SignatureHelpersCommon {
     }
     val singer = new CustomV2Signer(request.getHttpMethod.toString, resourcePath)
     singer.sign(request, credentials)
-
   }
 
   // add headers from original request before sign
-  def addHeadersToRequestV2(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit = {
+  def addHeadersToRequest(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit = {
     request.addHeader("Content-Type", mediaType)
     awsHeaders.requestDate.foreach(date => request.addHeader("Date", date))
     awsHeaders.securityToken.foreach(token => request.addHeader("X-Amz-Security-Token", token))

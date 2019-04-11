@@ -54,7 +54,6 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
     }
     proxy.startup.map { binding =>
       try testCode(getAmazonS3(
-        awsSignerType = awsSignerType,
         authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
       ))
       finally proxy.shutdown()
