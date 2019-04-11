@@ -107,7 +107,7 @@ class AirlockS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
       cred.getSessionToken
     )
 
-    getAmazonS3("S3SignerType", s3ProxyAuthority, sessionCredentials)
+    getAmazonS3(s3ProxyAuthority, sessionCredentials)
   }
 
   "Airlock" should {

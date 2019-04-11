@@ -19,7 +19,7 @@ scalacOptions += "-Xfatal-warnings"
 // Experimental: improved update resolution.
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
-val akkaHttpVersion = "10.1.7"
+val akkaHttpVersion = "10.1.8"
 val akkaVersion = "2.5.21"
 val logbackJson = "0.1.5"
 val metricVersion = "4.0.5"

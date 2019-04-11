@@ -37,7 +37,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
       implicit val config = EmbeddedKafkaConfig(kafkaPort = testKafkaPort)
 
       withRunningKafka {
-        Thread.sleep(2000)
+        Thread.sleep(3000)
         val createEventsTopic = "create_events"
         createCustomTopic(createEventsTopic)
         emitEvent(s3Request, HttpMethods.PUT, "testUser")
@@ -50,7 +50,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
       implicit val config = EmbeddedKafkaConfig(kafkaPort = testKafkaPort)
 
       withRunningKafka {
-        Thread.sleep(2000)
+        Thread.sleep(3000)
         val deleteEventsTopic = "delete_events"
         createCustomTopic(deleteEventsTopic)
         emitEvent(s3Request, HttpMethods.DELETE, "testUser")

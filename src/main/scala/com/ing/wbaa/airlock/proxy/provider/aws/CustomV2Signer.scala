@@ -6,15 +6,6 @@ import com.amazonaws.services.s3.Headers
 import com.amazonaws.services.s3.internal.RestUtils
 import com.typesafe.scalalogging.LazyLogging
 
-// we need custom class to override calculateContentHash.
-// Instead of calculating hash on proxy we copy hash from client, otherwise we need to materialize body content
-sealed class CustomV4Signer() extends AWS4Signer with LazyLogging {
-
-  this.doubleUrlEncode = false
-  override def calculateContentHash(request: SignableRequest[_]): String = request.getHeaders.get("X-Amz-Content-SHA256")
-  override def sign(request: SignableRequest[_], credentials: AWSCredentials): Unit = super.sign(request, credentials)
-}
-
 // we need custom class to override date of request. in V2 there is no direct method like in v4
 sealed class CustomV2Signer(httpVerb: String, resourcePath: String, additionalQueryParamsToSign: java.util.Set[String] = null)
   extends AbstractAWSSigner with LazyLogging {
