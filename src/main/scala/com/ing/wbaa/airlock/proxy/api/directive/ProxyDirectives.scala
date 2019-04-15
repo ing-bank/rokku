@@ -2,8 +2,8 @@ package com.ing.wbaa.airlock.proxy.api.directive
 
 import java.net.InetAddress
 
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.{ Directive0, Directive1 }
 import com.ing.wbaa.airlock.proxy.data._
 import com.ing.wbaa.airlock.proxy.metrics.MetricsFactory
@@ -173,17 +173,36 @@ object ProxyDirectives extends LazyLogging {
       }
     } getOrElse RemoteAddress.Unknown
 
-  val metricDuration: Directive0 = extractRequestContext.flatMap { _ =>
-    val start = System.nanoTime()
-    mapResponse { response =>
-      val took = System.nanoTime() - start
-      MetricsFactory.markRequestTime(took)
-      response.status match {
-        case StatusCodes.InternalServerError => MetricsFactory.countRequest(MetricsFactory.FAILURE_REQUEST)
-        case StatusCodes.Forbidden           => MetricsFactory.countRequest(MetricsFactory.UNAUTHENTICATED_REQUEST)
-        case _                               => MetricsFactory.countRequest(MetricsFactory.SUCCESS_REQUEST)
+  val metricDuration: Directive0 = extractRequestContext.flatMap {
+    requestCtx =>
+      val start = System.nanoTime()
+      val requestMethodName = requestCtx.request.method.value.toLowerCase
+      val requestContentLength = requestCtx.request.entity.contentLengthOption.getOrElse(0L)
+      metricsContentLengthCount(requestMethodName, requestContentLength, "out")
+      mapResponse { response =>
+        val took = System.nanoTime() - start
+        MetricsFactory.markRequestTime(took)
+        response.status match {
+          case StatusCodes.InternalServerError => MetricsFactory.countRequest(MetricsFactory.FAILURE_REQUEST)
+          case StatusCodes.Forbidden           => MetricsFactory.countRequest(MetricsFactory.UNAUTHENTICATED_REQUEST)
+          case _                               => MetricsFactory.countRequest(MetricsFactory.SUCCESS_REQUEST)
+        }
+        val responseContentLength = response.entity.contentLengthOption.getOrElse(0L)
+        metricsContentLengthCount(requestMethodName, responseContentLength, "in")
+        response
       }
-      response
+  }
+
+  private def metricsContentLengthCount(requestMethodName: String, contentLength: Long, inOrOutName: String): Unit = {
+    if (contentLength > 0 && !requestMethodName.equals("head")) {
+      MetricsFactory
+        .countRequest(MetricsFactory.REQUEST_CONTEXT_LENGTH
+          .replace(MetricsFactory.HTTP_METHOD, requestMethodName)
+          .replace(MetricsFactory.HTTP_DIRECTION, inOrOutName), countAll = false)
+      MetricsFactory
+        .countRequest(MetricsFactory.REQUEST_CONTEXT_LENGTH_SUM
+          .replace(MetricsFactory.HTTP_METHOD, requestMethodName)
+          .replace(MetricsFactory.HTTP_DIRECTION, inOrOutName), contentLength, countAll = false)
     }
   }
 }
