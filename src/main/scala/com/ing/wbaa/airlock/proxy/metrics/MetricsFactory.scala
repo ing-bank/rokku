@@ -11,6 +11,10 @@ object MetricsFactory {
   val UNAUTHENTICATED_REQUEST = "airlock.requests.unauthenticated"
   val REQUEST_TIME = "airlock.requests.sum.time"
   val REQUEST_TIME_HIST = "airlock.requests.time.histogram"
+  val HTTP_METHOD = "{httpMethod}"
+  val HTTP_DIRECTION = "{InOut}"
+  val REQUEST_CONTEXT_LENGTH = s"airlock.requests.method.$HTTP_METHOD.$HTTP_DIRECTION.context.length"
+  val REQUEST_CONTEXT_LENGTH_SUM = s"airlock.requests.method.$HTTP_METHOD.$HTTP_DIRECTION.sum.context.length"
 
   private[this] val metrics = new MetricRegistry()
 
@@ -18,9 +22,9 @@ object MetricsFactory {
 
   def registryMetrics(): MetricRegistry = metrics
 
-  def countRequest(name: String): Unit = {
-    metrics.counter(ALL_REQUEST).inc()
-    metrics.counter(name).inc()
+  def countRequest(name: String, count: Long = 1, countAll: Boolean = true): Unit = {
+    metrics.counter(name).inc(count)
+    if (countAll) metrics.counter(ALL_REQUEST).inc()
   }
 
   def markRequestTime(time: Long): Unit = {
