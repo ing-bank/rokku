@@ -2,13 +2,13 @@
 [![codecov.io](http://codecov.io/github/ing-bank/airlock/coverage.svg?branch=master)](https://codecov.io/gh/ing-bank/airlock?branch=master)
 [![](https://images.microbadger.com/badges/image/wbaa/airlock:latest.svg)](https://hub.docker.com/r/wbaa/airlock/tags/)
 
-![](./docs/img/airlock.jpg)
+# Rokku
 
 *A security layer between s3 user (eg. application using aws sdk) and s3 backend (eg. ceph RadosGW).*
 
 # What do you need
 
-To get started with Airlock you only need a few applications set up:
+To get started with Rokku you only need a few applications set up:
 
 - Docker
 - AWS CLI
@@ -25,7 +25,7 @@ We've added a small description on how to setup the AWS CLI [here](#setting-up-a
     There are 2 places you can put it:
     
     1. `REPO_ROOTDIR/src/main/resources/ranger-s3-security.xml`
-    2. `/etc/airlock/ranger-s3-security.xml`
+    2. `/etc/rokku/ranger-s3-security.xml`
     
     An example of this file can be found [here](./src/it/resources/ranger-s3-security.xml). 
     No modification to this is needed if you run this project with the accompanying docker containers.
@@ -36,10 +36,10 @@ We've added a small description on how to setup the AWS CLI [here](#setting-up-a
 
 > for windows docker runs on different ip so you need to:
 > set environmental variables:
-> * AIRLOCK_STS_HOST
-> * AIRLOCK_STORAGE_S3_HOST
-> * AIRLOCK_KEYCLOAK_TOKEN_URL
-> * change AIRLOCK_KEYCLOAK_URL in the docker-compose.yml
+> * ROKKU_STS_HOST
+> * ROKKU_STORAGE_S3_HOST
+> * ROKKU_KEYCLOAK_TOKEN_URL
+> * change ROKKU_KEYCLOAK_URL in the docker-compose.yml
 > * change the ranger.plugin.s3.policy.rest.url in ranger-s3-security.xml
 
 if you want to use atlas or notifications before running `sbt run` set `kafka` and `zookeeper` as a host name in `/etc/hosts`:
@@ -53,24 +53,24 @@ thanks to that you will be able to write lineage to kafka.
 
 When proxy is started as docker image, the ranger-s3-security.xml file can be added in the following way:
 
-        docker run -d -v /host/dir/with/xmls:/etc/airlock -p 8010:8010 airlock
+        docker run -d -v /host/dir/with/xmls:/etc/rokku -p 8010:8010 rokku
 
 # Getting Started
 
 > This guide assumes you're using the default docker containers provided, see: [How to run](#how-to-run)
 
 Now you've got everything running, you may wonder: what now? This section we'll describe a basic flow on how to use 
-Airlock to perform operations in S3. You may refer to the [What is Airlock?](./docs/What_is_airlock.md) document
+Rokku to perform operations in S3. You may refer to the [What is Rokku?](./docs/What_is_Rokku.md) document
 before diving in here. That will introduce you to the various components used.
 
 1. Authorise with keycloak to request a `keycloak token`:
 
         curl -s \
-             -d 'client_id=sts-airlock' \
+             -d 'client_id=sts-rokku' \
              -d 'username=testuser' \
              -d 'password=password' \
              -d 'grant_type=password' \
-             'http://localhost:8080/auth/realms/auth-airlock/protocol/openid-connect/token'
+             'http://localhost:8080/auth/realms/auth-rokku/protocol/openid-connect/token'
 
     Search for the field `access_token` which contains your token.
     
@@ -93,11 +93,11 @@ before diving in here. That will introduce you to the various components used.
     > NOTE: This session expires at the expiration date specified by the STS service. You'll need to repeat these steps
     > everytime your session expires.
  
-4. Technically you're now able to use the aws cli to perform any commands through Airlock to S3. Airlock automatically
+4. Technically you're now able to use the aws cli to perform any commands through Rokku to S3. Rokku automatically
    creates the user on Ceph for you. Since the authorisation is completely handled by ranger, authorization in Ceph
-   should be removed to avoid conflicts. For this reason, Airlock sets the proper bucket ACL immediately after the
+   should be removed to avoid conflicts. For this reason, Rokku sets the proper bucket ACL immediately after the
    bucket creation, so that every authenticated user can perform read and write operations on each bucket.
-   In order to create new users and set the bucket ACL, the Airlock NPA must be manually configured as `system` user:
+   In order to create new users and set the bucket ACL, the Rokku NPA must be manually configured as `system` user:
    
             docker-compose exec ceph radosgw-admin user modify --uid ceph-admin --system
             
@@ -128,14 +128,14 @@ before diving in here. That will introduce you to the various components used.
 1. Ceph allows only list all your own buckets. We need to see all buckets by all users so the functionality is modified.
 
 But the functionality is separated in the class 
-[ProxyServiceWithListAllBuckets](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/api/ProxyServiceWithListAllBuckets.scala) 
+[ProxyServiceWithListAllBuckets](https://github.com/ing-bank/rokku/blob/master/src/main/scala/com/ing/wbaa/rokku/proxy/api/ProxyServiceWithListAllBuckets.scala) 
 so if you want to have standard behaviour use 
-the [ProxyService](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/api/ProxyService.scala) 
-in [AirlockS3Proxy](https://github.com/ing-bank/airlock/blob/master/src/main/scala/com/ing/wbaa/airlock/proxy/AirlockS3Proxy.scala)
+the [ProxyService](https://github.com/ing-bank/Rokku/blob/master/src/main/scala/com/ing/wbaa/rokku/proxy/api/ProxyService.scala) 
+in [RokkuS3Proxy](https://github.com/ing-bank/rokku/blob/master/src/main/scala/com/ing/wbaa/rokku/proxy/rokkuS3Proxy.scala)
 
 # Verified AWS clients
 
-We've currently verified that the following set of AWS clients work with Airlock:
+We've currently verified that the following set of AWS clients work with Rokku:
 
 - CLI (`s3` and `s3api`) using region `us-east-1`
 - Java SDK (using signerType: `S3SignerType`)
@@ -147,14 +147,14 @@ Other options may work but haven't been checked yet by us. There are known limit
 
 Dependencies:
 * [Keycloak](https://www.keycloak.org/) for MFA authentication of users.
-* [STS Service](https://github.com/ing-bank/airlock-sts) to provide authentication and short term access to resources on S3.
+* [STS Service](https://github.com/ing-bank/rokku-sts) to provide authentication and short term access to resources on S3.
 * STS persistence storage to maintain the user and session tokens issued. Current implementation uses [MariaDB](https://mariadb.org).
-Information regarding the tables database and the tables to be created in MariaDB can be found [here](https://github.com/ing-bank/airlock-dev-mariadb/blob/master/database/airlockdb.sql). 
+Information regarding the tables database and the tables to be created in MariaDB can be found [here](https://github.com/ing-bank/rokku-dev-mariadb/blob/master/database/rokkudb.sql). 
 * [Ranger](https://ranger.apache.org/) to manage authorisation to resources on S3.
-The Apache Ranger docker images are created from this repo: https://github.com/ing-bank/airlock-dev-apache-ranger.git
+The Apache Ranger docker images are created from this repo: https://github.com/ing-bank/rokku-dev-apache-ranger.git
 * S3 Backend (Current setup contains Ceph image with RadosGW).
 
-A more in-depth discussion of the architecture and interaction of various components can be found here: [What is Airlock?](docs/What_is_airlock.md)
+A more in-depth discussion of the architecture and interaction of various components can be found here: [What is Rokku?](docs/What_is_rokku.md)
 
 
 # Docker Ceph settings
@@ -175,14 +175,14 @@ Currently it is possible to create lineage based on incoming request to proxy se
 default (preview feature). To enable lineage shipment to Atlas, following setting has to be added to application.conf:
 
 ```
-airlock {
+rokku {
      atlas {
         enabled = true
      }
 }
 ``` 
 
-As alternative environment value `AIRLOCK_ATLAS_ENABLED` should be set to true. 
+As alternative environment value `ROKKU_ATLAS_ENABLED` should be set to true. 
 
 Lineage is done according following model
  
@@ -193,7 +193,7 @@ admin user and password
 
 # Events Notification
 
-Airlock can send event notification to message queue based on user requests, in [AWS format](https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html).
+Rokku can send event notification to message queue based on user requests, in [AWS format](https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html).
 
 Currently, two types are emitted:
 
@@ -203,36 +203,36 @@ Currently, two types are emitted:
 In order to enable update application.conf, set to true:
 
 ```
-        bucketNotificationEnabled = ${?AIRLOCK_BUCKET_NOTIFY_ENABLED}
+        bucketNotificationEnabled = ${?ROKKU_BUCKET_NOTIFY_ENABLED}
 ```
 and configure kafka and topic names:
 ```
-        kafka.producer.bootstrapServers = ${?AIRLOCK_KAFKA_BOOTSTRAP_SERVERS}
-        kafka.producer.createTopic = ${?AIRLOCK_KAFKA_CREATE_TOPIC}
-        kafka.producer.deleteTopic = ${?AIRLOCK_KAFKA_DELETE_TOPIC}
+        kafka.producer.bootstrapServers = ${?ROKKU_KAFKA_BOOTSTRAP_SERVERS}
+        kafka.producer.createTopic = ${?ROKKU_KAFKA_CREATE_TOPIC}
+        kafka.producer.deleteTopic = ${?ROKKU_KAFKA_DELETE_TOPIC}
 ```
 
 # Setting Up AWS CLI
 
-It is possible to set up the AWS command-line tools for working with Ceph RadosGW and Airlock. Following are instructions
+It is possible to set up the AWS command-line tools for working with Ceph RadosGW and Rokku. Following are instructions
 to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com/).
 
 1. Create an environment for this work:
 
     a. **virtualenv_wrapper**
 
-       % mkvirtualenv -p python3 airlock
+       % mkvirtualenv -p python3 rokku
        
     b. **Anaconda**
 
-       % conda create -n airlock python=3
-       % conda activate airlock
+       % conda create -n rokku python=3
+       % conda activate rokku
 
 2. Install the AWS command-line tools and the endpoint plugin:
 
        % pip install awscli awscli-plugin-endpoint
 
-3. Configure profiles and credentials for working with Airlock or the RadosGW directly (more info can be found in the
+3. Configure profiles and credentials for working with Rokku or the RadosGW directly (more info can be found in the
 [aws documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html)):
 
        % mkdir -p ~/.aws
@@ -242,7 +242,7 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
        aws_access_key_id = accesskey
        aws_secret_access_key = secretkey
 
-       [airlock]
+       [rokku]
        aws_access_key_id = YOUR_ACCESSKEY
        aws_secret_access_key = YOUR_SECRETKEY
        aws_session_token = YOUR_SESSIONTOKEN
@@ -252,7 +252,7 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
        [plugins]
        endpoint = awscli_plugin_endpoint
 
-       [profile airlock]
+       [profile rokku]
        output = json
        region = us-east-1
        s3 =
@@ -277,33 +277,33 @@ to set this up using `virtualenv_wrapper` or [Anaconda](https://www.anaconda.com
 
     a. **virtualenv_wrapper**
     
-       % cat >> ${WORKON_HOME:-$HOME/.virtualenvs}/airlock/bin/postactivate << EOF
-       AWS_DEFAULT_PROFILE=airlock
+       % cat >> ${WORKON_HOME:-$HOME/.virtualenvs}/rokku/bin/postactivate << EOF
+       AWS_DEFAULT_PROFILE=rokku
        export AWS_DEFAULT_PROFILE
        EOF
        
-       % cat >> ${WORKON_HOME:-$HOME/.virtualenvs}/airlock/bin/predeactivate << EOF
+       % cat >> ${WORKON_HOME:-$HOME/.virtualenvs}/rokku/bin/predeactivate << EOF
        unset AWS_DEFAULT_PROFILE
        EOF
        
        % deactivate
        
-       % workon airlock
+       % workon rokku
 
     b. **Anaconda**
     
-       % cat >> /YOUR_CONDA_HOME/envs/airlock/etc/conda/deactivate.d/aws.sh << EOF
+       % cat >> /YOUR_CONDA_HOME/envs/rokku/etc/conda/deactivate.d/aws.sh << EOF
        unset AWS_DEFAULT_PROFILE
        EOF
        
-       % cat >> /YOUR_CONDA_HOME/envs/airlock/etc/conda/activate.d/aws.sh << EOF
-       AWS_DEFAULT_PROFILE=airlock
+       % cat >> /YOUR_CONDA_HOME/envs/rokku/etc/conda/activate.d/aws.sh << EOF
+       AWS_DEFAULT_PROFILE=rokku
        export AWS_DEFAULT_PROFILE
        EOF
        
        % source deactivate
        
-       % source activate airlock
+       % source activate rokku
 
 By default S3 and STS commands will now be issued against the proxy service. For example:
 
@@ -320,8 +320,8 @@ The default profile can also be switched by modifying the `AWS_DEFAULT_PROFILE` 
 For kerberos environment (e.g connecting to ranger) you need to provide keytab file and principle name.
 
 ```bash
-AIRLOCK_KERBEROS_KEYTAB: "keytab_full_path"
-AIRLOCK_KERBEROS_PRINCIPAL: "user"
+ROKKU_KERBEROS_KEYTAB: "keytab_full_path"
+ROKKU_KERBEROS_PRINCIPAL: "user"
 ```
 
 # Ranger Audit Log
@@ -329,7 +329,7 @@ AIRLOCK_KERBEROS_PRINCIPAL: "user"
 To enable the log set:
 
 ```bash
-AIRLOCK_RANGER_ENABLED_AUDIT="true"
+ROKKU_RANGER_ENABLED_AUDIT="true"
 ``` 
 
 and provide on the classpath the ranger-s3-audit.xml configuration.

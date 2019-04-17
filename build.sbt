@@ -2,10 +2,10 @@ import com.typesafe.sbt.packager.docker
 import com.typesafe.sbt.packager.docker.ExecCmd
 import scalariform.formatter.preferences._
 
-val airlockVersion = scala.sys.env.getOrElse("AIRLOCK_VERSION", "SNAPSHOT")
+val rokkuVersion = scala.sys.env.getOrElse("ROKKU_VERSION", "SNAPSHOT")
 
-name := "airlock"
-version := airlockVersion
+name := "rokku"
+version := rokkuVersion
 scalaVersion := "2.12.8"
 
 scalacOptions += "-unchecked"
@@ -75,7 +75,7 @@ javaOptions += "-Dlogback.configurationFile=/etc/airlock/logback.xml"
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
-dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("wbaa"), "airlock", Some(airlockVersion))
+dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("wbaa"), "airlock", Some(rokkuVersion))
 
 scalariformPreferences := scalariformPreferences.value
     .setPreference(AlignSingleLineCaseStatements, true)
