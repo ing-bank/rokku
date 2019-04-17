@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/ing-bank/airlock.svg?branch=master)](https://travis-ci.org/ing-bank/airlock)
-[![codecov.io](http://codecov.io/github/ing-bank/airlock/coverage.svg?branch=master)](https://codecov.io/gh/ing-bank/airlock?branch=master)
-[![](https://images.microbadger.com/badges/image/wbaa/airlock:latest.svg)](https://hub.docker.com/r/wbaa/airlock/tags/)
+[![Build Status](https://travis-ci.org/ing-bank/rokku.svg?branch=master)](https://travis-ci.org/ing-bank/rokku)
+[![codecov.io](http://codecov.io/github/ing-bank/rokku/coverage.svg?branch=master)](https://codecov.io/gh/ing-bank/rokku?branch=master)
+[![](https://images.microbadger.com/badges/image/wbaa/rokku:latest.svg)](https://hub.docker.com/r/wbaa/rokku/tags/)
 
 # Rokku
 
