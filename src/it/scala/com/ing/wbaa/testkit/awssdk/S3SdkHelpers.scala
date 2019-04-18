@@ -15,7 +15,7 @@ import scala.collection.JavaConverters._
 
 
 trait S3SdkHelpers {
-  private val awsRegion = ConfigFactory.load().getString("airlock.storage.s3.region")
+  private val awsRegion = ConfigFactory.load().getString("rokku.storage.s3.region")
 
   def getAmazonS3(authority: Authority,
                   credentials: AWSCredentials = new BasicSessionCredentials("accesskey", "secretkey", "token")

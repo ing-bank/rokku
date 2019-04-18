@@ -18,10 +18,10 @@ services:
     command: demo
 
   postgres-server:
-    image: wbaa/airlock-dev-apache-ranger-postgres:0.0.13
+    image: wbaa/rokku-dev-apache-ranger-postgres:0.0.14
 
   ranger-admin:
-    image: wbaa/airlock-dev-apache-ranger:0.0.16
+    image: wbaa/rokku-dev-apache-ranger:0.0.17
     stdin_open: true
     tty: true
     depends_on:
@@ -55,7 +55,7 @@ services:
       - "8080:8080"
 
   atlas:
-    image: wbaa/airlock-dev-apache-atlas:0.0.7
+    image: wbaa/rokku-dev-apache-atlas:0.0.7
     ports:
       - "21000:21000"
     depends_on:

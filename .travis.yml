@@ -23,7 +23,7 @@ before_script:
 - echo "Running pipeline for branch ${TRAVIS_BRANCH}"
 - if [ "$TRAVIS_PULL_REQUEST" != "false" -o "${TRAVIS_BRANCH}" == "master" ]; then
     echo "Starting dependent containers for testing";
-    docker-compose up -d ceph postgres-server mariadb ranger-admin airlock-sts keycloak;
+    docker-compose up -d ceph postgres-server mariadb ranger-admin rokku-sts keycloak;
     pip install --user awscli;
     echo "Compile the project while containers are starting up";
     sbt ++$TRAVIS_SCALA_VERSION clean compile;
