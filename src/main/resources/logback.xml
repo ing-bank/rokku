@@ -5,7 +5,7 @@
     <!-- encoders are  by default assigned the type
          ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
     <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-      <layout class="com.ing.wbaa.airlock.proxy.util.MaskingPatternJsonLayout">
+      <layout class="com.ing.wbaa.rokku.proxy.util.MaskingPatternJsonLayout">
         <!-- Insert here the regexes to sanitize the log messages.
              Replacement supports pattern groups with variables named $1, $2, etc -->
         <replace>

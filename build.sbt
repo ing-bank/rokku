@@ -70,12 +70,12 @@ fork := true
 // Some default options at runtime: the G1 garbage collector, and headless mode.
 javaOptions += "-XX:+UseG1GC"
 javaOptions += "-Djava.awt.headless=true"
-javaOptions += "-Dlogback.configurationFile=/etc/airlock/logback.xml"
+javaOptions += "-Dlogback.configurationFile=/etc/rokku/logback.xml"
 
 dockerExposedPorts := Seq(8080) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
-dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("wbaa"), "airlock", Some(rokkuVersion))
+dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("wbaa"), "rokku", Some(rokkuVersion))
 
 scalariformPreferences := scalariformPreferences.value
     .setPreference(AlignSingleLineCaseStatements, true)
@@ -86,7 +86,7 @@ scalariformPreferences := scalariformPreferences.value
     .setPreference(SingleCasePatternOnNewline, false)
 
 // hack for ranger conf dir - should contain files like ranger-s3-security.xml etc.
-scriptClasspath in bashScriptDefines ~= (cp => cp :+ ":/etc/airlock")
+scriptClasspath in bashScriptDefines ~= (cp => cp :+ ":/etc/rokku")
 
 //Coverage settings
 Compile / coverageMinimum := 70
