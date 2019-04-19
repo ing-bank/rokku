@@ -5,20 +5,20 @@ import com.codahale.metrics.jmx.JmxReporter
 
 object MetricsFactory {
 
-  val ALL_REQUEST = "rokku.requests.all"
-  val SUCCESS_REQUEST = "rokku.requests.success"
-  val FAILURE_REQUEST = "rokku.requests.failure"
-  val UNAUTHENTICATED_REQUEST = "rokku.requests.unauthenticated"
-  val REQUEST_TIME = "rokku.requests.sum.time"
-  val REQUEST_TIME_HIST = "rokku.requests.time.histogram"
+  val ALL_REQUEST = "requests.status.all.total"
+  val SUCCESS_REQUEST = "requests.status.success.total"
+  val FAILURE_REQUEST = "requests.status.failure.total"
+  val UNAUTHENTICATED_REQUEST = "requests.status.unauthenticated.total"
+  val REQUEST_TIME = "requests.nanoseconds.total"
+  val REQUEST_TIME_HIST = "requests.time.histogram"
   val HTTP_METHOD = "{httpMethod}"
   val HTTP_DIRECTION = "{InOut}"
-  val REQUEST_CONTEXT_LENGTH = s"rokku.requests.method.$HTTP_METHOD.$HTTP_DIRECTION.context.length"
-  val REQUEST_CONTEXT_LENGTH_SUM = s"rokku.requests.method.$HTTP_METHOD.$HTTP_DIRECTION.sum.context.length"
+  val REQUEST_CONTEXT_LENGTH = s"requests.method.$HTTP_METHOD.$HTTP_DIRECTION.context.length.bytes"
+  val REQUEST_CONTEXT_LENGTH_SUM = s"requests.method.$HTTP_METHOD.$HTTP_DIRECTION.context.length.bytes.total"
 
   private[this] val metrics = new MetricRegistry()
 
-  JmxReporter.forRegistry(metrics).build.start()
+  JmxReporter.forRegistry(metrics).inDomain("rokku").build.start()
 
   def registryMetrics(): MetricRegistry = metrics
 
