@@ -30,16 +30,16 @@ services:
     ports:
       - "6080:6080"
 
-  airlock-sts:
-    image: wbaa/rokku-sts:0.1.15
+  rokku-sts:
+    image: wbaa/rokku-sts:0.2.0
     environment:
       - STS_HOST=0.0.0.0
       - STS_PORT=12345
       - KEYCLOAK_PUBLIC_KEY_ID=FJ86GcF3jTbNLOco4NvZkUCIUmfYCqoqtOQeMfbhNlE
       - KEYCLOAK_URL=http://keycloak:8080
       - KEYCLOAK_CHECK_REALM_URL=false
-      - KEYCLOAK_CHECK_ISSUER_FOR_LIST=sts-airlock
-      - MARIADB_URL=jdbc:mysql:loadbalance://mariadb:3306,mariadb:3306/airlock
+      - KEYCLOAK_CHECK_ISSUER_FOR_LIST=sts-rokku
+      - MARIADB_URL=jdbc:mysql:loadbalance://mariadb:3306,mariadb:3306/rokku
     ports:
       - "12345:12345"
     depends_on:
