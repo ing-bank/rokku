@@ -3,15 +3,15 @@ package com.ing.wbaa.rokku.proxy.provider
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, Uri }
+import akka.http.scaladsl.model.{HttpRequest, StatusCodes, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import com.ing.wbaa.rokku.proxy.config.StsSettings
-import com.ing.wbaa.rokku.proxy.data.{ AwsRequestCredential, JsonProtocols, RequestId, User, UserRawJson }
+import com.ing.wbaa.rokku.proxy.data.{AwsRequestCredential, JsonProtocols, RequestId, User, UserRawJson}
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.util.JwtToken
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 trait AuthenticationProviderSTS extends JsonProtocols with JwtToken {
 
@@ -20,13 +20,15 @@ trait AuthenticationProviderSTS extends JsonProtocols with JwtToken {
   import AuthenticationProviderSTS.STSException
   import spray.json._
 
-  protected[this] implicit def system: ActorSystem
-  protected[this] implicit def executionContext: ExecutionContext
-  protected[this] implicit def materializer: Materializer
+  implicit protected[this] def system: ActorSystem
+  implicit protected[this] def executionContext: ExecutionContext
+  implicit protected[this] def materializer: Materializer
 
   protected[this] def stsSettings: StsSettings
 
-  protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] = {
+  protected[this] def areCredentialsActive(
+    awsRequestCredential: AwsRequestCredential
+  )(implicit id: RequestId): Future[Option[User]] = {
     val QueryParameters =
       Map("accessKey" -> awsRequestCredential.accessKey.value) ++
         awsRequestCredential.sessionToken.map(s => "sessionToken" -> s.value)
@@ -48,9 +50,11 @@ trait AuthenticationProviderSTS extends JsonProtocols with JwtToken {
             }
 
           case StatusCodes.Forbidden =>
-            logger.error(s"User not authenticated " +
-              s"with accessKey (${awsRequestCredential.accessKey.value}) " +
-              s"and sessionToken (${awsRequestCredential.sessionToken})")
+            logger.error(
+              s"User not authenticated " +
+                s"with accessKey (${awsRequestCredential.accessKey.value}) " +
+                s"and sessionToken (${awsRequestCredential.sessionToken})"
+            )
             Future.successful(None)
 
           case c =>
@@ -66,5 +70,5 @@ trait AuthenticationProviderSTS extends JsonProtocols with JwtToken {
 
 object AuthenticationProviderSTS {
   final case class STSException(private val message: String, private val cause: Throwable = None.orNull)
-    extends Exception(message, cause)
+      extends Exception(message, cause)
 }

@@ -8,13 +8,13 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
-import com.ing.wbaa.rokku.proxy.data.{ AwsRequestCredential, AwsSecretKey, RequestId, S3Request, User, Write }
+import com.ing.wbaa.rokku.proxy.data.{AwsRequestCredential, AwsSecretKey, RequestId, S3Request, User, Write}
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 trait ProxyService {
 
@@ -25,26 +25,36 @@ trait ProxyService {
   import ProxyDirectives._
   import akka.http.scaladsl.server.Directives._
 
-  protected[this] implicit def system: ActorSystem
+  implicit protected[this] def system: ActorSystem
 
-  protected[this] implicit def executionContext: ExecutionContext
+  implicit protected[this] def executionContext: ExecutionContext
 
   // Request Handler methods
-  protected[this] def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse]
+  protected[this] def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request)(
+    implicit id: RequestId
+  ): Future[HttpResponse]
 
   // Authentication methods
-  protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]]
+  protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(
+    implicit id: RequestId
+  ): Future[Option[User]]
 
   // AWS Signature methods
-  protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean
+  protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(
+    implicit id: RequestId
+  ): Boolean
 
   // Authorization methods
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean
 
-  protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit
+  protected[this] def handlePostRequestActions(
+    response: HttpResponse,
+    httpRequest: HttpRequest,
+    s3Request: S3Request,
+    userSTS: User
+  )(implicit id: RequestId): Unit
 
   val proxyServiceRoute: Route =
-
     metricDuration {
       implicit val requestId: RequestId = RequestId(UUID.randomUUID().toString)
       withoutSizeLimit {
@@ -71,23 +81,32 @@ trait ProxyService {
       }
     }
 
-  private def checkExtractedPostContents(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Future[Route] =
-    exctractMultideleteObjectsFlow(httpRequest.entity.dataBytes)(ActorMaterializer()).map { s3Objects =>
-      s3Objects.map { s3Object =>
-        val bucket = s3Request.s3BucketPath.getOrElse("")
-        isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some(s"$bucket/$s3Object"), s3Object = Some(s3Object)), userSTS)
+  private def checkExtractedPostContents(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(
+    implicit id: RequestId
+  ): Future[Route] =
+    exctractMultideleteObjectsFlow(httpRequest.entity.dataBytes)(ActorMaterializer())
+      .map { s3Objects =>
+        s3Objects.map { s3Object =>
+          val bucket = s3Request.s3BucketPath.getOrElse("")
+          isUserAuthorizedForRequest(
+            s3Request.copy(s3BucketPath = Some(s"$bucket/$s3Object"), s3Object = Some(s3Object)),
+            userSTS
+          )
+        }
       }
-    }.map { permittedObjects =>
-      if (permittedObjects.nonEmpty && permittedObjects.contains(false)) {
-        logger.warn("Multidelete - one of objects not allowed to be accessed")
-        complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
-      } else {
-        logger.info(s"User (${userSTS.userName}) successfully authorized for multidelete request: $s3Request")
-        processAuthorizedRequest(httpRequest, s3Request, userSTS)
+      .map { permittedObjects =>
+        if (permittedObjects.nonEmpty && permittedObjects.contains(false)) {
+          logger.warn("Multidelete - one of objects not allowed to be accessed")
+          complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+        } else {
+          logger.info(s"User (${userSTS.userName}) successfully authorized for multidelete request: $s3Request")
+          processAuthorizedRequest(httpRequest, s3Request, userSTS)
+        }
       }
-    }
 
-  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Route = {
+  protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(
+    implicit id: RequestId
+  ): Route =
     updateHeadersForRequest { newHttpRequest =>
       val httpResponse = executeRequest(newHttpRequest, userSTS, s3Request).andThen {
         case Success(response: HttpResponse) =>
@@ -95,9 +114,10 @@ trait ProxyService {
       }
       complete(httpResponse)
     }
-  }
 
-  private def processRequestForValidUser(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId) = {
+  private def processRequestForValidUser(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(
+    implicit id: RequestId
+  ) =
     if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
       logger.info("Request authenticated: {}", httpRequest)
       if (isUserAuthorizedForRequest(s3Request, userSTS)) {
@@ -109,7 +129,9 @@ trait ProxyService {
         if (isMultideletePost) {
           checkExtractedPostContents(
             httpRequest,
-            s3Request.copy(mediaType = MediaTypes.`application/xml`, accessType = Write("MULTIDELETE POST")), userSTS)
+            s3Request.copy(mediaType = MediaTypes.`application/xml`, accessType = Write("MULTIDELETE POST")),
+            userSTS
+          )
         } else {
           logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
           Future(processAuthorizedRequest(httpRequest, s3Request, userSTS))
@@ -122,5 +144,4 @@ trait ProxyService {
       logger.warn("Request not authenticated: {}", httpRequest)
       Future.successful(complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden)))
     }
-  }
 }

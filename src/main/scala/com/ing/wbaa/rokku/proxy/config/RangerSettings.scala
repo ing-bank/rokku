@@ -1,6 +1,6 @@
 package com.ing.wbaa.rokku.proxy.config
 
-import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
 
 class RangerSettings(config: Config) extends Extension {
@@ -16,4 +16,3 @@ object RangerSettings extends ExtensionId[RangerSettings] with ExtensionIdProvid
   override def createExtension(system: ExtendedActorSystem): RangerSettings = new RangerSettings(system.settings.config)
   override def lookup(): ExtensionId[RangerSettings] = RangerSettings
 }
-

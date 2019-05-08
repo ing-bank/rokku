@@ -4,7 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.ing.wbaa.rokku.proxy.config.StsSettings
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 trait JwtToken {
   protected[this] def stsSettings: StsSettings
@@ -12,7 +12,8 @@ trait JwtToken {
   lazy val createInternalToken: String =
     Try {
       val algorithm = Algorithm.HMAC256(stsSettings.encodeSecret)
-      JWT.create()
+      JWT
+        .create()
         .withIssuer("rokku")
         .withClaim("service", "rokku")
         .sign(algorithm)
