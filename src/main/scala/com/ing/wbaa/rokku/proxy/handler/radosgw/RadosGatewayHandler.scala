@@ -3,18 +3,18 @@ package com.ing.wbaa.rokku.proxy.handler.radosgw
 import akka.actor.ActorSystem
 import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
-import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsSecretKey, RequestId, User, UserName }
+import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsSecretKey, RequestId, User, UserName}
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
-import org.twonote.rgwadmin4j.{ RgwAdmin, RgwAdminBuilder }
+import org.twonote.rgwadmin4j.{RgwAdmin, RgwAdminBuilder}
 
 import scala.collection.JavaConverters._
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 trait RadosGatewayHandler {
 
   private val logger = new LoggerHandlerWithId
 
-  protected[this] implicit def system: ActorSystem
+  implicit protected[this] def system: ActorSystem
 
   protected[this] def storageS3Settings: StorageS3Settings
 
@@ -27,11 +27,14 @@ trait RadosGatewayHandler {
   private[this] lazy val rgwAdmin: RgwAdmin = new RgwAdminBuilder()
     .accessKey(storageS3Settings.storageS3AdminAccesskey)
     .secretKey(storageS3Settings.storageS3AdminSecretkey)
-    .endpoint(s"http://${storageS3Settings.storageS3Authority.host.address()}:${storageS3Settings.storageS3Authority.port}/admin")
+    .endpoint(
+      s"http://${storageS3Settings.storageS3Authority.host.address()}:${storageS3Settings.storageS3Authority.port}/admin"
+    )
     .build
 
-  private[this] def createCredentialsOnCeph(userName: UserName, awsAccessKey: AwsAccessKey, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = {
-
+  private[this] def createCredentialsOnCeph(userName: UserName, awsAccessKey: AwsAccessKey, awsSecretKey: AwsSecretKey)(
+    implicit id: RequestId
+  ): Boolean =
     Try {
       rgwAdmin.createUser(
         userName.value,
@@ -43,51 +46,58 @@ trait RadosGatewayHandler {
       )
     } match {
       case Success(user) =>
-        logger.info(s"Created on CEPH: " +
-          s"UID=${user.getUserId}, " +
-          s"AccessKey=${user.getS3Credentials.get(0).getAccessKey}," +
-          s"SecretKey=${user.getS3Credentials.get(0).getSecretKey}," +
-          s"DisplayName=${user.getDisplayName}")
+        logger.info(
+          s"Created on CEPH: " +
+            s"UID=${user.getUserId}, " +
+            s"AccessKey=${user.getS3Credentials.get(0).getAccessKey}," +
+            s"SecretKey=${user.getS3Credentials.get(0).getSecretKey}," +
+            s"DisplayName=${user.getDisplayName}"
+        )
         true
 
       case Failure(exc) =>
         logger.error("Unexpected exception during user creation", exc)
         false
     }
-  }
 
-  private[this] def updateCredentialsOnCeph(userName: UserName, oldAccessKey: AwsAccessKey, newAccessKey: AwsAccessKey, newSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = {
+  private[this] def updateCredentialsOnCeph(
+    userName: UserName,
+    oldAccessKey: AwsAccessKey,
+    newAccessKey: AwsAccessKey,
+    newSecretKey: AwsSecretKey
+  )(implicit id: RequestId): Boolean =
     Try {
       rgwAdmin.removeS3Credential(userName.value, oldAccessKey.value)
       rgwAdmin.createS3Credential(userName.value, newAccessKey.value, newSecretKey.value)
     } match {
       case Success(creds) =>
-        logger.info(s"Updated on CEPH: " +
-          s"UID=${creds.get(0).getUserId}, " +
-          s"AccessKey=${creds.get(0).getAccessKey}," +
-          s"SecretKey=${creds.get(0).getSecretKey}")
+        logger.info(
+          s"Updated on CEPH: " +
+            s"UID=${creds.get(0).getUserId}, " +
+            s"AccessKey=${creds.get(0).getAccessKey}," +
+            s"SecretKey=${creds.get(0).getSecretKey}"
+        )
         true
 
       case Failure(exc) =>
         logger.error("Unexpected exception during user update", exc)
         false
     }
-  }
 
-  private[this] def getUserOnCeph(userName: UserName): Option[UserOnCeph] = {
-
-    Try(rgwAdmin.getUserInfo(userName.value)).toOption.flatMap(cuo =>
-      if (cuo.isPresent) {
-        val cephUser = cuo.get
-        Some(UserOnCeph(
-          UserName(cephUser.getUserId),
-          cephUser.getS3Credentials.asScala.toList.map(c =>
-            CredentialsOnCeph(AwsAccessKey(c.getAccessKey), AwsSecretKey(c.getSecretKey))
+  private[this] def getUserOnCeph(userName: UserName): Option[UserOnCeph] =
+    Try(rgwAdmin.getUserInfo(userName.value)).toOption.flatMap(
+      cuo =>
+        if (cuo.isPresent) {
+          val cephUser = cuo.get
+          Some(
+            UserOnCeph(
+              UserName(cephUser.getUserId),
+              cephUser.getS3Credentials.asScala.toList
+                .map(c => CredentialsOnCeph(AwsAccessKey(c.getAccessKey), AwsSecretKey(c.getSecretKey)))
+            )
           )
-        ))
-      } else None
+        } else None
     )
-  }
 
   /**
    * Checks how to handle the current inconsistent situation, these optional cases apply:
@@ -102,7 +112,7 @@ trait RadosGatewayHandler {
    * @param userSTS User as retrieved from STS
    * @return True if a change was done on RadosGw
    */
-  protected[this] def handleUserCreationRadosGw(userSTS: User)(implicit id: RequestId): Boolean = {
+  protected[this] def handleUserCreationRadosGw(userSTS: User)(implicit id: RequestId): Boolean =
     getUserOnCeph(userSTS.userName).map(_.credentials) match {
 
       // User doesn't yet exist on CEPH, create it
@@ -128,17 +138,17 @@ trait RadosGatewayHandler {
           false
         } // Keys for user on CEPH don't match with keys in STS, update keys in CEPH according to those of sts
         else {
-          logger.info(s"Keys for the user from STS don't match those on CEPH (userSTS: $userSTS, userCeph: $cephAccessKey/$cephSecretKey)")
+          logger.info(
+            s"Keys for the user from STS don't match those on CEPH (userSTS: $userSTS, userCeph: $cephAccessKey/$cephSecretKey)"
+          )
           updateCredentialsOnCeph(userSTS.userName, cephAccessKey, userSTS.accessKey, userSTS.secretKey)
         }
     }
-  }
 
   /**
    * List all buckets - no matters who is the owner
    * @return - list of all buckets
    */
-  protected[this] def listAllBuckets: Seq[String] = {
+  protected[this] def listAllBuckets: Seq[String] =
     rgwAdmin.listBucket("").asScala
-  }
 }

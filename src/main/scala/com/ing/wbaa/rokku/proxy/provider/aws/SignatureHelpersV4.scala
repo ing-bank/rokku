@@ -8,7 +8,7 @@ import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.util.DateUtils
 import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.extractHeaderOption
 import com.ing.wbaa.rokku.proxy.data
-import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
+import com.ing.wbaa.rokku.proxy.data.{AWSHeaderValues, RequestId}
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
 import scala.collection.JavaConverters._
@@ -16,11 +16,13 @@ import scala.collection.JavaConverters._
 class SignatureHelpersV4 extends SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId
 
-  private def fixHeaderCapitals(header: String): String = {
-    header.split("-").map { h =>
-      h(0).toUpper + h.substring(1).toLowerCase
-    }.mkString("-")
-  }
+  private def fixHeaderCapitals(header: String): String =
+    header
+      .split("-")
+      .map { h =>
+        h(0).toUpper + h.substring(1).toLowerCase
+      }
+      .mkString("-")
 
   // java Map[String, util.List[String]] is need by AWS4Signer
   def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]] = {
@@ -49,7 +51,8 @@ class SignatureHelpersV4 extends SignatureHelpersCommon {
   def getSignedHeaders(authorization: String): String =
     """\S+ SignedHeaders=(\S+), """.r
       .findFirstMatchIn(authorization)
-      .map(_ group 1).getOrElse("")
+      .map(_.group(1))
+      .getOrElse("")
 
   def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues = {
     implicit val hr = httpRequest
@@ -57,7 +60,9 @@ class SignatureHelpersV4 extends SignatureHelpersCommon {
     val signature = authorization.map(auth => getSignatureFromAuthorization(auth))
     val accessKey = authorization.map(auth => getCredentialFromAuthorization(auth))
 
-    val signedHeadersMap = authorization.map(auth => getSignedHeaders(auth)).getOrElse("")
+    val signedHeadersMap = authorization
+      .map(auth => getSignedHeaders(auth))
+      .getOrElse("")
       .split(";")
       .toList
       .map { header =>
@@ -73,13 +78,19 @@ class SignatureHelpersV4 extends SignatureHelpersCommon {
         } else {
           (fixHeaderCapitals(header), extractHeaderOption(header).getOrElse(""))
         }
-      }.toMap
+      }
+      .toMap
 
     data.AWSHeaderValues(accessKey, signedHeadersMap, signature, None, None, None)
   }
 
   // for now we do not have any regions, we use default one
-  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
+  def signS3Request(
+    request: DefaultRequest[_],
+    credentials: BasicAWSCredentials,
+    date: String,
+    region: String = "us-east-1"
+  )(implicit id: RequestId): Unit = {
     logger.debug("Using version 4 signer")
 
     val signer = new CustomV4Signer()

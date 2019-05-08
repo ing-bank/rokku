@@ -4,13 +4,13 @@ import java.net.URLDecoder
 
 import akka.http.scaladsl.model.MediaTypes
 import com.ing.wbaa.rokku.proxy.config.RangerSettings
-import com.ing.wbaa.rokku.proxy.data.{ Delete, Head, Read, RequestId, S3Request, User, Write }
+import com.ing.wbaa.rokku.proxy.data.{Delete, Head, Read, RequestId, S3Request, User, Write}
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import org.apache.ranger.plugin.audit.RangerDefaultAuditHandler
-import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
+import org.apache.ranger.plugin.policyengine.{RangerAccessRequestImpl, RangerAccessResourceImpl}
 import org.apache.ranger.plugin.service.RangerBasePlugin
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /**
  * Interface for security provider implementations.
@@ -31,8 +31,11 @@ trait AuthorizationProviderRanger {
       p
     } catch {
       case ex: java.lang.NullPointerException =>
-        throw RangerException(s"Ranger serviceType or appId not found (serviceType=${rangerSettings.serviceType}, " +
-          s"appId=${rangerSettings.appId})", ex)
+        throw RangerException(
+          s"Ranger serviceType or appId not found (serviceType=${rangerSettings.serviceType}, " +
+            s"appId=${rangerSettings.appId})",
+          ex
+        )
       case ex: Throwable =>
         throw RangerException("Unknown exception from Ranger plugin caught", ex)
     }
@@ -87,27 +90,33 @@ trait AuthorizationProviderRanger {
 
       // object operation as subfolder, in this case object can be empty
       // we need this to differentiate subfolder create/delete from bucket create/delete
-      case S3Request(_, Some(s3path), None, accessType, _, _, _) if s3path.endsWith("/") && (accessType.isInstanceOf[Delete] || accessType.isInstanceOf[Write]) =>
+      case S3Request(_, Some(s3path), None, accessType, _, _, _)
+          if s3path.endsWith("/") && (accessType.isInstanceOf[Delete] || accessType.isInstanceOf[Write]) =>
         isAuthorisedByRanger(s3path)
 
       // list-objects in the bucket operation
-      case S3Request(_, Some(s3path), None, accessType, _, _, _) if accessType.isInstanceOf[Read] || accessType.isInstanceOf[Head] =>
+      case S3Request(_, Some(s3path), None, accessType, _, _, _)
+          if accessType.isInstanceOf[Read] || accessType.isInstanceOf[Head] =>
         isAuthorisedByRanger(s3path)
 
       // multidelete with xml list of objects in post
-      case S3Request(_, Some(s3path), None, accessType, _, _, mediaType) if accessType.isInstanceOf[Write] &&
-        (mediaType == MediaTypes.`application/xml` || mediaType == MediaTypes.`application/octet-stream`) =>
+      case S3Request(_, Some(s3path), None, accessType, _, _, mediaType)
+          if accessType.isInstanceOf[Write] &&
+            (mediaType == MediaTypes.`application/xml` || mediaType == MediaTypes.`application/octet-stream`) =>
         logger.debug(s"Passing ranger check for multi object deletion to check method")
         true
 
       // create / delete bucket operation
-      case S3Request(_, Some(bucket), None, accessType, _, _, _) if (accessType.isInstanceOf[Write] || accessType.isInstanceOf[Delete]) && rangerSettings.createBucketsEnabled =>
+      case S3Request(_, Some(bucket), None, accessType, _, _, _)
+          if (accessType.isInstanceOf[Write] || accessType
+            .isInstanceOf[Delete]) && rangerSettings.createBucketsEnabled =>
         logger.debug(s"Skipping ranger for creation/deletion of bucket with request: $request")
         logger.info(s"bucket $bucket has been ${accessType.auditAction}")
         true
 
       // list buckets
-      case S3Request(_, None, None, accessType, _, _, _) if accessType.isInstanceOf[Read] && rangerSettings.listBucketsEnabled =>
+      case S3Request(_, None, None, accessType, _, _, _)
+          if accessType.isInstanceOf[Read] && rangerSettings.listBucketsEnabled =>
         logger.debug(s"Skipping ranger for listing of buckets with request: $request")
         true
 
@@ -120,5 +129,5 @@ trait AuthorizationProviderRanger {
 
 object AuthorizationProviderRanger {
   final case class RangerException(private val message: String, private val cause: Throwable = None.orNull)
-    extends Exception(message, cause)
+      extends Exception(message, cause)
 }

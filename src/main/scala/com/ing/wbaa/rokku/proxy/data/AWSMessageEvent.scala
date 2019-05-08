@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy.data
 import java.time.Instant
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.{ HttpMethod, RemoteAddress }
+import akka.http.scaladsl.model.{HttpMethod, RemoteAddress}
 import com.ing.wbaa.rokku.proxy.provider.aws.S3ObjectAction
 import spray.json.DefaultJsonProtocol
 
@@ -24,15 +24,15 @@ case class ObjectProps(key: String, size: Int, eTag: String, versionId: String, 
 case class S3(s3SchemaVersion: String, configurationId: String, bucket: BucketProps, `object`: ObjectProps)
 
 case class AWSMessageEvent(
-    eventVersion: String,
-    eventSource: String,
-    awsRegion: String,
-    eventTime: String,
-    eventName: String,
-    userIdentity: UserIdentity,
-    requestParameters: RequestParameters,
-    responseElements: ResponseElements,
-    s3: S3
+  eventVersion: String,
+  eventSource: String,
+  awsRegion: String,
+  eventTime: String,
+  eventName: String,
+  userIdentity: UserIdentity,
+  requestParameters: RequestParameters,
+  responseElements: ResponseElements,
+  s3: S3
 )
 
 trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
@@ -49,7 +49,13 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
 
   import spray.json._
 
-  def prepareAWSMessage(s3Request: S3Request, method: HttpMethod, principalId: String, clientIPAddress: RemoteAddress, s3Action: S3ObjectAction): Option[JsValue] = {
+  def prepareAWSMessage(
+    s3Request: S3Request,
+    method: HttpMethod,
+    principalId: String,
+    clientIPAddress: RemoteAddress,
+    s3Action: S3ObjectAction
+  ): Option[JsValue] = {
     val clientIP = clientIPAddress.toIP match {
       case Some(ip) => ip.toString()
       case _        => "Unknown"
@@ -58,20 +64,22 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
     for {
       bucketPath <- s3Request.s3BucketPath
       s3object <- s3Request.s3Object
-    } yield Records(List(AWSMessageEvent(
-      "2.1",
-      "rokku:s3",
-      "us-east-1",
-      Instant.now().toString(),
-      s3Action.value,
-      UserIdentity(principalId),
-      RequestParameters(clientIP),
-      ResponseElements("", ""),
-      S3("1.0", "",
-        BucketProps(bucketPath, OwnerIdentity(""), ""),
-        ObjectProps(s3object, 0, "", "", ""))))
-    ).toJson
+    } yield
+      Records(
+        List(
+          AWSMessageEvent(
+            "2.1",
+            "rokku:s3",
+            "us-east-1",
+            Instant.now().toString(),
+            s3Action.value,
+            UserIdentity(principalId),
+            RequestParameters(clientIP),
+            ResponseElements("", ""),
+            S3("1.0", "", BucketProps(bucketPath, OwnerIdentity(""), ""), ObjectProps(s3object, 0, "", "", ""))
+          )
+        )
+      ).toJson
   }
 
 }
-

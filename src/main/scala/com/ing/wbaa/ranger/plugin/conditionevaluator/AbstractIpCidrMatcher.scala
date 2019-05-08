@@ -5,7 +5,7 @@ import org.apache.commons.net.util.SubnetUtils
 import org.apache.ranger.plugin.conditionevaluator.RangerAbstractConditionEvaluator
 import org.apache.ranger.plugin.policyengine.RangerAccessRequest
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /**
  * This class will be called by Ranger upon a policy condition evaluation for IP ranges
@@ -30,8 +30,7 @@ abstract class AbstractIpCidrMatcher extends RangerAbstractConditionEvaluator wi
       logger.debug("Wildcard value for policy found.  Will match always!")
       _allowAny = true
     } else {
-      cidrs = condition
-        .getValues.asScala.toList
+      cidrs = condition.getValues.asScala.toList
         .flatMap { cidr =>
           logger.debug("Adding cidr: " + cidr)
           Try {
@@ -61,9 +60,10 @@ abstract class AbstractIpCidrMatcher extends RangerAbstractConditionEvaluator wi
     if (_allowAny) {
       logger.debug("Always matches! (allowAny flag is true)")
       true
-    } else addresses.foldLeft(zero) { (a, b) =>
-      combine(a, isRemoteAddressInCidrRange(b))
-    }
+    } else
+      addresses.foldLeft(zero) { (a, b) =>
+        combine(a, isRemoteAddressInCidrRange(b))
+      }
   }
 
   protected val zero: Boolean

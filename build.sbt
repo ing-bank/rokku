@@ -1,6 +1,5 @@
 import com.typesafe.sbt.packager.docker
 import com.typesafe.sbt.packager.docker.ExecCmd
-import scalariform.formatter.preferences._
 
 val rokkuVersion = scala.sys.env.getOrElse("ROKKU_VERSION", "SNAPSHOT")
 
@@ -77,14 +76,6 @@ dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
 dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("wbaa"), "rokku", Some(rokkuVersion))
 
-scalariformPreferences := scalariformPreferences.value
-    .setPreference(AlignSingleLineCaseStatements, true)
-    .setPreference(DanglingCloseParenthesis, Preserve)
-    .setPreference(DoubleIndentConstructorArguments, true)
-    .setPreference(DoubleIndentMethodDeclaration, true)
-    .setPreference(NewlineAtEndOfFile, true)
-    .setPreference(SingleCasePatternOnNewline, false)
-
 // hack for ranger conf dir - should contain files like ranger-s3-security.xml etc.
 scriptClasspath in bashScriptDefines ~= (cp => cp :+ ":/etc/rokku")
 
@@ -93,3 +84,5 @@ Compile / coverageMinimum := 70
 Compile / coverageFailOnMinimum := false
 Compile / coverageHighlighting := true
 Compile / coverageEnabled := true
+
+scalafmtOnCompile := true
