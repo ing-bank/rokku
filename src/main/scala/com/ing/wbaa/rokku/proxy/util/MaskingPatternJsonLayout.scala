@@ -13,8 +13,9 @@ class MaskingPatternJsonLayout extends JsonLayout {
 
   private var replace: Vector[Replace] = Vector()
 
-  def addReplace(replace: Replace): Unit =
+  def addReplace(replace: Replace): Unit = {
     this.replace = this.replace :+ replace
+  }
 
   override def doLayout(event: ILoggingEvent): String = {
     val message = super.doLayout(event)
@@ -48,11 +49,13 @@ object MaskingPatternJsonLayout {
 
     override def toString = s"/$pattern/$replacement/"
 
-    def setPattern(pattern: String): Unit =
+    def setPattern(pattern: String): Unit = {
       this.pattern = new Regex(pattern)
+    }
 
-    def setReplacement(replacement: String): Unit =
+    def setReplacement(replacement: String): Unit = {
       this.replacement = replacement
+    }
   }
 
 }

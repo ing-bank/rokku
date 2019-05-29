@@ -6,13 +6,13 @@ import akka.http.scaladsl.server.Route
 import com.ing.wbaa.rokku.proxy.handler.radosgw.RadosGatewayHandler
 
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 trait HealthService extends RadosGatewayHandler {
   import akka.http.scaladsl.server.Directives._
 
-  implicit protected[this] def system: ActorSystem
-  implicit protected[this] def executionContext: ExecutionContext
+  protected[this] implicit def system: ActorSystem
+  protected[this] implicit def executionContext: ExecutionContext
 
   final val healthRoute: Route =
     path("ping") {

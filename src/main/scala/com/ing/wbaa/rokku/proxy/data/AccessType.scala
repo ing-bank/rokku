@@ -7,3 +7,4 @@ case class Head(override val auditAction: String = "") extends AccessType("read"
 case class Write(override val auditAction: String = "") extends AccessType("write", auditAction)
 case class Delete(override val auditAction: String = "") extends AccessType("write", auditAction)
 case object NoAccess extends AccessType("noAccess", "noAccess")
+

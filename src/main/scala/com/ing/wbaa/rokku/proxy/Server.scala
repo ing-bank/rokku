@@ -1,31 +1,15 @@
 package com.ing.wbaa.rokku.proxy
 
 import akka.actor.ActorSystem
-import com.ing.wbaa.rokku.proxy.config.{
-  HttpSettings,
-  KafkaSettings,
-  KerberosSettings,
-  RangerSettings,
-  StorageS3Settings,
-  StsSettings
-}
-import com.ing.wbaa.rokku.proxy.handler.{FilterRecursiveListBucketHandler, RequestHandlerS3}
-import com.ing.wbaa.rokku.proxy.provider.{
-  AuthenticationProviderSTS,
-  AuthorizationProviderRanger,
-  KerberosLoginProvider,
-  LineageProviderAtlas,
-  MessageProviderKafka,
-  SignatureProviderAws
-}
+import com.ing.wbaa.rokku.proxy.config.{ HttpSettings, KafkaSettings, KerberosSettings, RangerSettings, StorageS3Settings, StsSettings }
+import com.ing.wbaa.rokku.proxy.handler.{ FilterRecursiveListBucketHandler, RequestHandlerS3 }
+import com.ing.wbaa.rokku.proxy.provider.{ AuthenticationProviderSTS, AuthorizationProviderRanger, KerberosLoginProvider, LineageProviderAtlas, MessageProviderKafka, SignatureProviderAws }
 
 object Server extends App {
 
-  new RokkuS3Proxy with AuthorizationProviderRanger with RequestHandlerS3 with AuthenticationProviderSTS
-  with LineageProviderAtlas with SignatureProviderAws with KerberosLoginProvider with FilterRecursiveListBucketHandler
-  with MessageProviderKafka {
+  new RokkuS3Proxy with AuthorizationProviderRanger with RequestHandlerS3 with AuthenticationProviderSTS with LineageProviderAtlas with SignatureProviderAws with KerberosLoginProvider with FilterRecursiveListBucketHandler with MessageProviderKafka {
 
-    implicit override lazy val system: ActorSystem = ActorSystem.create("rokku")
+    override implicit lazy val system: ActorSystem = ActorSystem.create("rokku")
 
     override def kerberosSettings: KerberosSettings = KerberosSettings(system)
 

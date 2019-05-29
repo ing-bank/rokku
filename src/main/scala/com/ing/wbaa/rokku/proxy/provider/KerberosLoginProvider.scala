@@ -8,7 +8,7 @@ import org.apache.commons.lang.StringUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 trait KerberosLoginProvider extends LazyLogging {
 
@@ -16,7 +16,8 @@ trait KerberosLoginProvider extends LazyLogging {
 
   loginUserFromKeytab(kerberosSettings.keytab, kerberosSettings.principal)
 
-  private def loginUserFromKeytab(keytab: String, principal: String): Unit =
+  private def loginUserFromKeytab(keytab: String, principal: String): Unit = {
+
     if (StringUtils.isNotBlank(keytab) && StringUtils.isNotBlank(principal)) {
       if (!new File(keytab).exists()) {
         logger.info("keytab file does not exist {}", keytab)
@@ -32,5 +33,6 @@ trait KerberosLoginProvider extends LazyLogging {
     } else {
       logger.info("kerberos credentials are not provided")
     }
+  }
 
 }
