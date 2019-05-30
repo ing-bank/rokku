@@ -1,9 +1,8 @@
 package com.ing.wbaa.rokku.proxy.provider.atlas
 
-import spray.json.{ JsArray, JsNumber, JsObject, JsString }
-import spray.json._
 import com.ing.wbaa.rokku.proxy.data.LineageLiterals._
 import com.ing.wbaa.rokku.proxy.data.User
+import spray.json.{ JsArray, JsNumber, JsObject, JsString, _ }
 
 object ModelKafka extends DefaultJsonProtocol {
 
@@ -38,12 +37,13 @@ object ModelKafka extends DefaultJsonProtocol {
       "user" -> JsString(userSTS.userName.value)
     )
 
-  private def baseEntityValues(name: String, owner: String, description: String = "Request via Rokku") =
+  private def baseEntityValues(name: String, owner: String, created: Long, description: String = "Request via Rokku") =
     JsObject(
       "qualifiedName" -> JsString(name),
       "owner" -> JsString(owner),
       "description" -> JsString(description),
-      "name" -> JsString(name)
+      "name" -> JsString(name),
+      "createTime" -> JsString(created.toString) // we always update timestamp when lineage changes
     )
 
   def prepareEntity(userName: String, typeName: String, typeValues: JsObject, entityState: String, guid: Long): JsObject =
@@ -62,44 +62,52 @@ object ModelKafka extends DefaultJsonProtocol {
       "traits" -> JsObject() // not used at the moment by rokku
     )
 
-  def bucketEntity(name: String, userName: String, guid: Long): JsObject =
-    prepareEntity(userName, AWS_S3_BUCKET_TYPE, baseEntityValues(name, userName), ENTITY_ACTIVE, guid)
+  def bucketEntity(name: String, userName: String, guid: Long, created: Long = System.currentTimeMillis()): JsObject =
+    prepareEntity(userName, AWS_S3_BUCKET_TYPE,
+      JsObject(baseEntityValues(name, userName, created).fields ++
+        Map(
+          "createtime" -> JsString(created.toString) // not a typo, this is actual filed name in Atlas 1.x/2.x
+        )), ENTITY_ACTIVE, guid)
 
-  def pseudoDirEntity(name: String, bucketName: String, bucketGuid: Long, userName: String, guid: Long, entityState: String = "ACTIVE"): JsObject =
+  def pseudoDirEntity(name: String, bucketName: String, bucketGuid: Long, userName: String, guid: Long,
+      created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
     prepareEntity(userName, AWS_S3_PSEUDO_DIR_TYPE,
-      JsObject(baseEntityValues(name, userName).fields ++
+      JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
           "objectPrefix" -> JsString(name),
           "bucket" -> referencedObject(bucketName, AWS_S3_BUCKET_TYPE, bucketGuid, entityState))
       ), ENTITY_ACTIVE, guid)
 
-  def s3ObjectEntity(name: String, pseudoDir: String, pseudoDirGuid: Long, userName: String, dataType: String, guid: Long, entityState: String = "ACTIVE"): JsObject =
+  def s3ObjectEntity(name: String, pseudoDir: String, pseudoDirGuid: Long, userName: String, dataType: String, guid: Long,
+      created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
     prepareEntity(userName, AWS_S3_OBJECT_TYPE,
-      JsObject(baseEntityValues(name, userName).fields ++
+      JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
           "dataType" -> JsString(dataType),
           "pseudoDirectory" -> referencedObject(pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirGuid, entityState))
       ), ENTITY_ACTIVE, guid)
 
-  def serverEntity(host: String, userName: String, guid: Long): JsObject =
+  def serverEntity(host: String, userName: String, guid: Long, created: Long = System.currentTimeMillis()): JsObject =
     prepareEntity(userName, ROKKU_SERVER_TYPE,
-      JsObject(baseEntityValues(host, userName).fields ++
+      JsObject(baseEntityValues(host, userName, created).fields ++
         Map(
           "server_name" -> JsString(host),
           "ip_address" -> JsString(host))
       ), ENTITY_ACTIVE, guid)
 
-  def fsPathEntity(name: String, userName: String, path: String, guid: Long): JsObject =
+  def fsPathEntity(name: String, userName: String, path: String, guid: Long, modified: Long = System.currentTimeMillis()): JsObject =
     prepareEntity(userName, HADOOP_FS_PATH,
-      JsObject(baseEntityValues(name, userName).fields ++
+      JsObject(baseEntityValues(name, userName, modified).fields ++
         Map(
-          "path" -> JsString(path))
+          "path" -> JsString(path),
+          "modifiedTime" -> JsString(modified.toString))
       ), ENTITY_ACTIVE, guid)
 
   def processEntity(name: String, userName: String, operation: String, host: String, serverGuid: Long,
-      inName: String, inType: String, inGuid: Long, outName: String, outType: String, outGuid: Long, guid: Long, entityState: String = "ACTIVE"): JsObject =
+      inName: String, inType: String, inGuid: Long, outName: String, outType: String, outGuid: Long, guid: Long,
+      created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
     prepareEntity(userName, ROKKU_CLIENT_TYPE,
-      JsObject(baseEntityValues(name, userName).fields ++
+      JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
           "operation" -> JsString(operation),
           "run_as" -> JsString(userName),
