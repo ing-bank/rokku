@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.auth._
 import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.awsVersion
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
-import com.ing.wbaa.rokku.proxy.data.{AwsSecretKey, RequestId}
+import com.ing.wbaa.rokku.proxy.data.{ AwsSecretKey, RequestId }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
 trait SignatureProviderAws {
@@ -21,12 +21,7 @@ trait SignatureProviderAws {
 
     if (!credentials.getAWSAccessKeyId.isEmpty) {
       awsSignature.addHeadersToRequest(incomingRequest, awsHeaders, httpRequest.entity.contentType.mediaType.value)
-      awsSignature.signS3Request(
-        incomingRequest,
-        credentials,
-        awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""),
-        storageS3Settings.awsRegion
-      )
+      awsSignature.signS3Request(incomingRequest, credentials, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""), storageS3Settings.awsRegion)
       logger.debug("Signed Request:" + incomingRequest.getHeaders.toString)
     }
 

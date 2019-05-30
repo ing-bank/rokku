@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.DefaultRequest
 import com.amazonaws.auth.BasicAWSCredentials
 import com.ing.wbaa.rokku.proxy.provider.aws.NoSignerSupport.SignatureNotSupported
-import com.ing.wbaa.rokku.proxy.data.{AWSHeaderValues, RequestId}
+import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
 
 class NoSignerSupport(authorization: String) extends SignatureHelpersCommon {
   private val exceptionMsg = "Signature version not supported: " + authorization
@@ -19,16 +19,10 @@ class NoSignerSupport(authorization: String) extends SignatureHelpersCommon {
   override def addHeadersToRequest(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit =
     throw new SignatureNotSupported(exceptionMsg)
 
-  override def signS3Request(
-    request: DefaultRequest[_],
-    credentials: BasicAWSCredentials,
-    date: String,
-    region: String
-  )(implicit id: RequestId): Unit =
+  override def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, date: String, region: String)(implicit id: RequestId): Unit =
     throw new SignatureNotSupported(exceptionMsg)
 
-  def getSignedHeaders(authorization: String): String =
-    throw new Exception("V2 signature protocol doesn't support SignedHeaders")
+  def getSignedHeaders(authorization: String): String = throw new Exception("V2 signature protocol doesn't support SignedHeaders")
 
 }
 

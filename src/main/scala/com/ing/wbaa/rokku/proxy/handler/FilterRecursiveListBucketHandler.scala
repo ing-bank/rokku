@@ -3,12 +3,12 @@ package com.ing.wbaa.rokku.proxy.handler
 import java.net.URLDecoder
 
 import akka.NotUsed
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.stream.alpakka.xml.scaladsl.{XmlParsing, XmlWriting}
-import akka.stream.alpakka.xml.{EndElement, ParseEvent, StartElement, TextEvent}
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.stream.alpakka.xml.scaladsl.{ XmlParsing, XmlWriting }
+import akka.stream.alpakka.xml.{ EndElement, ParseEvent, StartElement, TextEvent }
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
-import com.ing.wbaa.rokku.proxy.data.{Read, RequestId, S3Request, User}
+import com.ing.wbaa.rokku.proxy.data.{ Read, RequestId, S3Request, User }
 
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
@@ -33,12 +33,9 @@ trait FilterRecursiveListBucketHandler {
    * @param response
    * @return for recursive request it returns filtered response for others the original response
    */
-  protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse)(
-    implicit id: RequestId
-  ): HttpResponse = {
+  protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse)(implicit id: RequestId): HttpResponse = {
     val noDelimiterWithReadAndNoObject =
-      !request.uri.rawQueryString.getOrElse("").contains("delimiter") && s3request.accessType
-        .isInstanceOf[Read] && s3request.s3Object.isEmpty
+      !request.uri.rawQueryString.getOrElse("").contains("delimiter") && s3request.accessType.isInstanceOf[Read] && s3request.s3Object.isEmpty
     if (noDelimiterWithReadAndNoObject) {
       response.transformEntityDataBytes(filterRecursiveListObjects(userSTS, s3request))
     } else {
@@ -53,20 +50,15 @@ trait FilterRecursiveListBucketHandler {
    * @param requestS3
    * @return xml as stream of bytes with only authorised resources
    */
-  protected[this] def filterRecursiveListObjects(user: User, requestS3: S3Request)(
-    implicit id: RequestId
-  ): Flow[ByteString, ByteString, NotUsed] = {
-    def elementResult(
-      allContentsElements: ListBuffer[ParseEvent],
-      isContentsTag: Boolean,
-      element: ParseEvent
-    ): immutable.Seq[ParseEvent] =
+  protected[this] def filterRecursiveListObjects(user: User, requestS3: S3Request)(implicit id: RequestId): Flow[ByteString, ByteString, NotUsed] = {
+    def elementResult(allContentsElements: ListBuffer[ParseEvent], isContentsTag: Boolean, element: ParseEvent): immutable.Seq[ParseEvent] = {
       if (isContentsTag) {
         allContentsElements += element
         immutable.Seq.empty
       } else {
         immutable.Seq(element)
       }
+    }
 
     def isPathOkInRangerPolicy(path: String)(implicit id: RequestId): Boolean = {
       val pathToCheck = normalizePath(path)
@@ -78,18 +70,13 @@ trait FilterRecursiveListBucketHandler {
       val delimiter = "/"
       val decodedPath = URLDecoder.decode(path, "UTF-8")
       val delimiterIndex = decodedPath.lastIndexOf(delimiter)
-      val pathToCheckWithoutLastSlash =
-        if (delimiterIndex > 0) delimiter + decodedPath.substring(0, delimiterIndex) else ""
+      val pathToCheckWithoutLastSlash = if (delimiterIndex > 0) delimiter + decodedPath.substring(0, delimiterIndex) else ""
       val s3BucketName = requestS3.s3BucketPath.getOrElse(delimiter)
-      val s3pathWithoutLastDelimiter =
-        if (s3BucketName.length > 1 && s3BucketName.endsWith(delimiter))
-          s3BucketName.substring(0, s3BucketName.length - 1)
-        else s3BucketName
+      val s3pathWithoutLastDelimiter = if (s3BucketName.length > 1 && s3BucketName.endsWith(delimiter)) s3BucketName.substring(0, s3BucketName.length - 1) else s3BucketName
       s3pathWithoutLastDelimiter + pathToCheckWithoutLastSlash
     }
 
-    Flow[ByteString]
-      .via(XmlParsing.parser)
+    Flow[ByteString].via(XmlParsing.parser)
       .statefulMapConcat(() => {
         // state
         val keyTagValue = StringBuilder.newBuilder

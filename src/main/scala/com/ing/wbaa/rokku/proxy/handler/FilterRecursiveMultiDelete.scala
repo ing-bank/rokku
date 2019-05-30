@@ -2,8 +2,8 @@ package com.ing.wbaa.rokku.proxy.handler
 
 import akka.stream.ActorMaterializer
 import akka.stream.alpakka.xml.scaladsl.XmlParsing
-import akka.stream.alpakka.xml.{EndElement, StartElement, TextEvent}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.alpakka.xml.{ EndElement, StartElement, TextEvent }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -12,9 +12,7 @@ import scala.concurrent.Future
 
 object FilterRecursiveMultiDelete {
 
-  def exctractMultideleteObjectsFlow(
-    source: Source[ByteString, Any]
-  )(implicit materializer: ActorMaterializer): Future[Seq[String]] = {
+  def exctractMultideleteObjectsFlow(source: Source[ByteString, Any])(implicit materializer: ActorMaterializer): Future[Seq[String]] = {
     var isKeyTag = false
 
     source
@@ -47,7 +45,6 @@ object FilterRecursiveMultiDelete {
             case _ =>
               immutable.Seq.empty
           }
-      })
-      .runWith(Sink.seq)
+      }).runWith(Sink.seq)
   }
 }

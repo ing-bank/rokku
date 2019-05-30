@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.DefaultRequest
 import com.amazonaws.auth.BasicAWSCredentials
 import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.extractHeaderOption
-import com.ing.wbaa.rokku.proxy.data.{AWSHeaderValues, RequestId}
+import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
 import scala.collection.JavaConverters._
@@ -14,8 +14,7 @@ import scala.collection.JavaConverters._
 class SignatureHelpersV2 extends SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId
 
-  def getSignedHeaders(authorization: String): String =
-    throw new Exception("V2 signature protocol doesn't support SignedHeaders")
+  def getSignedHeaders(authorization: String): String = throw new Exception("V2 signature protocol doesn't support SignedHeaders")
 
   def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]] = {
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
@@ -50,12 +49,8 @@ class SignatureHelpersV2 extends SignatureHelpersCommon {
     val requestDate = extractHeaderOption("Date")
     val securityToken = extractHeaderOption("X-Amz-Security-Token")
     val contentMD5 = extractHeaderOption("Content-MD5")
-    val possibleAWSHeaders = httpRequest.headers
-      .filter(_.lowercaseName().contains("x-amz"))
-      .map { h =>
-        (h.name(), h.value())
-      }
-      .toMap
+    val possibleAWSHeaders = httpRequest.headers.filter(_.lowercaseName().contains("x-amz"))
+      .map { h => (h.name(), h.value()) }.toMap
 
     AWSHeaderValues(accessKey, possibleAWSHeaders, signature, requestDate, securityToken, contentMD5)
   }
@@ -64,31 +59,10 @@ class SignatureHelpersV2 extends SignatureHelpersCommon {
   private def buildQueryParams(params: util.Set[String])(implicit id: RequestId): String = {
     // list of allowed AWS subresource parameters
     val signParameters = List(
-      "acl",
-      "torrent",
-      "logging",
-      "location",
-      "policy",
-      "requestPayment",
-      "versioning",
-      "versions",
-      "versionId",
-      "notification",
-      "uploadId",
-      "uploads",
-      "partNumber",
-      "website",
-      "delete",
-      "lifecycle",
-      "tagging",
-      "cors",
-      "restore",
-      "replication",
-      "accelerate",
-      "inventory",
-      "analytics",
-      "metrics"
-    )
+      "acl", "torrent", "logging", "location", "policy", "requestPayment", "versioning",
+      "versions", "versionId", "notification", "uploadId", "uploads", "partNumber", "website",
+      "delete", "lifecycle", "tagging", "cors", "restore", "replication", "accelerate",
+      "inventory", "analytics", "metrics")
 
     val queryParams = new StringBuilder("?")
 
@@ -102,12 +76,7 @@ class SignatureHelpersV2 extends SignatureHelpersCommon {
   }
 
   // for now we do not have any regions, we use default one
-  def signS3Request(
-    request: DefaultRequest[_],
-    credentials: BasicAWSCredentials,
-    date: String,
-    region: String = "us-east-1"
-  )(implicit id: RequestId): Unit = {
+  def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
     logger.debug("Using version 2 signer")
 
     val requestParams = request.getParameters.values()
