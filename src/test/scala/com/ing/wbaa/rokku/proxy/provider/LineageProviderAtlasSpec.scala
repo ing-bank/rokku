@@ -25,12 +25,13 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
   val HADOOP_FS_PATH = "fs_path"
   val ROKKU_CLIENT_TYPE = "rokku_client"
   val ROKKU_SERVER_TYPE = "server"
+  val created = System.currentTimeMillis()
 
   "Json serverEntities" should {
     "match current schema" in {
-      val testServerEntities = serverEntity(localhost, userName, 100)
+      val testServerEntities = serverEntity(localhost, userName, 100, created)
       val jsonEntities =
-        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"server","values":{"description":"Request via Rokku","ip_address":"127.0.0.1","name":"127.0.0.1","owner":"testuser","qualifiedName":"127.0.0.1","server_name":"127.0.0.1"}}"""
+        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"server","values":{"createTime":"""" + created + """","description":"Request via Rokku","ip_address":"127.0.0.1","name":"127.0.0.1","owner":"testuser","qualifiedName":"127.0.0.1","server_name":"127.0.0.1"}}"""
 
       assert(testServerEntities == jsonEntities.parseJson)
     }
@@ -38,9 +39,9 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json bucketEntities" should {
     "match current schema" in {
-      val testBucketEntities = bucketEntity(bucket, userName, 100)
+      val testBucketEntities = bucketEntity(bucket, userName, 100, created)
       val jsonEntities =
-        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_bucket","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_bucket","values":{"description":"Request via Rokku","name":"user","owner":"testuser","qualifiedName":"user"}}"""
+        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_bucket","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_bucket","values":{"createTime":"""" + created + """","createtime":"""" + created + """","description":"Request via Rokku","name":"user","owner":"testuser","qualifiedName":"user"}}"""
 
       assert(testBucketEntities == jsonEntities.parseJson)
     }
@@ -48,9 +49,9 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json file Entities" should {
     "match current schema" in {
-      val testFileEntities = s3ObjectEntity(s3Object, pseudoDir, 200, userName, dataType, 100).toJson
+      val testFileEntities = s3ObjectEntity(s3Object, pseudoDir, 200, userName, dataType, 100, created).toJson
       val jsonEntities =
-        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_object","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_object","values":{"dataType":"application/octet-stream","description":"Request via Rokku","name":"user/testuser/file1.txt","owner":"testuser","pseudoDirectory":{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0},"qualifiedName":"user/testuser/file1.txt"}}"""
+        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_object","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_object","values":{"createTime":"""" + created + """","dataType":"application/octet-stream","description":"Request via Rokku","name":"user/testuser/file1.txt","owner":"testuser","pseudoDirectory":{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0},"qualifiedName":"user/testuser/file1.txt"}}"""
 
       assert(testFileEntities == jsonEntities.parseJson)
     }
@@ -58,18 +59,18 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json fsPathEntities" should {
     "match current schema" in {
-      val testFsPathEntities = fsPathEntity(externalPath, userName, "external_object_in/file1.txt", 100).toJson
+      val testFsPathEntities = fsPathEntity(externalPath, userName, "external_object_in/file1.txt", 100, created).toJson
       val jsonEntities =
-        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"fs_path","values":{"description":"Request via Rokku","name":"external_object_in/file1.txt","owner":"testuser","path":"external_object_in/file1.txt","qualifiedName":"external_object_in/file1.txt"}}"""
+        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"fs_path","values":{"createTime":"""" + created + """","description":"Request via Rokku","modifiedTime":"""" + created + """","name":"external_object_in/file1.txt","owner":"testuser","path":"external_object_in/file1.txt","qualifiedName":"external_object_in/file1.txt"}}"""
       assert(testFsPathEntities == jsonEntities.parseJson)
     }
   }
 
   "Json pseudoDirEntities" should {
     "match current schema" in {
-      val pseudoDirEntities = pseudoDirEntity(pseudoDir, bucket, 200, userName, 100).toJson
+      val pseudoDirEntities = pseudoDirEntity(pseudoDir, bucket, 200, userName, 100, created).toJson
       val jsonEntities =
-        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_pseudo_dir","values":{"bucket":{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_bucket","version":0},"description":"Request via Rokku","name":"user/testuser","objectPrefix":"user/testuser","owner":"testuser","qualifiedName":"user/testuser"}}"""
+        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_pseudo_dir","values":{"bucket":{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_bucket","version":0},"createTime":"""" + created + """","description":"Request via Rokku","name":"user/testuser","objectPrefix":"user/testuser","owner":"testuser","qualifiedName":"user/testuser"}}"""
       assert(pseudoDirEntities == jsonEntities.parseJson)
     }
   }
@@ -79,9 +80,9 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
       val readProcess = processEntity("aws-cli_500", userName, Read().rangerName,
         localhost, 100,
         s3Object, AWS_S3_OBJECT_TYPE, 200,
-        externalPath, HADOOP_FS_PATH, 300, 400).toJson
+        externalPath, HADOOP_FS_PATH, 300, 400, created).toJson
       val jsonEntities =
-        """ {"id":{"id":"-400","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"rokku_client","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"rokku_client","values":{"description":"Request via Rokku","inputs":[{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_object","version":0}],"name":"aws-cli_500","operation":"read","outputs":[{"id":"-300","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0}],"owner":"testuser","qualifiedName":"aws-cli_500","run_as":"testuser","server":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0}}}"""
+        """ {"id":{"id":"-400","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"rokku_client","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"rokku_client","values":{"createTime":"""" + created + """","description":"Request via Rokku","inputs":[{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_object","version":0}],"name":"aws-cli_500","operation":"read","outputs":[{"id":"-300","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0}],"owner":"testuser","qualifiedName":"aws-cli_500","run_as":"testuser","server":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0}}}"""
       assert(readProcess == jsonEntities.parseJson)
     }
   }
@@ -91,9 +92,9 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
       val writeProcess = processEntity("aws-cli_500", userName, Write().rangerName,
         localhost, 100,
         externalPath, HADOOP_FS_PATH, 200,
-        pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, 300, 400).toJson
+        pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, 300, 400, created).toJson
       val jsonEntities =
-        """{"id":{"id":"-400","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"rokku_client","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"rokku_client","values":{"description":"Request via Rokku","inputs":[{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0}],"name":"aws-cli_500","operation":"write","outputs":[{"id":"-300","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0}],"owner":"testuser","qualifiedName":"aws-cli_500","run_as":"testuser","server":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0}}}"""
+        """{"id":{"id":"-400","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"rokku_client","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"rokku_client","values":{"createTime":"""" + created + """","description":"Request via Rokku","inputs":[{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0}],"name":"aws-cli_500","operation":"write","outputs":[{"id":"-300","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0}],"owner":"testuser","qualifiedName":"aws-cli_500","run_as":"testuser","server":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0}}}"""
       assert(writeProcess == jsonEntities.parseJson)
     }
   }
