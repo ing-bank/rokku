@@ -180,14 +180,35 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
         }
 
         import scala.concurrent.duration._
-        val testBucketPolicy = Await.result(radosS3client.getBucketAcl("acltest"), 5.seconds)
+        val testBucketACL = Await.result(radosS3client.getBucketAcl("acltest"), 5.seconds)
 
-        val grants = testBucketPolicy.getGrantsAsList.asScala
+        val grants = testBucketACL.getGrantsAsList.asScala
 
         assert(!grants.exists(g => GroupGrantee.AllUsers.equals(g.getGrantee) && Permission.Read == g.getPermission))
         assert(!grants.exists(g => GroupGrantee.AllUsers.equals(g.getGrantee) && Permission.Write == g.getPermission))
         assert(grants.exists(g => GroupGrantee.AuthenticatedUsers.equals(g.getGrantee) && Permission.Read == g.getPermission))
         assert(grants.exists(g => GroupGrantee.AuthenticatedUsers.equals(g.getGrantee) && Permission.Write == g.getPermission))
+
+        val testBucketPolicy = Await.result(radosS3client.getBucketPolicy(bucketName = "acltest"), 5.seconds)
+        val policy = testBucketPolicy.getPolicyText
+        assert(policy == """{"Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": "*","Resource": ["arn:aws:s3:::*"]}],"Version": "2012-10-17"}""")
+      }
+    }
+
+    "usertwo can read data created by userone from a shared bucket" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
+      val sharedBucket = "shared"
+      val sharedFile = "sharedFile"
+      val sharedContent = "sharedContent"
+      retrieveKeycloackToken(validKeycloakCredentialsUserone).flatMap { keycloakTokenUserone =>
+        val s3ClientUserone = getSdk(stsSdk, s3ProxyAuthority, keycloakTokenUserone)
+        s3ClientUserone.deleteObject(sharedBucket, sharedFile)
+        s3ClientUserone.putObject(sharedBucket, sharedFile, sharedContent)
+
+        retrieveKeycloackToken(validKeycloakCredentialsUsertwo).flatMap { keycloakTokenUserTwo =>
+          val s3ClientUserTwo = getSdk(stsSdk, s3ProxyAuthority, keycloakTokenUserTwo)
+          val sharedFileReadByTwo = s3ClientUserTwo.getObjectAsString(sharedBucket, sharedFile)
+          assert(sharedFileReadByTwo == sharedContent)
+        }
       }
     }
 

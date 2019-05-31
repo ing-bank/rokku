@@ -24,7 +24,7 @@ trait PostRequestActions {
 
   protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String)(implicit id: RequestId): Future[Done]
 
-  protected[this] def setDefaultBucketAcl(bucketName: String): Future[Unit]
+  protected[this] def setDefaultBucketAclAndPolicy(bucketName: String): Future[Unit]
 
   private[this] def createAtlasLineage(response: HttpResponse, httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] =
     if (atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent)) {
@@ -47,7 +47,7 @@ trait PostRequestActions {
     lazy val bucketName = bucketRegex findFirstMatchIn httpRequest.uri.path.toString() map (_.group(1))
     if (httpRequest.method == HttpMethods.PUT &&
       bucketName.isDefined) {
-      setDefaultBucketAcl(bucketName.get) map (_ => Done)
+      setDefaultBucketAclAndPolicy(bucketName.get) map (_ => Done)
     } else {
       Future.successful(Done)
     }
