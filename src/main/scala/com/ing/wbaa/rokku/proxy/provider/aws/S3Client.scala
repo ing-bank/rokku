@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy.provider.aws
 import com.amazonaws.auth.{ AWSStaticCredentialsProvider, BasicAWSCredentials }
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.regions.Regions
-import com.amazonaws.services.s3.model.{ AccessControlList, GroupGrantee, Permission }
+import com.amazonaws.services.s3.model.{ AccessControlList, BucketPolicy, GroupGrantee, Permission }
 import com.amazonaws.services.s3.{ AmazonS3, AmazonS3ClientBuilder }
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 
@@ -31,19 +31,24 @@ trait S3Client {
   }
 
   /**
-   * Sets the default bucket ACL
+   * Sets the default bucket ACL and policy
    * @param bucketName The name of the bucket to set the policy
    * @return A future which completes when the policy is set
    */
-  protected[this] def setDefaultBucketAcl(bucketName: String): Future[Unit] = Future {
+  protected[this] def setDefaultBucketAclAndPolicy(bucketName: String): Future[Unit] = Future {
     val acl = s3Client.getBucketAcl(bucketName)
     acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Read)
     acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Write)
     s3Client.setBucketAcl(bucketName, acl)
+    s3Client.setBucketPolicy(bucketName, """{"Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": "*","Resource": ["arn:aws:s3:::*"]}],"Version": "2012-10-17"}""")
   }
 
   def getBucketAcl(bucketName: String): Future[AccessControlList] = Future {
     s3Client.getBucketAcl(bucketName)
+  }
+
+  def getBucketPolicy(bucketName: String): Future[BucketPolicy] = Future {
+    s3Client.getBucketPolicy(bucketName)
   }
 
 }
