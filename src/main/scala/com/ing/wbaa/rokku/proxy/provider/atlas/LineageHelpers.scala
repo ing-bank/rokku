@@ -106,7 +106,7 @@ trait LineageHelpers extends EventProducer {
             processEntity(s"${clientType}_$timestamp", userName, method.rangerName,
               clientHost, guids.serverGuid,
               externalPath, HADOOP_FS_PATH, guids.externalPathGuid,
-              pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, guids.pseudoDir, guids.processGuid)))
+              bucketObject, AWS_S3_OBJECT_TYPE, guids.objectGuid, guids.processGuid)))
             .toString, ATLAS_HOOK_TOPIC)
 
       case _ => Future(Done)

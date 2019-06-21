@@ -92,9 +92,9 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
       val writeProcess = processEntity("aws-cli_500", userName, Write().rangerName,
         localhost, 100,
         externalPath, HADOOP_FS_PATH, 200,
-        pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, 300, 400, created).toJson
+        s3Object, AWS_S3_OBJECT_TYPE, 300, 400, created).toJson
       val jsonEntities =
-        """{"id":{"id":"-400","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"rokku_client","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"rokku_client","values":{"createTime":"""" + created + """","description":"Request via Rokku","inputs":[{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0}],"name":"aws-cli_500","operation":"write","outputs":[{"id":"-300","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0}],"owner":"testuser","qualifiedName":"aws-cli_500","run_as":"testuser","server":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0}}}"""
+        """{"id":{"id":"-400","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"rokku_client","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"rokku_client","values":{"createTime":"""" + created + """","description":"Request via Rokku","inputs":[{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"fs_path","version":0}],"name":"aws-cli_500","operation":"write","outputs":[{"id":"-300","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_object","version":0}],"owner":"testuser","qualifiedName":"aws-cli_500","run_as":"testuser","server":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"server","version":0}}}"""
       assert(writeProcess == jsonEntities.parseJson)
     }
   }
