@@ -62,6 +62,14 @@ object ModelKafka extends DefaultJsonProtocol {
       "traits" -> JsObject() // not used at the moment by rokku
     )
 
+  def prepareStrut(typeName: String, typeValues: JsObject): JsObject = {
+    JsObject(
+      "jsonClass" -> JsString("org.apache.atlas.typesystem.json.InstanceSerialization$_Struct"),
+      "typeName" -> JsString(typeName),
+      "values" -> typeValues
+    )
+  }
+
   def bucketEntity(name: String, userName: String, guid: Long, created: Long = System.currentTimeMillis()): JsObject =
     prepareEntity(userName, AWS_S3_BUCKET_TYPE,
       JsObject(baseEntityValues(name, userName, created).fields ++
@@ -79,12 +87,17 @@ object ModelKafka extends DefaultJsonProtocol {
       ), ENTITY_ACTIVE, guid)
 
   def s3ObjectEntity(name: String, pseudoDir: String, pseudoDirGuid: Long, userName: String, dataType: String, guid: Long,
-      created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
+      metadata: Option[Map[String, String]], created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
     prepareEntity(userName, AWS_S3_OBJECT_TYPE,
       JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
           "dataType" -> JsString(dataType),
-          "pseudoDirectory" -> referencedObject(pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirGuid, entityState))
+          "pseudoDirectory" -> referencedObject(pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirGuid, entityState),
+          "awsTags" -> {
+            JsArray(metadata.getOrElse(Map.empty).map {
+              case (key, value) => prepareStrut(AWS_TAG, JsObject("key" -> JsString(key), "value" -> JsString(value)))
+            }.toVector)
+          })
       ), ENTITY_ACTIVE, guid)
 
   def serverEntity(host: String, userName: String, guid: Long, created: Long = System.currentTimeMillis()): JsObject =

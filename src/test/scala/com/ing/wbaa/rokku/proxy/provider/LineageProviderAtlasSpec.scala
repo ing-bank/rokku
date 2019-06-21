@@ -49,9 +49,17 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
 
   "Json file Entities" should {
     "match current schema" in {
-      val testFileEntities = s3ObjectEntity(s3Object, pseudoDir, 200, userName, dataType, 100, created).toJson
+      val testFileEntities = s3ObjectEntity(s3Object, pseudoDir, 200, userName, dataType, 100, None, created).toJson
       val jsonEntities =
-        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_object","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_object","values":{"createTime":"""" + created + """","dataType":"application/octet-stream","description":"Request via Rokku","name":"user/testuser/file1.txt","owner":"testuser","pseudoDirectory":{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0},"qualifiedName":"user/testuser/file1.txt"}}"""
+        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_object","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_object","values":{"awsTags":[],"createTime":"""" + created + """","dataType":"application/octet-stream","description":"Request via Rokku","name":"user/testuser/file1.txt","owner":"testuser","pseudoDirectory":{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0},"qualifiedName":"user/testuser/file1.txt"}}"""
+
+      assert(testFileEntities == jsonEntities.parseJson)
+    }
+
+    "match current schema with awsTags" in {
+      val testFileEntities = s3ObjectEntity(s3Object, pseudoDir, 200, userName, dataType, 100, Some(Map("key1" -> "value1")), created).toJson
+      val jsonEntities =
+        """{"id":{"id":"-100","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_object","version":0},"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference","traitNames":[],"traits":{},"typeName":"aws_s3_object","values":{"awsTags":[{"jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Struct","typeName":"aws_tag","values":{"key":"key1","value":"value1"}}],"createTime":"""" + created + """","dataType":"application/octet-stream","description":"Request via Rokku","name":"user/testuser/file1.txt","owner":"testuser","pseudoDirectory":{"id":"-200","jsonClass":"org.apache.atlas.typesystem.json.InstanceSerialization$_Id","state":"ACTIVE","typeName":"aws_s3_pseudo_dir","version":0},"qualifiedName":"user/testuser/file1.txt"}}"""
 
       assert(testFileEntities == jsonEntities.parseJson)
     }

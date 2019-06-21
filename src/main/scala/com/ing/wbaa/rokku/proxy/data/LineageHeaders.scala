@@ -11,4 +11,6 @@ case class LineageHeaders(
     contentType: ContentType,
     clientType: Option[String],
     queryParams: Option[String],
-    copySource: Option[String])
+    copySource: Option[String],
+    classifications: Option[Seq[String]],
+    metadata: Option[Map[String, String]])

@@ -11,4 +11,5 @@ object LineageLiterals {
   val EXTERNAL_OBJECT_OUT = "external_object_out"
   val ATLAS_HOOK_TOPIC = "ATLAS_HOOK"
   val ENTITY_ACTIVE = "ACTIVE"
+  val AWS_TAG = "aws_tag"
 }
