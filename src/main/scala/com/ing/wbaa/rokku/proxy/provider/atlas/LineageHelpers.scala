@@ -35,7 +35,7 @@ trait LineageHelpers extends EventProducer {
         Some(path.dropRight(1).mkString("/"))
       else
         None
-    val bucketObjectFQN = if (path.length > 1) Some(path.mkString("/")) else None
+    val bucketObjectFQN = if (path.length > 1) Some(s"""s3://${path.mkString("/")}""") else None
 
     LineageHeaders(
       extractHeaderOption(httpRequest, "Remote-Address"),
