@@ -4,6 +4,7 @@ import java.net.InetAddress
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsSecretKey, RequestId, User, UserGroup, UserName}
@@ -17,7 +18,7 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
   implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
   implicit val requestId: RequestId = RequestId("test")
 
-  def fakeIncomingHttpRequest(method: HttpMethod, path: String) = {
+  def fakeIncomingHttpRequest(method: HttpMethod, path: String): HttpRequest = {
     val uri = Uri(
       scheme = "http",
       authority = Uri.Authority(host = Uri.Host("proxyHost"), port = 8010)).withPath(Uri.Path(path))
@@ -61,6 +62,17 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
           fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("external_object_in/fakeObject"))
+      }
+    }
+
+    "create Write lineage from HttpRequest with metadata" in withLineageProviderAtlas() { apr =>
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = testKafkaPort)
+      withRunningKafka {
+        Thread.sleep(2000)
+        apr.createLineageFromRequest(
+          fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeTags").withHeaders(RawHeader("rokku-metadata", "k1=v1")), userSTS, remoteClientIP)
+        val message = consumeFirstStringMessageFrom(createEventsTopic)
+        assert(message.contains("\"aws_tag\",\"values\":{\"key\":\"k1\",\"value\":\"v1\"}"))
       }
     }
 

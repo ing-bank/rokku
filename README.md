@@ -191,6 +191,13 @@ Lineage is done according following model
 To check lineage that has been created, login to Atlas web UI console, [default url](http://localhost:21000) with
 admin user and password 
 
+## Classifications and metadata
+
+You can set classifications and metadata to objects in lineage by setting http headers:
+
+* **rokku-metadata** - key value pair in format _key1=val1,key2=val2_ - the matadata is presented in lineage entity as "awsTags" properties.
+* **rokku-classifications**  - unsupported yet
+
 # Events Notification
 
 Rokku can send event notification to message queue based on user requests, in [AWS format](https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html).

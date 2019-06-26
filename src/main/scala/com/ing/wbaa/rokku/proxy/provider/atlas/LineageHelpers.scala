@@ -2,14 +2,15 @@ package com.ing.wbaa.rokku.proxy.provider.atlas
 
 import akka.Done
 import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
-import spray.json.JsObject
-import com.ing.wbaa.rokku.proxy.data.{ AccessType, LineageHeaders, LineageObjectGuids, Read, RequestId, User, Write }
 import com.ing.wbaa.rokku.proxy.data.LineageLiterals._
-import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka._
+import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka._
 import com.ing.wbaa.rokku.proxy.provider.kafka.EventProducer
+import spray.json.JsObject
 
 import scala.concurrent.Future
+import scala.util.{ Failure, Success, Try }
 
 trait LineageHelpers extends EventProducer {
 
@@ -22,13 +23,29 @@ trait LineageHelpers extends EventProducer {
       .findFirstMatchIn(userAgent)
       .map(_ group 1)
 
+  val CLASSIFICATIONS_HEADER = "rokku-classifications"
+  val METADATA_HEADER = "rokku-metadata"
+
   private def extractHeaderOption(httpRequest: HttpRequest, header: String): Option[String] =
     if (httpRequest.getHeader(header).isPresent)
       Some(httpRequest.getHeader(header).get().value())
     else
       None
 
-  def getLineageHeaders(httpRequest: HttpRequest): LineageHeaders = {
+  def extractMetadataHeader(metadata: Option[String])(implicit id: RequestId): Option[Map[String, String]] = {
+    if (metadata.isDefined) {
+      Try(metadata.get.split(",").map(_.split("=")).map(arr => arr(0) -> arr(1)).toMap) match {
+        case Success(value) => Some(value)
+        case Failure(exception) =>
+          logger.warn("cannot parse rokku metadata header ex=", exception)
+          None
+      }
+    } else {
+      None
+    }
+  }
+
+  def getLineageHeaders(httpRequest: HttpRequest)(implicit id: RequestId): LineageHeaders = {
     val path = httpRequest.uri.path.toString().split("/").filter(_.nonEmpty)
     val pseudoDir =
       if (path.length > 2)
@@ -46,7 +63,9 @@ trait LineageHelpers extends EventProducer {
       httpRequest.entity.contentType,
       extractHeaderOption(httpRequest, "User-Agent").flatMap(extractClient),
       httpRequest.uri.rawQueryString,
-      extractHeaderOption(httpRequest, "x-amz-copy-source")
+      extractHeaderOption(httpRequest, "x-amz-copy-source"),
+      extractHeaderOption(httpRequest, CLASSIFICATIONS_HEADER).map(_.split(",")),
+      extractMetadataHeader(extractHeaderOption(httpRequest, METADATA_HEADER))
     )
   }
 
@@ -85,7 +104,7 @@ trait LineageHelpers extends EventProducer {
     val serverEntityJs = serverEntity(clientHost, userName, guids.serverGuid)
     val bucketEntityJs = bucketEntity(lh.bucket, userName, guids.bucketGuid)
     val pseudoDirEntityJs = pseudoDirEntity(pseudoDir, lh.bucket, guids.bucketGuid, userName, guids.pseudoDir)
-    val s3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, guids.pseudoDir, userName, lh.contentType.toString(), guids.objectGuid)
+    val s3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, guids.pseudoDir, userName, lh.contentType.toString(), guids.objectGuid, lh.metadata)
     val externalPathEntityJs = fsPathEntity(externalPath, userName, externalPath, guids.externalPathGuid)
 
     method match {
@@ -139,7 +158,7 @@ trait LineageHelpers extends EventProducer {
     val serverEntityJs = serverEntity(clientHost, userName, srcGuids.serverGuid)
     val srcBucketEntityJs = bucketEntity(bucketNameFromCopySrc, userName, srcGuids.bucketGuid)
     val srcPseudoDirEntityJs = pseudoDirEntity(pseudoDirFromCopySrc, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, srcGuids.pseudoDir)
-    val srcS3ObjectEntityJs = s3ObjectEntity(objectNameFromCopySrc, pseudoDirFromCopySrc, srcGuids.pseudoDir, userName, lh.contentType.toString(), srcGuids.objectGuid)
+    val srcS3ObjectEntityJs = s3ObjectEntity(objectNameFromCopySrc, pseudoDirFromCopySrc, srcGuids.pseudoDir, userName, lh.contentType.toString(), srcGuids.objectGuid, lh.metadata)
     val destBucketEntityJs = bucketEntity(lh.bucket, userName, destGuids.bucketGuid)
     val destPseudoDirEntityJs =
       if (bucketNameFromCopySrc == lh.bucket) {
@@ -147,7 +166,7 @@ trait LineageHelpers extends EventProducer {
       } else {
         pseudoDirEntity(pseudoDir, lh.bucket, destGuids.bucketGuid, userName, destGuids.pseudoDir)
       }
-    val destS3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, destGuids.pseudoDir, userName, lh.contentType.toString(), destGuids.objectGuid)
+    val destS3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, destGuids.pseudoDir, userName, lh.contentType.toString(), destGuids.objectGuid, lh.metadata)
     val copyProcessEntityJs = processEntity(s"${clientType}_$timestamp", userName, method.rangerName, clientHost, srcGuids.serverGuid,
       objectNameFromCopySrc, AWS_S3_OBJECT_TYPE, srcGuids.objectGuid,
       bucketObject, AWS_S3_OBJECT_TYPE, destGuids.objectGuid, destGuids.processGuid)
