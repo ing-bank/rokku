@@ -33,7 +33,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
   /**
     * Fixture for starting and stopping a test proxy that tests can interact with.
     *
-    * @param testCode      Code that accepts the created sdk
+    * @param testCode Code that accepts the created sdk
     * @return Assertion
     */
   def withS3SdkToMockProxy(testCode: AmazonS3 => Assertion): Future[Assertion] = {
@@ -158,7 +158,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
 
       "put objects with special characters in object names" in withS3SdkToMockProxy { sdk =>
         withBucket(sdk) { testBucket =>
-          withFile(1024 * 1024) { filename =>
+          withFile(1024) { filename =>
             val testKeyFileWithDolar = "keywith$.txt"
             val testKeyFileWithHash = "keywith#.txt"
             val testKeyFileWithExclamation = "keywith!.txt"
@@ -166,6 +166,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
             val testKeyFileWithBracket = "keywith[bracket].txt"
             val testKeyFileWithPlus = "keywith+.txt"
             val testKeyFileWithCurly = "keywith(curly).txt"
+            val testKeyFileWithColon = "keywith:.txt"
 
             val dolarUploadResult = sdk.putObject(testBucket, testKeyFileWithDolar, new File(filename))
             val hashUploadResult = sdk.putObject(testBucket, testKeyFileWithHash, new File(filename))
@@ -174,6 +175,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
             val bracketUploadResult = sdk.putObject(testBucket, testKeyFileWithBracket, new File(filename))
             val plusUploadResult = sdk.putObject(testBucket, testKeyFileWithPlus, new File(filename))
             val curlyUploadResult = sdk.putObject(testBucket, testKeyFileWithCurly, new File(filename))
+            val colonUploadResult = sdk.putObject(testBucket, testKeyFileWithColon, new File(filename))
 
 
             assert(sdk.doesObjectExist(testBucket, testKeyFileWithDolar))
@@ -183,6 +185,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
             assert(sdk.doesObjectExist(testBucket, testKeyFileWithBracket))
             assert(sdk.doesObjectExist(testBucket, testKeyFileWithPlus))
             assert(sdk.doesObjectExist(testBucket, testKeyFileWithCurly))
+            assert(sdk.doesObjectExist(testBucket, testKeyFileWithColon))
 
             assert(!dolarUploadResult.getETag.isEmpty)
             assert(!hashUploadResult.getETag.isEmpty)
@@ -191,6 +194,21 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
             assert(!bracketUploadResult.getETag.isEmpty)
             assert(!plusUploadResult.getETag.isEmpty)
             assert(!curlyUploadResult.getETag.isEmpty)
+            assert(!colonUploadResult.getETag.isEmpty)
+          }
+        }
+      }
+
+      "list objects with special characters in object names" in withS3SdkToMockProxy { sdk =>
+        withBucket(sdk) { testBucket =>
+          withFile(1024) { filename =>
+            val unsafeNames = List("keywith$.txt", "keywith#.txt", "keywith!.txt", "keywith[bracket].txt", "keywith+.txt", "keywith(curly).txt", "keywith:.txt")
+            val uploadResults = unsafeNames.map { uName =>
+              sdk.putObject(testBucket, uName, new File(filename))
+              val uploadedFile = sdk.listObjects(testBucket, uName)
+              uploadedFile.getObjectSummaries.get(0).getKey == uName
+            }
+            assert(!uploadResults.contains(false))
           }
         }
       }
