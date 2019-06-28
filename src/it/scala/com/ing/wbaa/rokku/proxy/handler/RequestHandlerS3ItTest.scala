@@ -156,57 +156,20 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
         }
       }
 
-      "put objects with special characters in object names" in withS3SdkToMockProxy { sdk =>
+      "put and list objects with special characters in object names" in withS3SdkToMockProxy { sdk =>
         withBucket(sdk) { testBucket =>
           withFile(1024) { filename =>
-            val testKeyFileWithDolar = "keywith$.txt"
-            val testKeyFileWithHash = "keywith#.txt"
-            val testKeyFileWithExclamation = "keywith!.txt"
-            val testKeyFileWithSpace = "keywith space.txt"
-            val testKeyFileWithBracket = "keywith[bracket].txt"
-            val testKeyFileWithPlus = "keywith+.txt"
-            val testKeyFileWithCurly = "keywith(curly).txt"
-            val testKeyFileWithColon = "keywith:.txt"
+            val unsafeNames = List("keywith$.txt", "keywith#.txt", "keywith!.txt", "keywith space.txt", "keywith[bracket].txt", "keywith+.txt", "keywith(curly).txt", "keywith:.txt")
 
-            val dolarUploadResult = sdk.putObject(testBucket, testKeyFileWithDolar, new File(filename))
-            val hashUploadResult = sdk.putObject(testBucket, testKeyFileWithHash, new File(filename))
-            val exclamationUploadResult = sdk.putObject(testBucket, testKeyFileWithExclamation, new File(filename))
-            val spaceUploadResult = sdk.putObject(testBucket, testKeyFileWithSpace, new File(filename))
-            val bracketUploadResult = sdk.putObject(testBucket, testKeyFileWithBracket, new File(filename))
-            val plusUploadResult = sdk.putObject(testBucket, testKeyFileWithPlus, new File(filename))
-            val curlyUploadResult = sdk.putObject(testBucket, testKeyFileWithCurly, new File(filename))
-            val colonUploadResult = sdk.putObject(testBucket, testKeyFileWithColon, new File(filename))
-
-
-            assert(sdk.doesObjectExist(testBucket, testKeyFileWithDolar))
-            assert(sdk.doesObjectExist(testBucket, testKeyFileWithHash))
-            assert(sdk.doesObjectExist(testBucket, testKeyFileWithExclamation))
-            assert(sdk.doesObjectExist(testBucket, testKeyFileWithSpace))
-            assert(sdk.doesObjectExist(testBucket, testKeyFileWithBracket))
-            assert(sdk.doesObjectExist(testBucket, testKeyFileWithPlus))
-            assert(sdk.doesObjectExist(testBucket, testKeyFileWithCurly))
-            assert(sdk.doesObjectExist(testBucket, testKeyFileWithColon))
-
-            assert(!dolarUploadResult.getETag.isEmpty)
-            assert(!hashUploadResult.getETag.isEmpty)
-            assert(!exclamationUploadResult.getETag.isEmpty)
-            assert(!spaceUploadResult.getETag.isEmpty)
-            assert(!bracketUploadResult.getETag.isEmpty)
-            assert(!plusUploadResult.getETag.isEmpty)
-            assert(!curlyUploadResult.getETag.isEmpty)
-            assert(!colonUploadResult.getETag.isEmpty)
-          }
-        }
-      }
-
-      "list objects with special characters in object names" in withS3SdkToMockProxy { sdk =>
-        withBucket(sdk) { testBucket =>
-          withFile(1024) { filename =>
-            val unsafeNames = List("keywith$.txt", "keywith#.txt", "keywith!.txt", "keywith[bracket].txt", "keywith+.txt", "keywith(curly).txt", "keywith:.txt")
             val uploadResults = unsafeNames.map { uName =>
-              sdk.putObject(testBucket, uName, new File(filename))
-              val uploadedFile = sdk.listObjects(testBucket, uName)
-              uploadedFile.getObjectSummaries.get(0).getKey == uName
+              val u = sdk.putObject(testBucket, uName, new File(filename))
+              val objectUploadedCorrectly = sdk.doesObjectExist(testBucket, uName) && !u.getETag.isEmpty
+              val objectListedUsingPrefix =
+                if ( uName.contains(" ") ) true // we skip listing with prefix containing space as AWS replaces it as "+"
+                else {
+                  sdk.listObjects(testBucket, uName).getObjectSummaries.get(0).getKey == uName
+                }
+              objectUploadedCorrectly && objectListedUsingPrefix
             }
             assert(!uploadResults.contains(false))
           }
