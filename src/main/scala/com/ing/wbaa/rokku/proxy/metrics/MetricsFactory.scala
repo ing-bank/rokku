@@ -1,7 +1,7 @@
 package com.ing.wbaa.rokku.proxy.metrics
 
-import com.codahale.metrics.MetricRegistry
-import com.codahale.metrics.jmx.JmxReporter
+import com.codahale.metrics.{ JmxReporter, MetricRegistry }
+//import com.codahale.metrics.jmx.JmxReporter
 
 object MetricsFactory {
 

@@ -41,13 +41,21 @@ libraryDependencies ++= Seq(
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11"),
     "io.github.twonote"            %  "radosgw-admin4j"        % "1.0.2",
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.0-M2",
-    "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
-    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion,
+//    "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
+//    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion,
     "com.auth0"                    % "java-jwt"                % "3.8.0",
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
     "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.505"        % IntegrationTest
+) ++ persistenceDependencies
+
+val persistenceDependencies = Seq (
+  "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
+  "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
+  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.98",
+  "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % "0.98" % Test
+//  "com.safety-data" %% "akka-persistence-redis" % "0.4.0"
 )
 
 // Fix logging dependencies:

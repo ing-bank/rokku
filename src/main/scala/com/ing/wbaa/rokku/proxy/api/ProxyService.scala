@@ -11,6 +11,7 @@ import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data.{ AwsRequestCredential, AwsSecretKey, RequestId, S3Request, User, Write }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
+import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder.ExecutedRequestCmd
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -89,8 +90,11 @@ trait ProxyService {
 
   protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Route = {
     updateHeadersForRequest { newHttpRequest =>
+      lazy val lineageRecorderRef = system.actorSelection("/user/lineage-rec-id-1")
       val httpResponse = executeRequest(newHttpRequest, userSTS, s3Request).andThen {
         case Success(response: HttpResponse) =>
+          //add request recording after getting response and before executing postrequest actions
+          lineageRecorderRef ! ExecutedRequestCmd(httpRequest, userSTS, s3Request.clientIPAddress)
           handlePostRequestActions(response, httpRequest, s3Request, userSTS)
       }
       complete(httpResponse)

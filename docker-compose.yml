@@ -88,3 +88,17 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     depends_on:
       - zookeeper
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  cassandra:
+    image: cassandra:3
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+      - "9160:9160"
+
