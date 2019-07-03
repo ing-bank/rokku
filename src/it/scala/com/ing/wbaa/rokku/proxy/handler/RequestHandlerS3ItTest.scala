@@ -11,8 +11,8 @@ import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.{CopyObjectRequest, ObjectMetadata}
 import com.ing.wbaa.rokku.proxy.RokkuS3Proxy
 import com.ing.wbaa.rokku.proxy.config.{HttpSettings, KafkaSettings, StorageS3Settings}
-import com.ing.wbaa.rokku.proxy.data.{AwsRequestCredential, RequestId, S3Request, User, UserRawJson}
-import com.ing.wbaa.rokku.proxy.provider.{MessageProviderKafka, SignatureProviderAws}
+import com.ing.wbaa.rokku.proxy.data._
+import com.ing.wbaa.rokku.proxy.provider.{AuditLogProvider, MessageProviderKafka, SignatureProviderAws}
 import com.ing.wbaa.testkit.RokkuFixtures
 import org.scalatest._
 
@@ -38,7 +38,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
     */
   def withS3SdkToMockProxy(testCode: AmazonS3 => Assertion): Future[Assertion] = {
     val proxy: RokkuS3Proxy = new RokkuS3Proxy with RequestHandlerS3 with SignatureProviderAws
-      with FilterRecursiveListBucketHandler with MessageProviderKafka {
+      with FilterRecursiveListBucketHandler with MessageProviderKafka with AuditLogProvider {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = rokkuHttpSettings
 
@@ -165,7 +165,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
               val u = sdk.putObject(testBucket, uName, new File(filename))
               val objectUploadedCorrectly = sdk.doesObjectExist(testBucket, uName) && !u.getETag.isEmpty
               val objectListedUsingPrefix =
-                if ( uName.contains(" ") ) true // we skip listing with prefix containing space as AWS replaces it as "+"
+                if (uName.contains(" ")) true // we skip listing with prefix containing space as AWS replaces it as "+"
                 else {
                   sdk.listObjects(testBucket, uName).getObjectSummaries.get(0).getKey == uName
                 }

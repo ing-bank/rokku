@@ -7,6 +7,7 @@ class KafkaSettings(config: Config) extends Extension {
   val bootstrapServers: String = config.getString("kafka.producer.bootstrapServers")
   val createEventsTopic: String = config.getString("kafka.producer.createTopic")
   val deleteEventsTopic: String = config.getString("kafka.producer.deleteTopic")
+  val auditEventsTopic: String = config.getString("kafka.producer.auditTopic")
   val retries: String = config.getString("kafka.producer.retries")
   val retriesBackOff: String = config.getString("kafka.producer.backoff")
   val retriesBackOffMax: String = config.getString("kafka.producer.backoffMax")
