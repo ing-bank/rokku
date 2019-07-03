@@ -27,7 +27,7 @@ trait LineageProviderAtlas extends LineageHelpers {
       lineageHeaders.method match {
         // mb bucket
         case HttpMethods.PUT if !lineageHeaders.bucket.isEmpty && bucketObject == "emptyObject" =>
-          createSingleEntity(lineageHeaders.bucket, userSTS, bucketEntity(lineageHeaders.bucket, userSTS.userName.value, System.nanoTime()))
+          createSingleEntity(lineageHeaders.bucket, userSTS, bucketEntity(lineageHeaders.bucket, userSTS.userName.value, System.nanoTime(), lineageHeaders.classifications.getOrElse(List.empty)))
 
         // rm bucket
         case HttpMethods.DELETE if !lineageHeaders.bucket.isEmpty && bucketObject == "emptyObject" =>

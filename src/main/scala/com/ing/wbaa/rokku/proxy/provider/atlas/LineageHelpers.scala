@@ -101,11 +101,11 @@ trait LineageHelpers extends EventProducer {
     val externalPath = externalFsPath.getOrElse("")
 
     // entity definitions
-    val serverEntityJs = serverEntity(clientHost, userName, guids.serverGuid)
-    val bucketEntityJs = bucketEntity(lh.bucket, userName, guids.bucketGuid)
-    val pseudoDirEntityJs = pseudoDirEntity(pseudoDir, lh.bucket, guids.bucketGuid, userName, guids.pseudoDir)
-    val s3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, guids.pseudoDir, userName, lh.contentType.toString(), guids.objectGuid, lh.metadata)
-    val externalPathEntityJs = fsPathEntity(externalPath, userName, externalPath, guids.externalPathGuid)
+    val serverEntityJs = serverEntity(clientHost, userName, guids.serverGuid, lh.classifications.getOrElse(List.empty))
+    val bucketEntityJs = bucketEntity(lh.bucket, userName, guids.bucketGuid, lh.classifications.getOrElse(List.empty))
+    val pseudoDirEntityJs = pseudoDirEntity(pseudoDir, lh.bucket, guids.bucketGuid, userName, guids.pseudoDir, lh.classifications.getOrElse(List.empty))
+    val s3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, guids.pseudoDir, userName, lh.contentType.toString(), guids.objectGuid, lh.metadata, lh.classifications.getOrElse(List.empty))
+    val externalPathEntityJs = fsPathEntity(externalPath, userName, externalPath, guids.externalPathGuid, lh.classifications.getOrElse(List.empty))
 
     method match {
       case Read(_) =>
@@ -155,18 +155,18 @@ trait LineageHelpers extends EventProducer {
         pathArray.mkString + "/"
     }
     // entity definitions
-    val serverEntityJs = serverEntity(clientHost, userName, srcGuids.serverGuid)
-    val srcBucketEntityJs = bucketEntity(bucketNameFromCopySrc, userName, srcGuids.bucketGuid)
-    val srcPseudoDirEntityJs = pseudoDirEntity(pseudoDirFromCopySrc, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, srcGuids.pseudoDir)
-    val srcS3ObjectEntityJs = s3ObjectEntity(objectNameFromCopySrc, pseudoDirFromCopySrc, srcGuids.pseudoDir, userName, lh.contentType.toString(), srcGuids.objectGuid, lh.metadata)
-    val destBucketEntityJs = bucketEntity(lh.bucket, userName, destGuids.bucketGuid)
+    val serverEntityJs = serverEntity(clientHost, userName, srcGuids.serverGuid, lh.classifications.getOrElse(List.empty))
+    val srcBucketEntityJs = bucketEntity(bucketNameFromCopySrc, userName, srcGuids.bucketGuid, lh.classifications.getOrElse(List.empty))
+    val srcPseudoDirEntityJs = pseudoDirEntity(pseudoDirFromCopySrc, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, srcGuids.pseudoDir, lh.classifications.getOrElse(List.empty))
+    val srcS3ObjectEntityJs = s3ObjectEntity(objectNameFromCopySrc, pseudoDirFromCopySrc, srcGuids.pseudoDir, userName, lh.contentType.toString(), srcGuids.objectGuid, lh.metadata, lh.classifications.getOrElse(List.empty))
+    val destBucketEntityJs = bucketEntity(lh.bucket, userName, destGuids.bucketGuid, lh.classifications.getOrElse(List.empty))
     val destPseudoDirEntityJs =
       if (bucketNameFromCopySrc == lh.bucket) {
-        pseudoDirEntity(pseudoDir, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, destGuids.pseudoDir)
+        pseudoDirEntity(pseudoDir, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, destGuids.pseudoDir, lh.classifications.getOrElse(List.empty))
       } else {
-        pseudoDirEntity(pseudoDir, lh.bucket, destGuids.bucketGuid, userName, destGuids.pseudoDir)
+        pseudoDirEntity(pseudoDir, lh.bucket, destGuids.bucketGuid, userName, destGuids.pseudoDir, lh.classifications.getOrElse(List.empty))
       }
-    val destS3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, destGuids.pseudoDir, userName, lh.contentType.toString(), destGuids.objectGuid, lh.metadata)
+    val destS3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, destGuids.pseudoDir, userName, lh.contentType.toString(), destGuids.objectGuid, lh.metadata, lh.classifications.getOrElse(List.empty))
     val copyProcessEntityJs = processEntity(s"${clientType}_$timestamp", userName, method.rangerName, clientHost, srcGuids.serverGuid,
       objectNameFromCopySrc, AWS_S3_OBJECT_TYPE, srcGuids.objectGuid,
       bucketObject, AWS_S3_OBJECT_TYPE, destGuids.objectGuid, destGuids.processGuid)
