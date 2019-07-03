@@ -6,23 +6,21 @@ import spray.json.{ JsArray, JsNumber, JsObject, JsString, _ }
 
 object ModelKafka extends DefaultJsonProtocol {
 
-  private def rootMessage(message: JsObject) =
+  private def rootMessage(message: JsObject, userSTS: User) =
     JsObject(
-      "version" -> JsObject("version" -> JsString("1.0.0")),
-      "message" -> message
+      "entities" -> message,
+      "type" -> JsString("ENTITY_FULL_UPDATE_V2"),
+      "user" -> JsString(userSTS.userName.value)
     )
 
-  private def prepareEntities(userSTS: User, entities: JsArray) =
+  private def prepareEntities(entities: JsArray) =
     JsObject(
-      "entities" -> entities,
-      "type" -> JsString("ENTITY_FULL_UPDATE"),
-      "user" -> JsString(userSTS.userName.value)
+      "entities" -> entities
     )
 
   private def referencedObject(name: String, typeName: String, guid: Long, entityState: String) =
     JsObject(
-      "jsonClass" -> JsString("org.apache.atlas.typesystem.json.InstanceSerialization$_Id"),
-      "id" -> JsString(s"-$guid"), // we do not care about GUID of entity
+      "guid" -> JsString(s"-$guid"), // we do not care about GUID of entity
       "version" -> JsNumber(0),
       "typeName" -> JsString(typeName),
       "state" -> JsString(entityState)
@@ -33,7 +31,7 @@ object ModelKafka extends DefaultJsonProtocol {
       "typeName" -> JsString(typeName),
       "attribute" -> JsString("qualifiedName"),
       "attributeValue" -> JsString(name),
-      "type" -> JsString("ENTITY_DELETE"),
+      "type" -> JsString("ENTITY_DELETE_V2"),
       "user" -> JsString(userSTS.userName.value)
     )
 
@@ -46,48 +44,39 @@ object ModelKafka extends DefaultJsonProtocol {
       "createTime" -> JsString(created.toString) // we always update timestamp when lineage changes
     )
 
-  def prepareEntity(userName: String, typeName: String, typeValues: JsObject, entityState: String, guid: Long): JsObject =
+  def prepareEntity(userName: String, typeName: String, typeValues: JsObject, entityState: String, guid: Long, classifications: JsArray): JsObject =
     JsObject(
-      "jsonClass" -> JsString("org.apache.atlas.typesystem.json.InstanceSerialization$_Reference"),
-      "id" -> JsObject(
-        "jsonClass" -> JsString("org.apache.atlas.typesystem.json.InstanceSerialization$_Id"),
-        "id" -> JsString(s"-$guid"), // we do not care about GUID of entity
-        "version" -> JsNumber(0),
-        "typeName" -> JsString(typeName),
-        "state" -> JsString(entityState)
-      ),
+      "guid" -> JsString(s"-$guid"),
       "typeName" -> JsString(typeName),
-      "values" -> typeValues,
-      "traitNames" -> JsArray(), // not used at the moment by rokku
-      "traits" -> JsObject() // not used at the moment by rokku
+      "attributes" -> typeValues,
+      "classifications" -> classifications //JsArray(JsObject("typeName" -> JsString("customer_PII"))
     )
 
   def prepareStrut(typeName: String, typeValues: JsObject): JsObject = {
     JsObject(
-      "jsonClass" -> JsString("org.apache.atlas.typesystem.json.InstanceSerialization$_Struct"),
       "typeName" -> JsString(typeName),
-      "values" -> typeValues
+      "attributes" -> typeValues
     )
   }
 
-  def bucketEntity(name: String, userName: String, guid: Long, created: Long = System.currentTimeMillis()): JsObject =
+  def bucketEntity(name: String, userName: String, guid: Long, classifications: Seq[String], created: Long = System.currentTimeMillis()): JsObject =
     prepareEntity(userName, AWS_S3_BUCKET_TYPE,
       JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
           "createtime" -> JsString(created.toString) // not a typo, this is actual filed name in Atlas 1.x/2.x
-        )), ENTITY_ACTIVE, guid)
+        )), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
 
-  def pseudoDirEntity(name: String, bucketName: String, bucketGuid: Long, userName: String, guid: Long,
+  def pseudoDirEntity(name: String, bucketName: String, bucketGuid: Long, userName: String, guid: Long, classifications: Seq[String],
       created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
     prepareEntity(userName, AWS_S3_PSEUDO_DIR_TYPE,
       JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
           "objectPrefix" -> JsString(name),
           "bucket" -> referencedObject(bucketName, AWS_S3_BUCKET_TYPE, bucketGuid, entityState))
-      ), ENTITY_ACTIVE, guid)
+      ), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
 
   def s3ObjectEntity(name: String, pseudoDir: String, pseudoDirGuid: Long, userName: String, dataType: String, guid: Long,
-      metadata: Option[Map[String, String]], created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
+      metadata: Option[Map[String, String]], classifications: Seq[String], created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
     prepareEntity(userName, AWS_S3_OBJECT_TYPE,
       JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
@@ -98,23 +87,23 @@ object ModelKafka extends DefaultJsonProtocol {
               case (key, value) => prepareStrut(AWS_TAG, JsObject("key" -> JsString(key), "value" -> JsString(value)))
             }.toVector)
           })
-      ), ENTITY_ACTIVE, guid)
+      ), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
 
-  def serverEntity(host: String, userName: String, guid: Long, created: Long = System.currentTimeMillis()): JsObject =
+  def serverEntity(host: String, userName: String, guid: Long, classifications: Seq[String], created: Long = System.currentTimeMillis()): JsObject =
     prepareEntity(userName, ROKKU_SERVER_TYPE,
       JsObject(baseEntityValues(host, userName, created).fields ++
         Map(
           "server_name" -> JsString(host),
           "ip_address" -> JsString(host))
-      ), ENTITY_ACTIVE, guid)
+      ), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
 
-  def fsPathEntity(name: String, userName: String, path: String, guid: Long, modified: Long = System.currentTimeMillis()): JsObject =
+  def fsPathEntity(name: String, userName: String, path: String, guid: Long, classifications: Seq[String], modified: Long = System.currentTimeMillis()): JsObject =
     prepareEntity(userName, HADOOP_FS_PATH,
       JsObject(baseEntityValues(name, userName, modified).fields ++
         Map(
           "path" -> JsString(path),
           "modifiedTime" -> JsString(modified.toString))
-      ), ENTITY_ACTIVE, guid)
+      ), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
 
   def processEntity(name: String, userName: String, operation: String, host: String, serverGuid: Long,
       inName: String, inType: String, inGuid: Long, outName: String, outType: String, outGuid: Long, guid: Long,
@@ -128,16 +117,16 @@ object ModelKafka extends DefaultJsonProtocol {
           "inputs" -> JsArray(referencedObject(inName, inType, inGuid, entityState)),
           "outputs" -> JsArray(referencedObject(outName, outType, outGuid, entityState))
         )
-      ), ENTITY_ACTIVE, guid)
+      ), ENTITY_ACTIVE, guid, JsArray())
 
   def prepareEntityFullCreateMessage(userSTS: User, entityList: Vector[JsObject]): JsValue = {
     rootMessage(
-      prepareEntities(userSTS, JsArray(entityList))
+      prepareEntities(JsArray(entityList)), userSTS
     ).toJson
   }
 
   def prepareEntityDeleteMessage(userSTS: User, name: String, typeName: String): JsValue =
     rootMessage(
-      deleteEntity(userSTS, name, typeName)
+      deleteEntity(userSTS, name, typeName), userSTS
     ).toJson
 }
