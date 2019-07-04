@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy.persistence.serializers
 import java.net.InetAddress
 
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
-import akka.http.scaladsl.model.{HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpProtocol, HttpRequest, RemoteAddress, Uri}
+import akka.http.scaladsl.model.{ HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpProtocol, HttpRequest, RemoteAddress, Uri }
 import com.ing.wbaa.rokku.proxy.data.UserRawJson
 import spray.json.DefaultJsonProtocol
 

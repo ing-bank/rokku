@@ -34,6 +34,9 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = true
 
     override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit = ()
+
+    override val requestPersistenceEnabled: Boolean = false
+    override val configuredPersistenceId: String = "localhost-1"
   }
 
   private def testRequest(accessKey: String = "okAccessKey", path: String = "/okBucket") = HttpRequest(

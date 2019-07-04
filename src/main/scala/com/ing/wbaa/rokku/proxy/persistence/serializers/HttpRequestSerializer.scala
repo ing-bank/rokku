@@ -4,7 +4,7 @@ import java.nio.charset.Charset
 
 import akka.http.scaladsl.model.HttpEntity
 import akka.serialization.SerializerWithStringManifest
-import com.ing.wbaa.rokku.proxy.data.{User, UserRawJson}
+import com.ing.wbaa.rokku.proxy.data.{ User, UserRawJson }
 import com.ing.wbaa.rokku.proxy.persistence.ExecutedRequestEvt
 import spray.json._
 

@@ -36,6 +36,8 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
     override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit = ()
     override protected[this] def listAllBuckets: Seq[String] = List("bucket1", "bucket2")
 
+    override val requestPersistenceEnabled: Boolean = false
+    override val configuredPersistenceId: String = "localhost-1"
   }
 
   private def testRequest(accessKey: String = "okAccessKey", path: String = "/") = HttpRequest(

@@ -44,6 +44,9 @@ trait ProxyService {
 
   protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit
 
+  val requestPersistenceEnabled: Boolean
+  val configuredPersistenceId: String
+
   val proxyServiceRoute: Route =
 
     metricDuration {
@@ -90,11 +93,14 @@ trait ProxyService {
 
   protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Route = {
     updateHeadersForRequest { newHttpRequest =>
-      lazy val lineageRecorderRef = system.actorSelection("/user/lineage-rec-id-1")
       val httpResponse = executeRequest(newHttpRequest, userSTS, s3Request).andThen {
         case Success(response: HttpResponse) =>
-          //add request recording after getting response and before executing postrequest actions
-          lineageRecorderRef ! ExecutedRequestCmd(httpRequest, userSTS, s3Request.clientIPAddress)
+          //add request recording after getting response and before executing postrequest actions, we skip ls requests
+          val isListRequest = httpRequest.method.value == "GET" && httpRequest.uri.rawQueryString.getOrElse("empty").contains("prefix")
+          if (requestPersistenceEnabled && !isListRequest) {
+            lazy val lineageRecorderRef = system.actorSelection(s"/user/$configuredPersistenceId")
+            lineageRecorderRef ! ExecutedRequestCmd(httpRequest, userSTS, s3Request.clientIPAddress)
+          }
           handlePostRequestActions(response, httpRequest, s3Request, userSTS)
       }
       complete(httpResponse)
