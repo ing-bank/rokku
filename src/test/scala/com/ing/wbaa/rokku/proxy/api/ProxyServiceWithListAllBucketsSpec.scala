@@ -2,6 +2,7 @@ package com.ing.wbaa.rokku.proxy.api
 
 import java.net.InetAddress
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
@@ -35,6 +36,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
     override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit = ()
     override protected[this] def listAllBuckets: Seq[String] = List("bucket1", "bucket2")
+    override def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String)(implicit id: RequestId): Future[Done] = Future(Done)
 
     override val requestPersistenceEnabled: Boolean = false
     override val configuredPersistenceId: String = "localhost-1"

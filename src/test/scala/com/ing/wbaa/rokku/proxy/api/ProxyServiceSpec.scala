@@ -2,6 +2,7 @@ package com.ing.wbaa.rokku.proxy.api
 
 import java.net.InetAddress
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
@@ -37,6 +38,8 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
     override val requestPersistenceEnabled: Boolean = false
     override val configuredPersistenceId: String = "localhost-1"
+
+    override def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String)(implicit id: RequestId): Future[Done] = Future(Done)
   }
 
   private def testRequest(accessKey: String = "okAccessKey", path: String = "/okBucket") = HttpRequest(

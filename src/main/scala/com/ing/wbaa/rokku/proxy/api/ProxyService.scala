@@ -2,6 +2,7 @@ package com.ing.wbaa.rokku.proxy.api
 
 import java.util.UUID
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
@@ -43,6 +44,8 @@ trait ProxyService {
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean
 
   protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit
+
+  protected[this] def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String)(implicit id: RequestId): Future[Done]
 
   val requestPersistenceEnabled: Boolean
   val configuredPersistenceId: String
@@ -108,6 +111,9 @@ trait ProxyService {
   }
 
   private def processRequestForValidUser(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId) = {
+    auditLog(s3Request, httpRequest, userSTS.userName.value).andThen({
+      case Failure(err) => logger.error(s"Error while sending audit log: ${err}")
+    })
     if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
       logger.info("Request authenticated: {}", httpRequest)
       if (isUserAuthorizedForRequest(s3Request, userSTS)) {

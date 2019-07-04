@@ -1,9 +1,9 @@
 package com.ing.wbaa.rokku.proxy.persistence
 
-import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
-import akka.persistence.{PersistentActor, RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
+import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
+import akka.persistence.{ PersistentActor, RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer }
 import com.ing.wbaa.rokku.proxy.data.User
-import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder.{ExecutedRequestCmd, LatestRequests, Shutdown}
+import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder.{ ExecutedRequestCmd, LatestRequests, Shutdown }
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -18,7 +18,7 @@ object HttpRequestRecorder {
 
 case class CurrentRequestsState(requests: List[ExecutedRequestEvt] = Nil) {
   def add(e: ExecutedRequestEvt): CurrentRequestsState = {
-    if(size > 200){ copy(requests.reverse.drop(100))}
+    if (size > 200) { copy(requests.reverse.drop(100)) }
     copy(e :: requests)
   }
   def getRequests(n: Int = 100): List[ExecutedRequestEvt] = requests.reverse.take(n)
@@ -43,7 +43,6 @@ class HttpRequestRecorder extends PersistentActor with LazyLogging {
     case RecoveryCompleted => logger.debug("Actor State recovery completed!")
   }
 
-
   override def receiveCommand: Receive = {
     case SaveSnapshotSuccess(metadata)  => logger.debug("Snapshot saved successfully, seq: {}", metadata.sequenceNr)
 
@@ -58,10 +57,9 @@ class HttpRequestRecorder extends PersistentActor with LazyLogging {
 
     case get: LatestRequests => sender() ! state.getRequests(get.amount)
 
-    case Shutdown =>
-      context.stop(self)
+    case Shutdown            => context.stop(self)
 
-    case _ => logger.debug(s"{} Got unsupported message type", HttpRequestRecorder.getClass.getName)
+    case _                   => logger.debug(s"{} Got unsupported message type", HttpRequestRecorder.getClass.getName)
   }
 
 }
