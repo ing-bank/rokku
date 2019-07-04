@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy.persistence
 import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
 import akka.persistence.{ PersistentActor, RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer }
 import com.ing.wbaa.rokku.proxy.data.User
-import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder.{ ExecutedRequestCmd, LatestRequests, Shutdown }
+import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder.{ ExecutedRequestCmd, LatestRequests, LatestRequestsResult, Shutdown }
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -13,6 +13,7 @@ case class ExecutedRequestEvt(httpRequest: HttpRequest, userSTS: User, clientIPA
 object HttpRequestRecorder {
   case class ExecutedRequestCmd(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)
   case class LatestRequests(amount: Int)
+  case class LatestRequestsResult(requests: List[ExecutedRequestEvt])
   case object Shutdown
 }
 
@@ -21,7 +22,7 @@ case class CurrentRequestsState(requests: List[ExecutedRequestEvt] = Nil) {
     if (size > 200) { copy(requests.reverse.drop(100)) }
     copy(e :: requests)
   }
-  def getRequests(n: Int = 100): List[ExecutedRequestEvt] = requests.reverse.take(n)
+  def getRequests(n: Int = 100): List[ExecutedRequestEvt] = this.requests.reverse.take(n)
   def size: Int = requests.size
 }
 
@@ -29,12 +30,14 @@ class HttpRequestRecorder extends PersistentActor with LazyLogging {
   var state: CurrentRequestsState = CurrentRequestsState()
   val snapShotInterval = ConfigFactory.load().getInt("rokku.requestPersistence.snapshotInterval")
 
+  private def updateState(e: ExecutedRequestEvt) = state = state.add(e)
+
   override def persistenceId: String = ConfigFactory.load().getString("rokku.requestPersistence.persistenceId")
 
   override def receiveRecover: Receive = {
     case e: ExecutedRequestEvt => {
       logger.debug("No snapshot, replying event sequence {}", lastSequenceNr)
-      state.add(e)
+      updateState(e)
     }
     case SnapshotOffer(metadata, snapshot: CurrentRequestsState) => {
       logger.debug("Received snapshot offer, timestamp: {} for persistenceId: {} ", metadata.timestamp, metadata.persistenceId)
@@ -51,11 +54,12 @@ class HttpRequestRecorder extends PersistentActor with LazyLogging {
     case rc: ExecutedRequestCmd =>
       persist(ExecutedRequestEvt(rc.httpRequest, rc.userSTS, rc.clientIPAddress)) { e =>
         logger.debug("Received event for event sourcing {} from user: {}", e.httpRequest.uri, e.userSTS.userName)
+        updateState(e)
         if (lastSequenceNr % snapShotInterval == 0 && lastSequenceNr != 0)
           saveSnapshot(state)
       }
 
-    case get: LatestRequests => sender() ! state.getRequests(get.amount)
+    case get: LatestRequests => sender() ! LatestRequestsResult(state.getRequests(get.amount))
 
     case Shutdown            => context.stop(self)
 
