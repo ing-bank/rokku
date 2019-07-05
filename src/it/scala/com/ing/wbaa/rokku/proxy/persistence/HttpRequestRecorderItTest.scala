@@ -61,7 +61,7 @@ class HttpRequestRecorderItTest extends AsyncWordSpec with DiagrammedAssertions 
   }
 
   private val CHECKER_PERSISTENCE_ID = "localhost-1"
-  val requestRecorder = testSystem.actorOf(Props(classOf[HttpRequestRecorder]), "localhost-1")
+  val requestRecorder = testSystem.actorOf(Props(classOf[HttpRequestRecorder]), CHECKER_PERSISTENCE_ID)
 
   val queries = PersistenceQuery(testSystem)
     .readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
