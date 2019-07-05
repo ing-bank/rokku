@@ -73,6 +73,7 @@ class HttpRequestRecorderItTest extends AsyncWordSpec with DiagrammedAssertions 
 
         // just to make fake request
         sdk.createBucket("testbucket")
+        Thread.sleep(3000)
 
         val storedInCassandraF = queries.currentEventsByPersistenceId(CHECKER_PERSISTENCE_ID, 1L, Long.MaxValue)
           .map(_.event)
