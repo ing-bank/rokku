@@ -2,7 +2,7 @@ package com.ing.wbaa.rokku.proxy.persistence
 
 import java.net.InetAddress
 
-import akka.actor.{ ActorSystem, Props }
+import akka.actor.{ ActorSystem, PoisonPill, Props }
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
 import akka.http.scaladsl.model._
 import akka.testkit.{ ImplicitSender, TestKit }
@@ -52,7 +52,11 @@ class HttpRequestRecorderSpec extends TestKit(ActorSystem("RequestRecorderTest")
       requestRecorder ! ExecutedRequestCmd(httpRequest, userSTS, clientIPAddress)
       requestRecorder ! LatestRequests(1)
       expectMsg(LatestRequestsResult(List(ExecutedRequestEvt(httpRequest, userSTS, clientIPAddress))))
-      //Assert(result.requests.size == 1)
+      requestRecorder ! PoisonPill
+
+      val requestRecorder1 = system.actorOf(Props(classOf[HttpRequestRecorder]), "localhost-2")
+      requestRecorder1 ! LatestRequests(1)
+      expectMsg(LatestRequestsResult(List(ExecutedRequestEvt(httpRequest, userSTS, clientIPAddress))))
     }
   }
 
