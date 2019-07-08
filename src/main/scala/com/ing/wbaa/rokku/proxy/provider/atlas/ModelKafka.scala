@@ -44,13 +44,13 @@ object ModelKafka extends DefaultJsonProtocol {
       "createTime" -> JsString(created.toString) // we always update timestamp when lineage changes
     )
 
-  def prepareEntity(userName: String, typeName: String, typeValues: JsObject, entityState: String, guid: Long, classifications: JsArray): JsObject =
-    JsObject(
+  def prepareEntity(userName: String, typeName: String, typeValues: JsObject, entityState: String, guid: Long, classifications: JsArray): Option[JsObject] =
+    Some(JsObject(
       "guid" -> JsString(s"-$guid"),
       "typeName" -> JsString(typeName),
       "attributes" -> typeValues,
-      "classifications" -> classifications //JsArray(JsObject("typeName" -> JsString("customer_PII"))
-    )
+      "classifications" -> classifications
+    ))
 
   def prepareStrut(typeName: String, typeValues: JsObject): JsObject = {
     JsObject(
@@ -59,7 +59,7 @@ object ModelKafka extends DefaultJsonProtocol {
     )
   }
 
-  def bucketEntity(name: String, userName: String, guid: Long, classifications: Seq[String], created: Long = System.currentTimeMillis()): JsObject =
+  def bucketEntity(name: String, userName: String, guid: Long, classifications: Seq[String], created: Long = System.currentTimeMillis()): Option[JsObject] =
     prepareEntity(userName, AWS_S3_BUCKET_TYPE,
       JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
@@ -67,7 +67,7 @@ object ModelKafka extends DefaultJsonProtocol {
         )), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
 
   def pseudoDirEntity(name: String, bucketName: String, bucketGuid: Long, userName: String, guid: Long, classifications: Seq[String],
-      created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
+      created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): Option[JsObject] =
     prepareEntity(userName, AWS_S3_PSEUDO_DIR_TYPE,
       JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
@@ -75,9 +75,9 @@ object ModelKafka extends DefaultJsonProtocol {
           "bucket" -> referencedObject(bucketName, AWS_S3_BUCKET_TYPE, bucketGuid, entityState))
       ), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
 
-  def s3ObjectEntity(name: String, pseudoDir: String, pseudoDirGuid: Long, userName: String, dataType: String, guid: Long,
-      metadata: Option[Map[String, String]], classifications: Seq[String], created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
-    prepareEntity(userName, AWS_S3_OBJECT_TYPE,
+  def s3ObjectEntity(objName: Option[String], pseudoDir: String, pseudoDirGuid: Long, userName: String, dataType: String, guid: Long,
+      metadata: Option[Map[String, String]], classifications: Seq[String], created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): Option[JsObject] =
+    objName.flatMap(name => prepareEntity(userName, AWS_S3_OBJECT_TYPE,
       JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
           "dataType" -> JsString(dataType),
@@ -87,27 +87,27 @@ object ModelKafka extends DefaultJsonProtocol {
               case (key, value) => prepareStrut(AWS_TAG, JsObject("key" -> JsString(key), "value" -> JsString(value)))
             }.toVector)
           })
-      ), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
+      ), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector)))
 
-  def serverEntity(host: String, userName: String, guid: Long, classifications: Seq[String], created: Long = System.currentTimeMillis()): JsObject =
+  def serverEntity(host: String, userName: String, guid: Long, created: Long = System.currentTimeMillis()): Option[JsObject] =
     prepareEntity(userName, ROKKU_SERVER_TYPE,
       JsObject(baseEntityValues(host, userName, created).fields ++
         Map(
           "server_name" -> JsString(host),
           "ip_address" -> JsString(host))
-      ), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
+      ), ENTITY_ACTIVE, guid, JsArray())
 
-  def fsPathEntity(name: String, userName: String, path: String, guid: Long, classifications: Seq[String], modified: Long = System.currentTimeMillis()): JsObject =
+  def fsPathEntity(name: String, userName: String, path: String, guid: Long, modified: Long = System.currentTimeMillis()): Option[JsObject] =
     prepareEntity(userName, HADOOP_FS_PATH,
       JsObject(baseEntityValues(name, userName, modified).fields ++
         Map(
           "path" -> JsString(path),
           "modifiedTime" -> JsString(modified.toString))
-      ), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
+      ), ENTITY_ACTIVE, guid, JsArray())
 
   def processEntity(name: String, userName: String, operation: String, host: String, serverGuid: Long,
       inName: String, inType: String, inGuid: Long, outName: String, outType: String, outGuid: Long, guid: Long,
-      created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): JsObject =
+      created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): Option[JsObject] =
     prepareEntity(userName, ROKKU_CLIENT_TYPE,
       JsObject(baseEntityValues(name, userName, created).fields ++
         Map(
@@ -119,9 +119,10 @@ object ModelKafka extends DefaultJsonProtocol {
         )
       ), ENTITY_ACTIVE, guid, JsArray())
 
-  def prepareEntityFullCreateMessage(userSTS: User, entityList: Vector[JsObject]): JsValue = {
+  def prepareEntityFullCreateMessage(userSTS: User, entityList: Vector[Option[JsObject]]): JsValue = {
+    val entities = entityList.filter(_.isDefined).flatten
     rootMessage(
-      prepareEntities(JsArray(entityList)), userSTS
+      prepareEntities(JsArray(entities)), userSTS
     ).toJson
   }
 
