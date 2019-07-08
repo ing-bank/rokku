@@ -48,12 +48,8 @@ trait LineageHelpers extends EventProducer {
   def getLineageHeaders(httpRequest: HttpRequest)(implicit id: RequestId): LineageHeaders = {
     val fullPath = httpRequest.uri.path.toString()
     val path = httpRequest.uri.path.toString().split("/").filter(_.nonEmpty)
-    val pseudoDir =
-      if (path.length > 1)
-        Some(s"${path.dropRight(1).mkString("/")}/")
-      else
-        None
-    val bucketObjectFQN = if (path.length > 1 && !fullPath.endsWith("/")) Some(s"""s3://${path.mkString("/")}""") else None
+    val pseudoDir = getPathDir(fullPath)
+    val bucketObjectFQN = getObjectName(fullPath)
 
     logger.debug("lineage header fullPath={}, pseudoDir={}, bucketObject={}", fullPath, pseudoDir, bucketObjectFQN)
 
@@ -70,6 +66,28 @@ trait LineageHelpers extends EventProducer {
       extractClassifications(httpRequest),
       extractMetadataHeader(extractHeaderOption(httpRequest, METADATA_HEADER))
     )
+  }
+
+  def getObjectName(fullPath: String): Option[String] = {
+    val path = fullPath.split("/").filter(_.nonEmpty)
+    if (path.length > 1 && !fullPath.endsWith("/")) Some(s"""s3://${path.mkString("/")}""") else None
+  }
+
+  def getPathDir(fullPath: String): Option[String] = {
+    val path = fullPath.split("/").filter(_.nonEmpty)
+    if (isOnlyBucketName(path))
+      if (!fullPath.endsWith("/"))
+        Some(s"${path.dropRight(1).mkString("/")}/")
+      else if (fullPath.startsWith("/"))
+        Some(fullPath.drop(1))
+      else
+        Some(fullPath)
+    else
+      None
+  }
+
+  private def isOnlyBucketName(path: Array[String]): Boolean = {
+    path.length > 1
   }
 
   /**
@@ -92,7 +110,6 @@ trait LineageHelpers extends EventProducer {
         logger.warn("unknown classification for {}", path)
         UnknownClassification()
     }
-//TODO for test    Map(classificationFor -> List("customer_PII", "staging_node"))
     Map(classificationFor -> extractHeaderOption(httpRequest, CLASSIFICATIONS_HEADER).map(_.split(",").toList).getOrElse(Seq.empty))
   }
 
@@ -174,15 +191,10 @@ trait LineageHelpers extends EventProducer {
     val clientType = lh.clientType.getOrElse("generic")
     val bucketObject = lh.bucketObject
     val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
-    val objectNameFromCopySrc = lh.copySource
+    val objectNameFromCopySrc = getObjectName(lh.copySource.getOrElse(""))
     val bucketNameFromCopySrc = lh.copySource.getOrElse("").split("/").head
-    val pseudoDirFromCopySrc = {
-      val pathArray = lh.copySource.getOrElse("").split("/").dropRight(1)
-      if (pathArray.length >= 2)
-        pathArray.mkString("/")
-      else
-        pathArray.mkString + "/"
-    }
+    val pseudoDirFromCopySrc = getPathDir(lh.copySource.getOrElse("")).getOrElse("")
+
     // entity definitions
     val serverEntityJs = serverEntity(clientHost, userName, srcGuids.serverGuid)
     val srcBucketEntityJs = bucketEntity(bucketNameFromCopySrc, userName, srcGuids.bucketGuid, List.empty)
@@ -197,8 +209,10 @@ trait LineageHelpers extends EventProducer {
       }
     val destS3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, destGuids.pseudoDir, userName, lh.contentType.toString(), destGuids.objectGuid, lh.metadata, lh.classifications.getOrElse(ObjectClassification(), List.empty))
     val copyProcessEntityJs = processEntity(s"${clientType}_$timestamp", userName, method.rangerName, clientHost, srcGuids.serverGuid,
-      objectNameFromCopySrc.getOrElse(pseudoDirFromCopySrc), objectNameFromCopySrc.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE), srcGuids.objectGuid,
-      bucketObject.getOrElse(pseudoDir), bucketObject.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE), destGuids.objectGuid, destGuids.processGuid)
+      objectNameFromCopySrc.getOrElse(pseudoDirFromCopySrc), objectNameFromCopySrc.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE),
+      objectNameFromCopySrc.map(_ => srcGuids.objectGuid).getOrElse(srcGuids.pseudoDir),
+      bucketObject.getOrElse(pseudoDir), bucketObject.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE),
+      bucketObject.map(_ => destGuids.objectGuid).getOrElse(destGuids.pseudoDir), destGuids.processGuid)
 
     if (bucketNameFromCopySrc == lh.bucket) {
       sendSingleMessage(

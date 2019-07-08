@@ -6,10 +6,10 @@ import spray.json.{ JsArray, JsNumber, JsObject, JsString, _ }
 
 object ModelKafka extends DefaultJsonProtocol {
 
-  private def rootMessage(message: JsObject, userSTS: User) =
+  private def rootMessage(message: JsObject, userSTS: User, typeName: String) =
     JsObject(
       "entities" -> message,
-      "type" -> JsString("ENTITY_FULL_UPDATE_V2"),
+      "type" -> JsString(typeName),
       "user" -> JsString(userSTS.userName.value)
     )
 
@@ -31,7 +31,7 @@ object ModelKafka extends DefaultJsonProtocol {
       "typeName" -> JsString(typeName),
       "attribute" -> JsString("qualifiedName"),
       "attributeValue" -> JsString(name),
-      "type" -> JsString("ENTITY_DELETE_V2"),
+      "type" -> JsString("ENTITY_DELETE"),
       "user" -> JsString(userSTS.userName.value)
     )
 
@@ -122,12 +122,15 @@ object ModelKafka extends DefaultJsonProtocol {
   def prepareEntityFullCreateMessage(userSTS: User, entityList: Vector[Option[JsObject]]): JsValue = {
     val entities = entityList.filter(_.isDefined).flatten
     rootMessage(
-      prepareEntities(JsArray(entities)), userSTS
+      prepareEntities(JsArray(entities)), userSTS, "ENTITY_FULL_UPDATE_V2"
     ).toJson
   }
 
-  def prepareEntityDeleteMessage(userSTS: User, name: String, typeName: String): JsValue =
-    rootMessage(
-      deleteEntity(userSTS, name, typeName), userSTS
+  def prepareEntityDeleteMessage(userSTS: User, name: String, typeName: String): JsValue = {
+    JsObject(
+      "version" -> JsObject("version" -> JsString("1.0.0")),
+      "message" -> deleteEntity(userSTS, name, typeName)
     ).toJson
+  }
 }
+

@@ -4,9 +4,9 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
-import com.ing.wbaa.rokku.proxy.data.{BucketClassification, DirClassification, ObjectClassification, RequestId}
+import com.ing.wbaa.rokku.proxy.data.{ BucketClassification, DirClassification, ObjectClassification, RequestId }
 import com.ing.wbaa.rokku.proxy.provider.atlas.LineageHelpers
-import org.scalatest.{DiagrammedAssertions, PrivateMethodTester, WordSpec}
+import org.scalatest.{ DiagrammedAssertions, PrivateMethodTester, WordSpec }
 
 import scala.concurrent.ExecutionContext
 
