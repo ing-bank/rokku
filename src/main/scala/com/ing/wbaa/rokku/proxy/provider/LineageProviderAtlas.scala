@@ -34,9 +34,9 @@ trait LineageProviderAtlas extends LineageHelpers {
           createSingleEntity(lineageHeaders.bucket, userSTS, bucketEntity(lineageHeaders.bucket, userSTS.userName.value, System.nanoTime(), lineageHeaders.classifications.getOrElse(BucketClassification(), List.empty)))
 
         // rm bucket
-        case HttpMethods.DELETE if !lineageHeaders.bucket.isEmpty && bucketObject.isEmpty =>
+        case HttpMethods.DELETE if !lineageHeaders.bucket.isEmpty && pseudoDir.isEmpty && bucketObject.isEmpty =>
           deleteEntityLineage(lineageHeaders.bucket, userSTS, AWS_S3_BUCKET_TYPE)
-          deleteEntityLineage(s"${lineageHeaders.bucket}/", userSTS, AWS_S3_PSEUDO_DIR_TYPE) // we also have to remove pseudodir root
+        //deleteEntityLineage(s"${lineageHeaders.bucket}/", userSTS, AWS_S3_PSEUDO_DIR_TYPE) // we also have to remove pseudodir root
 
         // get object
         case HttpMethods.GET if lineageHeaders.queryParams.isEmpty || lineageHeaders.queryParams.contains("encoding-type") && bucketObject.isDefined =>
@@ -67,8 +67,8 @@ trait LineageProviderAtlas extends LineageHelpers {
           readOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress, Some(externalObject))
 
         // delete object
-        case HttpMethods.DELETE if lineageHeaders.queryParams.isEmpty && bucketObject.isDefined =>
-          deleteEntityLineage(lineageHeaders.bucketObject.getOrElse(""), userSTS)
+        case HttpMethods.DELETE if lineageHeaders.queryParams.isEmpty && (pseudoDir.isDefined || bucketObject.isDefined) =>
+          deleteEntityLineage(lineageHeaders.bucketObject.getOrElse(pseudoDir.getOrElse("")), userSTS, bucketObject.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE))
 
         // delete on abort multipart
         // DELETE /ObjectName?uploadId=UploadId
