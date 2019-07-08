@@ -7,7 +7,8 @@ import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.data.LineageLiterals._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
 import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka.bucketEntity
-import com.ing.wbaa.rokku.proxy.data.{ Read, RequestId, User, Write }
+import com.ing.wbaa.rokku.proxy.data.{ BucketClassification, Read, RequestId, User, Write }
+import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.provider.atlas.LineageHelpers
 
 import scala.concurrent.Future
@@ -16,9 +17,12 @@ trait LineageProviderAtlas extends LineageHelpers {
 
   protected[this] implicit def system: ActorSystem
 
+  private val logger = new LoggerHandlerWithId
+
   def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] = {
     val lineageHeaders = getLineageHeaders(httpRequest)
-    val bucketObject = lineageHeaders.bucketObject.getOrElse("emptyObject")
+    val pseudoDir = lineageHeaders.pseduoDir
+    val bucketObject = lineageHeaders.bucketObject
     val isMultideletePost =
       (httpRequest.entity.contentType.mediaType == MediaTypes.`application/xml` || httpRequest.entity.contentType.mediaType == MediaTypes.`application/octet-stream`) &&
         lineageHeaders.queryParams.getOrElse("") == "delete"
@@ -26,27 +30,27 @@ trait LineageProviderAtlas extends LineageHelpers {
     if (lineageHeaders.bucket.length > 1) {
       lineageHeaders.method match {
         // mb bucket
-        case HttpMethods.PUT if !lineageHeaders.bucket.isEmpty && bucketObject == "emptyObject" =>
-          createSingleEntity(lineageHeaders.bucket, userSTS, bucketEntity(lineageHeaders.bucket, userSTS.userName.value, System.nanoTime(), lineageHeaders.classifications.getOrElse(List.empty)))
+        case HttpMethods.PUT if !lineageHeaders.bucket.isEmpty && pseudoDir.isEmpty && bucketObject.isEmpty =>
+          createSingleEntity(lineageHeaders.bucket, userSTS, bucketEntity(lineageHeaders.bucket, userSTS.userName.value, System.nanoTime(), lineageHeaders.classifications.getOrElse(BucketClassification(), List.empty)))
 
         // rm bucket
-        case HttpMethods.DELETE if !lineageHeaders.bucket.isEmpty && bucketObject == "emptyObject" =>
+        case HttpMethods.DELETE if !lineageHeaders.bucket.isEmpty && bucketObject.isEmpty =>
           deleteEntityLineage(lineageHeaders.bucket, userSTS, AWS_S3_BUCKET_TYPE)
           deleteEntityLineage(s"${lineageHeaders.bucket}/", userSTS, AWS_S3_PSEUDO_DIR_TYPE) // we also have to remove pseudodir root
 
         // get object
-        case HttpMethods.GET if lineageHeaders.queryParams.isEmpty || lineageHeaders.queryParams.contains("encoding-type") && !bucketObject.isEmpty =>
-          val externalObject = s"$EXTERNAL_OBJECT_OUT/${bucketObject.split("/").takeRight(1).mkString}"
+        case HttpMethods.GET if lineageHeaders.queryParams.isEmpty || lineageHeaders.queryParams.contains("encoding-type") && bucketObject.isDefined =>
+          val externalObject = s"$EXTERNAL_OBJECT_OUT/${bucketObject.get.split("/").takeRight(1).mkString}"
           readOrWriteLineage(lineageHeaders, userSTS, Read(), clientIPAddress, Some(externalObject))
 
         // put object from outside of ceph
-        case HttpMethods.PUT if lineageHeaders.queryParams.isEmpty && lineageHeaders.copySource.isEmpty && !bucketObject.isEmpty =>
-          val externalObject = s"$EXTERNAL_OBJECT_IN/${bucketObject.split("/").takeRight(1).mkString}"
+        case HttpMethods.PUT if lineageHeaders.queryParams.isEmpty && lineageHeaders.copySource.isEmpty && (pseudoDir.isDefined || bucketObject.isDefined) =>
+          val externalObject = s"$EXTERNAL_OBJECT_IN/${bucketObject.getOrElse(pseudoDir.get).split("/").takeRight(1).mkString}"
           readOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress, Some(externalObject))
 
         // put object - copy
         // if contains header x-amz-copy-source
-        case HttpMethods.PUT if lineageHeaders.copySource.getOrElse("").length > 0 && !bucketObject.isEmpty =>
+        case HttpMethods.PUT if lineageHeaders.copySource.getOrElse("").length > 0 && (pseudoDir.isDefined || bucketObject.isDefined) =>
           lineageForCopyOperation(lineageHeaders, userSTS, Write(), clientIPAddress)
 
         // multidelete by POST
@@ -58,20 +62,22 @@ trait LineageProviderAtlas extends LineageHelpers {
 
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
-        case HttpMethods.POST if lineageHeaders.queryParams.getOrElse("").contains("uploadId") && !bucketObject.isEmpty =>
-          val externalObject = s"$EXTERNAL_OBJECT_IN/${bucketObject.split("/").takeRight(1).mkString}"
+        case HttpMethods.POST if lineageHeaders.queryParams.getOrElse("").contains("uploadId") && bucketObject.isDefined =>
+          val externalObject = s"$EXTERNAL_OBJECT_IN/${bucketObject.get.split("/").takeRight(1).mkString}"
           readOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress, Some(externalObject))
 
         // delete object
-        case HttpMethods.DELETE if lineageHeaders.queryParams.isEmpty && !bucketObject.isEmpty =>
+        case HttpMethods.DELETE if lineageHeaders.queryParams.isEmpty && bucketObject.isDefined =>
           deleteEntityLineage(lineageHeaders.bucketObject.getOrElse(""), userSTS)
 
         // delete on abort multipart
         // DELETE /ObjectName?uploadId=UploadId
-        case HttpMethods.DELETE if lineageHeaders.queryParams.getOrElse("").contains("uploadId") && !bucketObject.isEmpty =>
+        case HttpMethods.DELETE if lineageHeaders.queryParams.getOrElse("").contains("uploadId") && bucketObject.isDefined =>
           deleteEntityLineage(lineageHeaders.bucketObject.getOrElse(""), userSTS)
 
-        case _ => Future.successful(Done)
+        case _ =>
+          logger.warn("no case for lineage {}", httpRequest)
+          Future.successful(Done)
       }
     } else {
       Future.successful(Done)
