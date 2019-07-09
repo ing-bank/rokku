@@ -192,7 +192,7 @@ trait LineageHelpers extends EventProducer {
     val bucketObject = lh.bucketObject
     val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
     val objectNameFromCopySrc = getObjectName(lh.copySource.getOrElse(""))
-    val bucketNameFromCopySrc = lh.copySource.getOrElse("").split("/").head
+    val bucketNameFromCopySrc = lh.copySource.getOrElse("").split("/").filter(_.nonEmpty).head
     val pseudoDirFromCopySrc = getPathDir(lh.copySource.getOrElse("")).getOrElse("")
 
     // entity definitions
