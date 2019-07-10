@@ -12,6 +12,7 @@ import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data.{ AwsRequestCredential, AwsSecretKey, RequestId, S3Request, User, Write }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
+import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder.ExecutedRequestCmd
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -45,6 +46,9 @@ trait ProxyService {
   protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit
 
   protected[this] def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String)(implicit id: RequestId): Future[Done]
+
+  val requestPersistenceEnabled: Boolean
+  val configuredPersistenceId: String
 
   val proxyServiceRoute: Route =
 
@@ -94,6 +98,12 @@ trait ProxyService {
     updateHeadersForRequest { newHttpRequest =>
       val httpResponse = executeRequest(newHttpRequest, userSTS, s3Request).andThen {
         case Success(response: HttpResponse) =>
+          //add request recording after getting response and before executing postrequest actions, we skip ls requests
+          val isListRequest = httpRequest.method.value == "GET" && httpRequest.uri.rawQueryString.getOrElse("empty").contains("prefix")
+          if (requestPersistenceEnabled && !isListRequest) {
+            lazy val lineageRecorderRef = system.actorSelection(s"/user/$configuredPersistenceId")
+            lineageRecorderRef ! ExecutedRequestCmd(httpRequest, userSTS, s3Request.clientIPAddress)
+          }
           handlePostRequestActions(response, httpRequest, s3Request, userSTS)
       }
       complete(httpResponse)

@@ -22,7 +22,7 @@ updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true
 val akkaHttpVersion = "10.1.8"
 val akkaVersion = "2.5.21"
 val logbackJson = "0.1.5"
-val metricVersion = "4.0.5"
+val metricVersion = "3.2.2" // align with C* driver core, can be updated with new C* persistence from akka
 
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
@@ -42,12 +42,19 @@ libraryDependencies ++= Seq(
     "io.github.twonote"            %  "radosgw-admin4j"        % "1.0.2",
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.0-M2",
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
-    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion,
+//    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion, // bring back after persistence update
     "com.auth0"                    % "java-jwt"                % "3.8.0",
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
     "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.505"        % IntegrationTest
+) ++ persistenceDependencies
+
+val persistenceDependencies = Seq (
+  "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
+  "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
+  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.98",
+  "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % "0.98" % Test
 )
 
 // Fix logging dependencies:

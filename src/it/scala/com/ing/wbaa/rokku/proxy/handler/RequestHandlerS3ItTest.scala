@@ -51,6 +51,9 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
         Future(Some(User(UserRawJson("userId", Set("group"), "accesskey", "secretkey"))))
 
       def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] = Future.successful(Done)
+
+      override val requestPersistenceEnabled: Boolean = false
+      override val configuredPersistenceId: String = "localhost-1"
     }
     proxy.startup.map { binding =>
       try testCode(getAmazonS3(

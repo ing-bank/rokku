@@ -36,6 +36,9 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
 
     override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit = ()
 
+    override val requestPersistenceEnabled: Boolean = false
+    override val configuredPersistenceId: String = "localhost-1"
+
     override def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String)(implicit id: RequestId): Future[Done] = Future(Done)
   }
 
