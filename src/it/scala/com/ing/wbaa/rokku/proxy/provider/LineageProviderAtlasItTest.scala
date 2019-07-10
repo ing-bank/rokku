@@ -72,7 +72,18 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
         apr.createLineageFromRequest(
           fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeTags").withHeaders(RawHeader("rokku-metadata", "k1=v1")), userSTS, remoteClientIP)
         val message = consumeFirstStringMessageFrom(createEventsTopic)
-        assert(message.contains("\"aws_tag\",\"values\":{\"key\":\"k1\",\"value\":\"v1\"}"))
+        assert(message.contains("{\"awsTags\":[{\"attributes\":{\"key\":\"k1\",\"value\":\"v1\"},\"typeName\":\"aws_tag\"}]"))
+      }
+    }
+
+    "create Write lineage from HttpRequest with classifications" in withLineageProviderAtlas() { apr =>
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = testKafkaPort)
+      withRunningKafka {
+        Thread.sleep(2000)
+        apr.createLineageFromRequest(
+          fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeTags").withHeaders(RawHeader("rokku-classifications", "customerPII,secret")), userSTS, remoteClientIP)
+        val message = consumeFirstStringMessageFrom(createEventsTopic)
+        assert(message.contains("\"classifications\":[{\"typeName\":\"customerPII\"},{\"typeName\":\"secret\"}]"))
       }
     }
 

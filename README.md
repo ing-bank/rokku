@@ -196,7 +196,7 @@ admin user and password
 You can set classifications and metadata to objects in lineage by setting http headers:
 
 * **rokku-metadata** - key value pair in format _key1=val1,key2=val2_ - the matadata is presented in lineage entity as "awsTags" properties.
-* **rokku-classifications**  - unsupported yet
+* **rokku-classifications**  - comma separated classifications names (the classifications must exist)
 
 # Events Notification
 

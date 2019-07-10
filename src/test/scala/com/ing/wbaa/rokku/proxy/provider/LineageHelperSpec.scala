@@ -1,8 +1,10 @@
 package com.ing.wbaa.rokku.proxy.provider
 
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
-import com.ing.wbaa.rokku.proxy.data.RequestId
+import com.ing.wbaa.rokku.proxy.data.{ BucketClassification, DirClassification, ObjectClassification, RequestId }
 import com.ing.wbaa.rokku.proxy.provider.atlas.LineageHelpers
 import org.scalatest.{ DiagrammedAssertions, PrivateMethodTester, WordSpec }
 
@@ -41,6 +43,37 @@ class LineageHelperSpec extends WordSpec with DiagrammedAssertions with PrivateM
     "return keys and values for metadata header" in {
       val result = LineageHelpersTest.extractMetadataHeader(Some("k1=v1,k2=v2"))
       assert(result.contains(Map("k1" -> "v1", "k2" -> "v2")))
+    }
+  }
+
+  "extractClassifications" that {
+    "returns bucket classifications" in {
+      val request = HttpRequest().withUri("bucket").withHeaders(RawHeader(LineageHelpersTest.CLASSIFICATIONS_HEADER, "classification1"))
+      val result = LineageHelpersTest.extractClassifications(request)
+      assert(result.size == 1)
+      assert(result contains BucketClassification())
+      assert(result(BucketClassification()) == List("classification1"))
+    }
+
+    "returns dir classifications" in {
+      val request = HttpRequest().withUri("bucket/dir1/").withHeaders(RawHeader(LineageHelpersTest.CLASSIFICATIONS_HEADER, "classification1,classification2"))
+      val result = LineageHelpersTest.extractClassifications(request)
+      assert(result.size == 1)
+      assert(result contains DirClassification())
+      assert(result(DirClassification()) == List("classification1", "classification2"))
+    }
+
+    "returns object classifications" in {
+      val request = HttpRequest().withUri("bucket/obj").withHeaders(RawHeader(LineageHelpersTest.CLASSIFICATIONS_HEADER, "classification1,classification2,classification3"))
+      val result = LineageHelpersTest.extractClassifications(request)
+      assert(result.size == 1)
+      assert(result contains ObjectClassification())
+      assert(result(ObjectClassification()) == List("classification1", "classification2", "classification3"))
+      val request2 = HttpRequest().withUri("bucket/dir1/obj").withHeaders(RawHeader(LineageHelpersTest.CLASSIFICATIONS_HEADER, "classification1"))
+      val result2 = LineageHelpersTest.extractClassifications(request2)
+      assert(result2.size == 1)
+      assert(result2 contains ObjectClassification())
+      assert(result2(ObjectClassification()) == List("classification1"))
     }
   }
 

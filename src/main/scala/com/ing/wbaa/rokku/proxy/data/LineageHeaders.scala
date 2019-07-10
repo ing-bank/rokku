@@ -12,5 +12,11 @@ case class LineageHeaders(
     clientType: Option[String],
     queryParams: Option[String],
     copySource: Option[String],
-    classifications: Option[Seq[String]],
+    classifications: Map[ClassificationFor, Seq[String]],
     metadata: Option[Map[String, String]])
+
+sealed class ClassificationFor
+case class BucketClassification() extends ClassificationFor
+case class DirClassification() extends ClassificationFor
+case class ObjectClassification() extends ClassificationFor
+case class UnknownClassification() extends ClassificationFor

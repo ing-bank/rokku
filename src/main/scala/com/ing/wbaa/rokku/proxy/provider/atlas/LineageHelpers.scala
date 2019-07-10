@@ -46,17 +46,16 @@ trait LineageHelpers extends EventProducer {
   }
 
   def getLineageHeaders(httpRequest: HttpRequest)(implicit id: RequestId): LineageHeaders = {
-    val path = httpRequest.uri.path.toString().split("/").filter(_.nonEmpty)
-    val pseudoDir =
-      if (path.length > 2)
-        Some(path.dropRight(1).mkString("/"))
-      else
-        None
-    val bucketObjectFQN = if (path.length > 1) Some(s"""s3://${path.mkString("/")}""") else None
+    val fullPath = httpRequest.uri.path.toString()
+    val bucketName = getBucketName(fullPath)
+    val pseudoDir = getPathDir(fullPath)
+    val bucketObjectFQN = getObjectName(fullPath)
+
+    logger.debug("lineage header fullPath={}, pseudoDir={}, bucketObject={}", fullPath, pseudoDir, bucketObjectFQN)
 
     LineageHeaders(
       extractHeaderOption(httpRequest, "Remote-Address"),
-      path.head,
+      bucketName,
       pseudoDir,
       bucketObjectFQN,
       httpRequest.method,
@@ -64,9 +63,56 @@ trait LineageHelpers extends EventProducer {
       extractHeaderOption(httpRequest, "User-Agent").flatMap(extractClient),
       httpRequest.uri.rawQueryString,
       extractHeaderOption(httpRequest, "x-amz-copy-source"),
-      extractHeaderOption(httpRequest, CLASSIFICATIONS_HEADER).map(_.split(",")),
+      extractClassifications(httpRequest),
       extractMetadataHeader(extractHeaderOption(httpRequest, METADATA_HEADER))
     )
+  }
+
+  def getBucketName(fullPath: String): String = fullPath.split("/").filter(_.nonEmpty).head
+
+  def getObjectName(fullPath: String): Option[String] = {
+    val path = fullPath.split("/").filter(_.nonEmpty)
+    if (path.length > 1 && !fullPath.endsWith("/")) Some(s"""s3://${path.mkString("/")}""") else None
+  }
+
+  def getPathDir(fullPath: String): Option[String] = {
+    val path = fullPath.split("/").filter(_.nonEmpty)
+    if (isOnlyBucketName(path))
+      if (!fullPath.endsWith("/"))
+        Some(s"${path.dropRight(1).mkString("/")}/")
+      else if (fullPath.startsWith("/"))
+        Some(fullPath.drop(1))
+      else
+        Some(fullPath)
+    else
+      None
+  }
+
+  private def isOnlyBucketName(path: Array[String]): Boolean = {
+    path.length > 1
+  }
+
+  /**
+   * get classifications from http header and set on right entity in atlas
+   * - the path is made from one element the classification is set on bucket
+   * - the path is made from more than one element and end with "/" - classification is set on pseudoDir
+   * - the path is made from more than one element - classification is set on s3_object
+   *
+   * @param httpRequest - the request to get header
+   * @param id          - session id
+   * @return map with entity name and list of classifications
+   */
+  def extractClassifications(httpRequest: HttpRequest)(implicit id: RequestId): Map[ClassificationFor, Seq[String]] = {
+    val path = httpRequest.uri.path.toString()
+    val classificationFor: ClassificationFor = path.split("/").filter(_.nonEmpty) match {
+      case Array(_)                        => BucketClassification()
+      case Array(_*) if path.endsWith("/") => DirClassification()
+      case Array(_*)                       => ObjectClassification()
+      case _ =>
+        logger.warn("unknown classification for {}", path)
+        UnknownClassification()
+    }
+    Map(classificationFor -> extractHeaderOption(httpRequest, CLASSIFICATIONS_HEADER).map(_.split(",").toList).getOrElse(Seq.empty))
   }
 
   // file/object/bucket object entity delete
@@ -78,7 +124,7 @@ trait LineageHelpers extends EventProducer {
     sendSingleMessage(prepareEntityDeleteMessage(userSTS, entityName, entityType).toString, ATLAS_HOOK_TOPIC)
   }
 
-  def createSingleEntity(entityName: String, userSTS: User, entityValues: JsObject)(implicit id: RequestId): Future[Done] = {
+  def createSingleEntity(entityName: String, userSTS: User, entityValues: Option[JsObject])(implicit id: RequestId): Future[Done] = {
     logger.debug(s"Creating lineage for request, $entityName at $timestamp")
     sendSingleMessage(
       prepareEntityFullCreateMessage(userSTS, Vector(entityValues)).toString,
@@ -96,15 +142,15 @@ trait LineageHelpers extends EventProducer {
     val userName = userSTS.userName.value
     val clientHost = clientIPAddress.getAddress().get().getHostAddress
     val clientType = lh.clientType.getOrElse("generic")
-    val bucketObject = lh.bucketObject.getOrElse("emptyObject")
+    val bucketObject = lh.bucketObject
     val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
     val externalPath = externalFsPath.getOrElse("")
 
     // entity definitions
     val serverEntityJs = serverEntity(clientHost, userName, guids.serverGuid)
-    val bucketEntityJs = bucketEntity(lh.bucket, userName, guids.bucketGuid)
-    val pseudoDirEntityJs = pseudoDirEntity(pseudoDir, lh.bucket, guids.bucketGuid, userName, guids.pseudoDir)
-    val s3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, guids.pseudoDir, userName, lh.contentType.toString(), guids.objectGuid, lh.metadata)
+    val bucketEntityJs = bucketEntity(lh.bucket, userName, guids.bucketGuid, List.empty)
+    val pseudoDirEntityJs = pseudoDirEntity(pseudoDir, lh.bucket, guids.bucketGuid, userName, guids.pseudoDir, lh.classifications.getOrElse(DirClassification(), List.empty))
+    val s3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, guids.pseudoDir, userName, lh.contentType.toString(), guids.objectGuid, lh.metadata, lh.classifications.getOrElse(ObjectClassification(), List.empty))
     val externalPathEntityJs = fsPathEntity(externalPath, userName, externalPath, guids.externalPathGuid)
 
     method match {
@@ -114,7 +160,8 @@ trait LineageHelpers extends EventProducer {
           prepareEntityFullCreateMessage(userSTS, Vector(serverEntityJs, bucketEntityJs, pseudoDirEntityJs, s3ObjectEntityJs, externalPathEntityJs,
             processEntity(s"${clientType}_$timestamp", userName, method.rangerName,
               clientHost, guids.serverGuid,
-              bucketObject, AWS_S3_OBJECT_TYPE, guids.objectGuid,
+              bucketObject.getOrElse(pseudoDir), bucketObject.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE),
+              bucketObject.map(_ => guids.objectGuid).getOrElse(guids.pseudoDir),
               externalPath, HADOOP_FS_PATH, guids.externalPathGuid, guids.processGuid)))
             .toString, ATLAS_HOOK_TOPIC)
 
@@ -125,7 +172,8 @@ trait LineageHelpers extends EventProducer {
             processEntity(s"${clientType}_$timestamp", userName, method.rangerName,
               clientHost, guids.serverGuid,
               externalPath, HADOOP_FS_PATH, guids.externalPathGuid,
-              bucketObject, AWS_S3_OBJECT_TYPE, guids.objectGuid, guids.processGuid)))
+              bucketObject.getOrElse(pseudoDir), bucketObject.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE),
+              bucketObject.map(_ => guids.objectGuid).getOrElse(guids.pseudoDir), guids.processGuid)))
             .toString, ATLAS_HOOK_TOPIC)
 
       case _ => Future(Done)
@@ -143,33 +191,30 @@ trait LineageHelpers extends EventProducer {
     val userName = userSTS.userName.value
     val clientHost = clientIPAddress.getAddress().get().getHostAddress
     val clientType = lh.clientType.getOrElse("generic")
-    val bucketObject = lh.bucketObject.getOrElse("emptyObject")
+    val bucketObject = lh.bucketObject
     val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
-    val objectNameFromCopySrc = lh.copySource.getOrElse("")
-    val bucketNameFromCopySrc = lh.copySource.getOrElse("").split("/").head
-    val pseudoDirFromCopySrc = {
-      val pathArray = lh.copySource.getOrElse("").split("/").dropRight(1)
-      if (pathArray.length >= 2)
-        pathArray.mkString("/")
-      else
-        pathArray.mkString + "/"
-    }
+    val objectNameFromCopySrc = getObjectName(lh.copySource.getOrElse(""))
+    val bucketNameFromCopySrc = getBucketName(lh.copySource.getOrElse(""))
+    val pseudoDirFromCopySrc = getPathDir(lh.copySource.getOrElse("")).getOrElse("")
+
     // entity definitions
     val serverEntityJs = serverEntity(clientHost, userName, srcGuids.serverGuid)
-    val srcBucketEntityJs = bucketEntity(bucketNameFromCopySrc, userName, srcGuids.bucketGuid)
-    val srcPseudoDirEntityJs = pseudoDirEntity(pseudoDirFromCopySrc, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, srcGuids.pseudoDir)
-    val srcS3ObjectEntityJs = s3ObjectEntity(objectNameFromCopySrc, pseudoDirFromCopySrc, srcGuids.pseudoDir, userName, lh.contentType.toString(), srcGuids.objectGuid, lh.metadata)
-    val destBucketEntityJs = bucketEntity(lh.bucket, userName, destGuids.bucketGuid)
+    val srcBucketEntityJs = bucketEntity(bucketNameFromCopySrc, userName, srcGuids.bucketGuid, List.empty)
+    val srcPseudoDirEntityJs = pseudoDirEntity(pseudoDirFromCopySrc, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, srcGuids.pseudoDir, lh.classifications.getOrElse(DirClassification(), List.empty))
+    val srcS3ObjectEntityJs = s3ObjectEntity(objectNameFromCopySrc, pseudoDirFromCopySrc, srcGuids.pseudoDir, userName, lh.contentType.toString(), srcGuids.objectGuid, lh.metadata, lh.classifications.getOrElse(BucketClassification(), List.empty))
+    val destBucketEntityJs = bucketEntity(lh.bucket, userName, destGuids.bucketGuid, List.empty)
     val destPseudoDirEntityJs =
       if (bucketNameFromCopySrc == lh.bucket) {
-        pseudoDirEntity(pseudoDir, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, destGuids.pseudoDir)
+        pseudoDirEntity(pseudoDir, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, destGuids.pseudoDir, lh.classifications.getOrElse(DirClassification(), List.empty))
       } else {
-        pseudoDirEntity(pseudoDir, lh.bucket, destGuids.bucketGuid, userName, destGuids.pseudoDir)
+        pseudoDirEntity(pseudoDir, lh.bucket, destGuids.bucketGuid, userName, destGuids.pseudoDir, lh.classifications.getOrElse(DirClassification(), List.empty))
       }
-    val destS3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, destGuids.pseudoDir, userName, lh.contentType.toString(), destGuids.objectGuid, lh.metadata)
+    val destS3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, destGuids.pseudoDir, userName, lh.contentType.toString(), destGuids.objectGuid, lh.metadata, lh.classifications.getOrElse(ObjectClassification(), List.empty))
     val copyProcessEntityJs = processEntity(s"${clientType}_$timestamp", userName, method.rangerName, clientHost, srcGuids.serverGuid,
-      objectNameFromCopySrc, AWS_S3_OBJECT_TYPE, srcGuids.objectGuid,
-      bucketObject, AWS_S3_OBJECT_TYPE, destGuids.objectGuid, destGuids.processGuid)
+      objectNameFromCopySrc.getOrElse(pseudoDirFromCopySrc), objectNameFromCopySrc.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE),
+      objectNameFromCopySrc.map(_ => srcGuids.objectGuid).getOrElse(srcGuids.pseudoDir),
+      bucketObject.getOrElse(pseudoDir), bucketObject.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE),
+      bucketObject.map(_ => destGuids.objectGuid).getOrElse(destGuids.pseudoDir), destGuids.processGuid)
 
     if (bucketNameFromCopySrc == lh.bucket) {
       sendSingleMessage(
