@@ -68,7 +68,7 @@ trait LineageHelpers extends EventProducer {
     )
   }
 
-  def getBucketName(fullPatch: String): String = fullPatch.split("/").filter(_.nonEmpty).head
+  def getBucketName(fullPath: String): String = fullPath.split("/").filter(_.nonEmpty).head
 
   def getObjectName(fullPath: String): Option[String] = {
     val path = fullPath.split("/").filter(_.nonEmpty)
