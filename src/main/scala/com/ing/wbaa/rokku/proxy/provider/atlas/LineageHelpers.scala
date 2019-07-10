@@ -47,7 +47,7 @@ trait LineageHelpers extends EventProducer {
 
   def getLineageHeaders(httpRequest: HttpRequest)(implicit id: RequestId): LineageHeaders = {
     val fullPath = httpRequest.uri.path.toString()
-    val path = httpRequest.uri.path.toString().split("/").filter(_.nonEmpty)
+    val bucketName = getBucketName(fullPath)
     val pseudoDir = getPathDir(fullPath)
     val bucketObjectFQN = getObjectName(fullPath)
 
@@ -55,7 +55,7 @@ trait LineageHelpers extends EventProducer {
 
     LineageHeaders(
       extractHeaderOption(httpRequest, "Remote-Address"),
-      path.head,
+      bucketName,
       pseudoDir,
       bucketObjectFQN,
       httpRequest.method,
@@ -67,6 +67,8 @@ trait LineageHelpers extends EventProducer {
       extractMetadataHeader(extractHeaderOption(httpRequest, METADATA_HEADER))
     )
   }
+
+  def getBucketName(fullPatch: String): String = fullPatch.split("/").filter(_.nonEmpty).head
 
   def getObjectName(fullPath: String): Option[String] = {
     val path = fullPath.split("/").filter(_.nonEmpty)
@@ -140,7 +142,7 @@ trait LineageHelpers extends EventProducer {
     val userName = userSTS.userName.value
     val clientHost = clientIPAddress.getAddress().get().getHostAddress
     val clientType = lh.clientType.getOrElse("generic")
-    val bucketObject = lh.bucketObject //.getOrElse("emptyObject")
+    val bucketObject = lh.bucketObject
     val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
     val externalPath = externalFsPath.getOrElse("")
 
@@ -192,7 +194,7 @@ trait LineageHelpers extends EventProducer {
     val bucketObject = lh.bucketObject
     val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
     val objectNameFromCopySrc = getObjectName(lh.copySource.getOrElse(""))
-    val bucketNameFromCopySrc = lh.copySource.getOrElse("").split("/").filter(_.nonEmpty).head
+    val bucketNameFromCopySrc = getBucketName(lh.copySource.getOrElse(""))
     val pseudoDirFromCopySrc = getPathDir(lh.copySource.getOrElse("")).getOrElse("")
 
     // entity definitions

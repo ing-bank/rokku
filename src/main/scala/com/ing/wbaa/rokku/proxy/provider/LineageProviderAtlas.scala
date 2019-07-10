@@ -27,6 +27,8 @@ trait LineageProviderAtlas extends LineageHelpers {
       (httpRequest.entity.contentType.mediaType == MediaTypes.`application/xml` || httpRequest.entity.contentType.mediaType == MediaTypes.`application/octet-stream`) &&
         lineageHeaders.queryParams.getOrElse("") == "delete"
 
+    val extractObjectFromPath = bucketObject.get.split("/").takeRight(1).mkString
+
     if (lineageHeaders.bucket.length > 1) {
       lineageHeaders.method match {
         // mb bucket
@@ -36,11 +38,10 @@ trait LineageProviderAtlas extends LineageHelpers {
         // rm bucket
         case HttpMethods.DELETE if !lineageHeaders.bucket.isEmpty && pseudoDir.isEmpty && bucketObject.isEmpty =>
           deleteEntityLineage(lineageHeaders.bucket, userSTS, AWS_S3_BUCKET_TYPE)
-        //deleteEntityLineage(s"${lineageHeaders.bucket}/", userSTS, AWS_S3_PSEUDO_DIR_TYPE) // we also have to remove pseudodir root
 
         // get object
         case HttpMethods.GET if lineageHeaders.queryParams.isEmpty || lineageHeaders.queryParams.contains("encoding-type") && bucketObject.isDefined =>
-          val externalObject = s"$EXTERNAL_OBJECT_OUT/${bucketObject.get.split("/").takeRight(1).mkString}"
+          val externalObject = s"$EXTERNAL_OBJECT_OUT/${extractObjectFromPath}"
           readOrWriteLineage(lineageHeaders, userSTS, Read(), clientIPAddress, Some(externalObject))
 
         // put object from outside of ceph
@@ -63,7 +64,7 @@ trait LineageProviderAtlas extends LineageHelpers {
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
         case HttpMethods.POST if lineageHeaders.queryParams.getOrElse("").contains("uploadId") && bucketObject.isDefined =>
-          val externalObject = s"$EXTERNAL_OBJECT_IN/${bucketObject.get.split("/").takeRight(1).mkString}"
+          val externalObject = s"$EXTERNAL_OBJECT_IN/${extractObjectFromPath}"
           readOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress, Some(externalObject))
 
         // delete object
@@ -76,7 +77,7 @@ trait LineageProviderAtlas extends LineageHelpers {
           deleteEntityLineage(lineageHeaders.bucketObject.getOrElse(""), userSTS)
 
         case _ =>
-          logger.warn("no case for lineage {}", httpRequest)
+          logger.debug("no case for lineage {}", httpRequest)
           Future.successful(Done)
       }
     } else {
