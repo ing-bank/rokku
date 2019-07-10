@@ -27,7 +27,7 @@ trait LineageProviderAtlas extends LineageHelpers {
       (httpRequest.entity.contentType.mediaType == MediaTypes.`application/xml` || httpRequest.entity.contentType.mediaType == MediaTypes.`application/octet-stream`) &&
         lineageHeaders.queryParams.getOrElse("") == "delete"
 
-    val extractObjectFromPath = bucketObject.get.split("/").takeRight(1).mkString
+    val extractObjectFromPath = bucketObject.getOrElse("").split("/").takeRight(1).mkString
 
     if (lineageHeaders.bucket.length > 1) {
       lineageHeaders.method match {
@@ -41,7 +41,7 @@ trait LineageProviderAtlas extends LineageHelpers {
 
         // get object
         case HttpMethods.GET if lineageHeaders.queryParams.isEmpty || lineageHeaders.queryParams.contains("encoding-type") && bucketObject.isDefined =>
-          val externalObject = s"$EXTERNAL_OBJECT_OUT/${extractObjectFromPath}"
+          val externalObject = s"$EXTERNAL_OBJECT_OUT/$extractObjectFromPath"
           readOrWriteLineage(lineageHeaders, userSTS, Read(), clientIPAddress, Some(externalObject))
 
         // put object from outside of ceph
@@ -64,7 +64,7 @@ trait LineageProviderAtlas extends LineageHelpers {
         // post object (complete multipart)
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
         case HttpMethods.POST if lineageHeaders.queryParams.getOrElse("").contains("uploadId") && bucketObject.isDefined =>
-          val externalObject = s"$EXTERNAL_OBJECT_IN/${extractObjectFromPath}"
+          val externalObject = s"$EXTERNAL_OBJECT_IN/$extractObjectFromPath"
           readOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress, Some(externalObject))
 
         // delete object
