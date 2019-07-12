@@ -13,7 +13,12 @@ class KafkaSettings(config: Config) extends Extension {
   val retriesBackOffMax: String = config.getString("kafka.producer.backoffMax")
   val protocol: String = config.getString("kafka.producer.protocol")
   val maxblock: String = config.getString("kafka.producer.maxblock")
-  val kafkaConfig = config.getConfig("kafka.producer")
+  val sslTruststoreLocation: String = config.getString("kafka.producer.ssl.truststore.location")
+  val sslTruststorePassword: String = config.getString("kafka.producer.ssl.truststore.password")
+  val sslKeystoreLocation: String = config.getString("kafka.producer.ssl.keystore.location")
+  val sslKeystorePassword: String = config.getString("kafka.producer.ssl.keystore.password")
+  val sslKeyPassword: String = config.getString("kafka.producer.ssl.key.password")
+  val kafkaConfig: Config = config.getConfig("kafka.producer")
 }
 
 object KafkaSettings extends ExtensionId[KafkaSettings] with ExtensionIdProvider {
