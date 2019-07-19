@@ -6,10 +6,10 @@ import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata}
+import org.apache.kafka.clients.producer.{ KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata }
 import org.apache.kafka.common.serialization.StringSerializer
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait EventProducer {
 
@@ -35,8 +35,7 @@ trait EventProducer {
       "ssl.truststore.password" -> kafkaSettings.sslTruststorePassword,
       "ssl.keystore.location" -> kafkaSettings.sslKeystoreLocation,
       "ssl.keystore.password" -> kafkaSettings.sslKeystorePassword,
-      "ssl.key.password" -> kafkaSettings.sslKeyPassword,
-
+      "ssl.key.password" -> kafkaSettings.sslKeyPassword
     )
 
   private lazy val kafkaProducer: KafkaProducer[String, String] = new KafkaProducer(config.asJava, new StringSerializer, new StringSerializer)
