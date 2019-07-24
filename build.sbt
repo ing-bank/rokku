@@ -20,7 +20,7 @@ scalacOptions += "-Xfatal-warnings"
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
 val akkaHttpVersion = "10.1.8"
-val akkaVersion = "2.5.21"
+val akkaVersion = "2.5.23"
 val logbackJson = "0.1.5"
 val metricVersion = "3.2.2" // align with C* driver core, can be updated with new C* persistence from akka
 
@@ -29,16 +29,16 @@ libraryDependencies ++= Seq(
     "ch.qos.logback"               %  "logback-classic"        % "1.2.3",
     "ch.qos.logback.contrib"       %  "logback-json-classic"   % logbackJson,
     "ch.qos.logback.contrib"       %  "logback-jackson"        % logbackJson,
-    "com.fasterxml.jackson.core"   %  "jackson-databind"       % "2.9.8",
+    "com.fasterxml.jackson.core"   %  "jackson-databind"       % "2.9.9",
     "com.typesafe.akka"            %% "akka-slf4j"             % akkaVersion,
     "com.typesafe.akka"            %% "akka-http"              % akkaHttpVersion,
     "com.typesafe.akka"            %% "akka-stream"            % akkaVersion,
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaHttpVersion,
     "com.typesafe.akka"            %% "akka-http-xml"          % akkaHttpVersion,
-    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.437",
+    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.505",
     "org.apache.kafka"             %  "kafka-clients"           % "2.0.0",
     "net.manub"                    %% "scalatest-embedded-kafka" % "2.0.0" % IntegrationTest,
-    "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11"),
+    "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11") exclude("org.apache.htrace","htrace-core"),
     "io.github.twonote"            %  "radosgw-admin4j"        % "1.0.2",
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.0-M2",
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
@@ -53,8 +53,8 @@ libraryDependencies ++= Seq(
 val persistenceDependencies = Seq (
   "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
   "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
-  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.98",
-  "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % "0.98" % Test
+  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.99",
+  "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % "0.99" % Test
 )
 
 // Fix logging dependencies:

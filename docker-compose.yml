@@ -31,7 +31,7 @@ services:
       - "6080:6080"
 
   rokku-sts:
-    image: wbaa/rokku-sts:0.2.0
+    image: wbaa/rokku-sts:0.2.3
     environment:
       - STS_HOST=0.0.0.0
       - STS_PORT=12345
@@ -63,7 +63,7 @@ services:
       - "kafka"
 
   mariadb:
-    image: wbaa/rokku-dev-mariadb:0.0.3
+    image: wbaa/rokku-dev-mariadb:0.0.5
     environment:
       - MYSQL_ROOT_PASSWORD=admin
     ports:
