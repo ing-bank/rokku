@@ -53,8 +53,8 @@ libraryDependencies ++= Seq(
 val persistenceDependencies = Seq (
   "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
   "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
-  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.98",
-  "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % "0.98" % Test
+  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.99",
+  "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % "0.99" % Test
 )
 
 // Fix logging dependencies:
