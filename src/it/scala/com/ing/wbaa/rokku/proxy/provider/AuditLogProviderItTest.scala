@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy.provider
 import java.net.InetAddress
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest, RemoteAddress}
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest, RemoteAddress, StatusCodes}
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data._
@@ -41,9 +41,12 @@ class AuditLogProviderItTest extends WordSpecLike with DiagrammedAssertions with
         Thread.sleep(3000)
         val createEventsTopic = "audit_events"
         createCustomTopic(createEventsTopic)
-        auditLog(s3Request, HttpRequest(HttpMethods.PUT, "http://localhost", Nil), "testUser")
+        auditLog(s3Request, HttpRequest(HttpMethods.PUT, "http://localhost", Nil), "testUser", StatusCodes.Processing)
         val result = consumeFirstStringMessageFrom(createEventsTopic)
         assert(result.contains("\"eventName\":\"PUT\""))
+        assert(result.contains("\"sourceIPAddress\":\"127.0.0.1\""))
+        assert(result.contains("\"x-amz-request-id\":\"test\""))
+        assert(result.contains("\"principalId\":\"testUser\""))
       }
     }
   }

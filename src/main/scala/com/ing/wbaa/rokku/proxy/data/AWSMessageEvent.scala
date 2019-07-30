@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy.data
 import java.time.Instant
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.{ HttpMethod, RemoteAddress }
+import akka.http.scaladsl.model.{ HttpMethod, RemoteAddress, StatusCode }
 import com.ing.wbaa.rokku.proxy.provider.aws.S3ObjectAction
 import spray.json.DefaultJsonProtocol
 
@@ -49,7 +49,9 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
 
   import spray.json._
 
-  def prepareAWSMessage(s3Request: S3Request, method: HttpMethod, principalId: String, clientIPAddress: RemoteAddress, s3Action: S3ObjectAction): Option[JsValue] = {
+  def prepareAWSMessage(s3Request: S3Request, method: HttpMethod, principalId: String,
+      clientIPAddress: RemoteAddress, s3Action: S3ObjectAction,
+      requestId: RequestId, responseStatus: StatusCode): Option[JsValue] = {
     val clientIP = clientIPAddress.toIP match {
       case Some(ip) => ip.toString()
       case _        => "Unknown"
@@ -62,11 +64,11 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
       "2.1",
       "rokku:s3",
       "us-east-1",
-      Instant.now().toString(),
+      Instant.now().toString,
       s3Action.value,
       UserIdentity(principalId),
       RequestParameters(clientIP),
-      ResponseElements("", ""),
+      ResponseElements(requestId.value, responseStatus.value),
       S3("1.0", "",
         BucketProps(bucketPath, OwnerIdentity(""), ""),
         ObjectProps(s3object, 0, "", "", ""))))

@@ -45,7 +45,7 @@ trait ProxyService {
 
   protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit
 
-  protected[this] def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String)(implicit id: RequestId): Future[Done]
+  protected[this] def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String, responseStatus: StatusCode = StatusCodes.Processing)(implicit id: RequestId): Future[Done]
 
   val requestPersistenceEnabled: Boolean
   val configuredPersistenceId: String
@@ -132,10 +132,16 @@ trait ProxyService {
         }
       } else {
         logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")
-        Future.successful(complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden)))
+        auditLog(s3Request, httpRequest, userSTS.userName.value, StatusCodes.Unauthorized).andThen({
+          case Failure(err) => logger.error(s"Error while sending audit log: ${err}")
+        })
+        Future.successful(complete(StatusCodes.Unauthorized -> AwsErrorCodes.response(StatusCodes.Unauthorized)))
       }
     } else {
       logger.warn("Request not authenticated: {}", httpRequest)
+      auditLog(s3Request, httpRequest, userSTS.userName.value, StatusCodes.Forbidden).andThen({
+        case Failure(err) => logger.error(s"Error while sending audit log: ${err}")
+      })
       Future.successful(complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden)))
     }
   }

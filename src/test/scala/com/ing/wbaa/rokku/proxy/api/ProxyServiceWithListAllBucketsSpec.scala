@@ -36,7 +36,7 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
     override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit = ()
     override protected[this] def listAllBuckets: Seq[String] = List("bucket1", "bucket2")
-    override def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String)(implicit id: RequestId): Future[Done] = Future(Done)
+    override def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String, responseStatus: StatusCode)(implicit id: RequestId): Future[Done] = Future(Done)
 
     override val requestPersistenceEnabled: Boolean = false
     override val configuredPersistenceId: String = "localhost-1"
@@ -88,13 +88,13 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
     }
   }
 
-  it should "return an accessDenied when user is not authorized" in {
+  it should "return an Unauthorized when user is not authorized" in {
     testRequest() ~> new ProxyServiceMock {
       override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = false
     }.proxyServiceRoute ~> check {
-      assert(status == StatusCodes.Forbidden)
+      assert(status == StatusCodes.Unauthorized)
       val response = responseAs[String].replaceAll("\\s", "")
-      assert(response == "<Error><Code>AccessDenied</Code><Message>AccessDenied</Message><Resource></Resource><RequestId></RequestId></Error>")
+      assert(response == "<Error><Code>Unauthorized</Code><Message>Unauthorized</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
 
