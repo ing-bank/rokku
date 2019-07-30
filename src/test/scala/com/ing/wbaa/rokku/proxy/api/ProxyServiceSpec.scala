@@ -39,7 +39,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     override val requestPersistenceEnabled: Boolean = false
     override val configuredPersistenceId: String = "localhost-1"
 
-    override def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String)(implicit id: RequestId): Future[Done] = Future(Done)
+    override def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String, responseStatus: StatusCode)(implicit id: RequestId): Future[Done] = Future(Done)
   }
 
   private def testRequest(accessKey: String = "okAccessKey", path: String = "/okBucket") = HttpRequest(
@@ -81,13 +81,13 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     }
   }
 
-  it should "return an accessDenied when user is not authorized" in {
+  it should "return an Unauthorized when user is not authorized" in {
     testRequest() ~> new ProxyServiceMock {
       override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = false
     }.proxyServiceRoute ~> check {
-      assert(status == StatusCodes.Forbidden)
+      assert(status == StatusCodes.Unauthorized)
       val response = responseAs[String].replaceAll("\\s", "")
-      assert(response == "<Error><Code>AccessDenied</Code><Message>AccessDenied</Message><Resource></Resource><RequestId></RequestId></Error>")
+      assert(response == "<Error><Code>Unauthorized</Code><Message>Unauthorized</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
 
