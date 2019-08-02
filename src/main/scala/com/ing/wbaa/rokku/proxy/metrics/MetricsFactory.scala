@@ -14,6 +14,9 @@ object MetricsFactory {
   val HTTP_DIRECTION = "{InOut}"
   val REQUEST_CONTEXT_LENGTH = s"requests.method.$HTTP_METHOD.$HTTP_DIRECTION.context.length.bytes"
   val REQUEST_CONTEXT_LENGTH_SUM = s"requests.method.$HTTP_METHOD.$HTTP_DIRECTION.context.length.bytes.total"
+  val REQUEST_QUEUE_OCCUPIED = "request.queue.occupied"
+  val REQUEST_USER = "{user}"
+  val REQUEST_QUEUE_OCCUPIED_BY_USER = s"request.queue.occupied.by.$REQUEST_USER"
 
   private[this] val metrics = new MetricRegistry()
 
@@ -29,5 +32,15 @@ object MetricsFactory {
   def markRequestTime(time: Long): Unit = {
     metrics.counter(REQUEST_TIME).inc(time)
     metrics.histogram(REQUEST_TIME_HIST).update(time)
+  }
+
+  def incrementRequestQueue(name: String): Unit = {
+    metrics.counter(name).inc()
+    metrics.counter(REQUEST_QUEUE_OCCUPIED).inc()
+  }
+
+  def decrementRequestQueue(name: String): Unit = {
+    metrics.counter(name).dec()
+    metrics.counter(REQUEST_QUEUE_OCCUPIED).dec()
   }
 }

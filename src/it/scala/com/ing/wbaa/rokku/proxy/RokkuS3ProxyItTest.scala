@@ -10,6 +10,7 @@ import com.amazonaws.services.s3.model.{AmazonS3Exception, DeleteObjectsRequest,
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
 import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest
 import com.ing.wbaa.rokku.proxy.config._
+import com.ing.wbaa.rokku.proxy.data.queue.MemoryUserRequestQueue
 import com.ing.wbaa.rokku.proxy.data.{RequestId, S3Request, User}
 import com.ing.wbaa.rokku.proxy.handler.{FilterRecursiveListBucketHandler, RequestHandlerS3}
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
@@ -74,7 +75,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     val proxy: RokkuS3Proxy = new RokkuS3Proxy with RequestHandlerS3
       with FilterRecursiveListBucketHandler with AuthenticationProviderSTS
       with AuthorizationProviderRanger with LineageProviderAtlas with SignatureProviderAws
-      with MessageProviderKafka with AuditLogProvider {
+      with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = rokkuHttpSettings
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)

@@ -1,46 +1,73 @@
 package com.ing.wbaa.rokku.proxy.data.queue
+
 import java.util.concurrent.atomic.AtomicLong
 
-import com.ing.wbaa.rokku.proxy.data.{RequestId, User}
+import com.ing.wbaa.rokku.proxy.data.{ RequestId, User }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
+import com.typesafe.config.ConfigFactory
 
 import scala.collection.concurrent.TrieMap
 
+/**
+ * Memory implementation of user request queue
+ *
+ */
 trait MemoryUserRequestQueue extends UserRequestQueue {
 
   private val logger = new LoggerHandlerWithId
 
-  private val queueSize: Long = 4
-  private val maxQueueBeforeBlockInPercent: Byte = 50
+  protected val queueSize: Long = ConfigFactory.load().getLong("rokku.storage.s3.request.queue.size")
+  protected val maxQueueBeforeBlockInPercent: Int = ConfigFactory.load().getInt("rokku.storage.s3.request.queue.max.size.to.block.in.percent")
   private val queue: AtomicLong = new AtomicLong(0)
   private val queuePerUser: TrieMap[String, AtomicLong] = TrieMap.empty[String, AtomicLong]
 
-  def getQueue = queue
-  def getUserQueue = queuePerUser
+  def getQueue: AtomicLong = queue
 
+  def getUserQueue: TrieMap[String, AtomicLong] = queuePerUser
 
-  override def doesUserOverflowQueue(user: User)(implicit id: RequestId): Boolean = {
-    logger.debug("request queue = {}", queue.get())
-    queuePerUser.putIfAbsent(user.userName.value, new AtomicLong(0))
-    val userRequests = queuePerUser(user.userName.value)
-    logger.debug("user request queue = {}",user.userName.value, userRequests)
-    val userOccupiedQueue  = ((100 * userRequests.get()) / queueSize)
-    logger.debug("user {} occupied {} queue", user, userOccupiedQueue)
-    val isOverflown =  userOccupiedQueue >= maxQueueBeforeBlockInPercent
-    if (queue.get() < queueSize && !isOverflown) {
-      queuePerUser(user.userName.value).incrementAndGet()
-      queue.incrementAndGet()
-    logger.debug("increment request queue = {}", queue.get())
-    logger.debug("increment user request queue = {}",user.userName.value, queuePerUser(user.userName.value))
+  override def addIfAllowedUserToRequestQueue(user: User)(implicit id: RequestId): Boolean = {
+    if (isAllowedToAddToRequestQueue(user)) {
+      increment(user)
+      logDebug(user)
+      true
+    } else {
+      false
     }
-    isOverflown
   }
 
   override def decrement(user: User)(implicit id: RequestId): Unit = {
-    logger.debug("decrement request queue = {}", queue.get())
-    logger.debug("decrement user request queue = {}",user.userName.value, queuePerUser(user.userName.value))
-    queuePerUser(user.userName.value).updateAndGet(x => if (x > 0) x-1 else 0)
-    queue.updateAndGet(x => if (x > 0) x-1 else 0)
+    queuePerUser(user.userName.value).updateAndGet(x => if (x > 0) x - 1 else 0)
+    queue.updateAndGet(x => if (x > 0) x - 1 else 0)
+    MetricsFactory.decrementRequestQueue(metricName(user))
+    logDebug(user, "decrement")
   }
 
+  private def increment(user: User)(implicit id: RequestId): Unit = {
+    queuePerUser(user.userName.value).incrementAndGet()
+    queue.incrementAndGet()
+    MetricsFactory.incrementRequestQueue(metricName(user))
+    logDebug(user, "increment")
+  }
+
+  /**
+   * @param user the user to check
+   * @return true when the queue is not full and the user does not occupy the queue than the maxQueueBeforeBlockInPercent param
+   */
+  private def isAllowedToAddToRequestQueue(user: User) = {
+    queuePerUser.putIfAbsent(user.userName.value, new AtomicLong(0))
+    val userRequests = queuePerUser(user.userName.value)
+    val userOccupiedQueue = (100 * userRequests.get()) / queueSize
+    val isOverflown = userOccupiedQueue >= maxQueueBeforeBlockInPercent
+    queue.get() < queueSize && !isOverflown
+  }
+
+  private def logDebug(user: User, method: String = "")(implicit id: RequestId): Unit = {
+    logger.debug("request queue = {}", queue.get())
+    logger.debug(s" $method user request queue = {}", user.userName.value, queuePerUser(user.userName.value))
+  }
+
+  private def metricName(user: User): String = {
+    MetricsFactory.REQUEST_QUEUE_OCCUPIED_BY_USER.replace(MetricsFactory.REQUEST_USER, s"${user.userName.value.head.toString}..")
+  }
 }
