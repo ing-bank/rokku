@@ -1,11 +1,11 @@
 package com.ing.wbaa.rokku.proxy
 
-import akka.actor.{ ActorSystem, Props }
+import akka.actor.{ActorSystem, Props}
 import com.ing.wbaa.rokku.proxy.config._
-import com.ing.wbaa.rokku.proxy.data.queue.MemoryUserRequestQueue
-import com.ing.wbaa.rokku.proxy.handler.{ FilterRecursiveListBucketHandler, RequestHandlerS3 }
+import com.ing.wbaa.rokku.proxy.handler.{FilterRecursiveListBucketHandler, RequestHandlerS3}
 import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder
 import com.ing.wbaa.rokku.proxy.provider._
+import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 import com.typesafe.config.ConfigFactory
 
 object Server extends App {

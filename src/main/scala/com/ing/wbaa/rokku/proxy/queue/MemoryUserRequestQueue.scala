@@ -1,4 +1,4 @@
-package com.ing.wbaa.rokku.proxy.data.queue
+package com.ing.wbaa.rokku.proxy.queue
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -64,7 +64,7 @@ trait MemoryUserRequestQueue extends UserRequestQueue {
 
   private def logDebug(user: User, method: String = "")(implicit id: RequestId): Unit = {
     logger.debug("request queue = {}", queue.get())
-    logger.debug(s" $method user request queue = {}", user.userName.value, queuePerUser(user.userName.value))
+    logger.debug("user request queue = {}",method, user.userName.value, queuePerUser(user.userName.value).get())
   }
 
   private def metricName(user: User): String = {

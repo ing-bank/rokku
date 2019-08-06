@@ -5,12 +5,12 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
-import com.ing.wbaa.rokku.proxy.data.queue.UserRequestQueue
-import com.ing.wbaa.rokku.proxy.data.{ RequestId, S3Request, User }
+import com.ing.wbaa.rokku.proxy.data.{RequestId, S3Request, User}
 import com.ing.wbaa.rokku.proxy.handler.radosgw.RadosGatewayHandler
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
+import com.ing.wbaa.rokku.proxy.queue.UserRequestQueue
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
 trait RequestHandlerS3 extends RadosGatewayHandler with S3Client with UserRequestQueue {

@@ -1,4 +1,4 @@
-package com.ing.wbaa.rokku.proxy.data.queue
+package com.ing.wbaa.rokku.proxy.queue
 
 import com.ing.wbaa.rokku.proxy.data.{ RequestId, User }
 
