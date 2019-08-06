@@ -74,7 +74,7 @@ trait RequestHandlerS3 extends RadosGatewayHandler with S3Client with UserReques
       if (addIfAllowedUserToRequestQueue(user)) {
         fireRequestToS3(request).andThen { case _ => decrement(user) }
       } else {
-        logger.info("user {} is sending to many requests")
+        logger.info("user {} is sending to many requests", user.userName.value)
         Future.successful(HttpResponse(StatusCodes.TooManyRequests))
       }
     } else {

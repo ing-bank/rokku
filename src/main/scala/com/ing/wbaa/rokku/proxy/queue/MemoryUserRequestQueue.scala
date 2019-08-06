@@ -55,11 +55,13 @@ trait MemoryUserRequestQueue extends UserRequestQueue {
    * @return true when the queue is not full and the user does not occupy the queue than the maxQueueBeforeBlockInPercent param
    */
   private def isAllowedToAddToRequestQueue(user: User) = {
-    queuePerUser.putIfAbsent(user.userName.value, new AtomicLong(0))
-    val userRequests = queuePerUser(user.userName.value)
-    val userOccupiedQueue = (100 * userRequests.get()) / queueSize
-    val isOverflown = userOccupiedQueue >= maxQueueBeforeBlockInPercent
-    queue.get() < queueSize && !isOverflown
+    synchronized {
+      queuePerUser.putIfAbsent(user.userName.value, new AtomicLong(0))
+      val userRequests = queuePerUser(user.userName.value)
+      val userOccupiedQueue = (100 * userRequests.get()) / queueSize
+      val isOverflown = userOccupiedQueue >= maxQueueBeforeBlockInPercent
+      queue.get() < queueSize && !isOverflown
+    }
   }
 
   private def logDebug(user: User, method: String = "")(implicit id: RequestId): Unit = {
