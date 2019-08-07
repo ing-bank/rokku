@@ -25,13 +25,14 @@ trait RequestParser {
     val HttpRequest(method, uri, headers, _, _) = request
     val queryString = uri.queryString().getOrElse("")
     val containsUploadId = queryString.contains("uploadId")
-    val isXMLMedia = request.entity.contentType.mediaType == MediaTypes.`application/xml`
+    val isXML = request.entity.contentType.mediaType == MediaTypes.`application/xml`
+    val isOctetStream = request.entity.contentType.mediaType == MediaTypes.`application/octet-stream`
 
     method match {
       // aws multipart part upload eg. PUT /ObjectName?uploadId=UploadId
       case HttpMethods.PUT if containsUploadId => AWSRequest(MultipartRequest(uploadId(queryString), false))
       // aws multipart complete eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
-      case HttpMethods.POST if containsUploadId && isXMLMedia => AWSRequest(MultipartRequest(uploadId(queryString), true))
+      case HttpMethods.POST if containsUploadId && (isXML || isOctetStream) => AWSRequest(MultipartRequest(uploadId(queryString), true))
       case _ => AWSRequest(RequestUnknown())
     }
   }
