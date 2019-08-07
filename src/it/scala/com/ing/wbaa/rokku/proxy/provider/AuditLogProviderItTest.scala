@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.{HttpMethods, HttpRequest, RemoteAddress, Status
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data._
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{AWSRequest, RequestUnknown}
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.scalatest.{DiagrammedAssertions, WordSpecLike}
 
@@ -41,7 +42,7 @@ class AuditLogProviderItTest extends WordSpecLike with DiagrammedAssertions with
         Thread.sleep(3000)
         val createEventsTopic = "audit_events"
         createCustomTopic(createEventsTopic)
-        auditLog(s3Request, HttpRequest(HttpMethods.PUT, "http://localhost", Nil), "testUser", StatusCodes.Processing)
+        auditLog(s3Request, HttpRequest(HttpMethods.PUT, "http://localhost", Nil), "testUser", AWSRequest(RequestUnknown()), StatusCodes.Processing)
         val result = consumeFirstStringMessageFrom(createEventsTopic)
         assert(result.contains("\"eventName\":\"PUT\""))
         assert(result.contains("\"sourceIPAddress\":\"127.0.0.1\""))

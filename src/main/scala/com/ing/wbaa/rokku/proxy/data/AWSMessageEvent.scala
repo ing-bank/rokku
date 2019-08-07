@@ -4,7 +4,8 @@ import java.time.Instant
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{ HttpMethod, RemoteAddress, StatusCode }
-import com.ing.wbaa.rokku.proxy.provider.aws.S3ObjectAction
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequest, MultipartRequest }
+import com.ing.wbaa.rokku.proxy.provider.aws.{ S3ObjectAction, s3MuptipartUpload, s3MuptipartUploadComplete }
 import spray.json.DefaultJsonProtocol
 
 case class Records(records: List[AWSMessageEvent])
@@ -51,10 +52,21 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
 
   def prepareAWSMessage(s3Request: S3Request, method: HttpMethod, principalId: String,
       clientIPAddress: RemoteAddress, s3Action: S3ObjectAction,
-      requestId: RequestId, responseStatus: StatusCode): Option[JsValue] = {
+      requestId: RequestId, responseStatus: StatusCode, awsRequest: AWSRequest): Option[JsValue] = {
     val clientIP = clientIPAddress.toIP match {
       case Some(ip) => ip.toString()
       case _        => "Unknown"
+    }
+
+    val toMultipartRequest: AWSRequest => Option[MultipartRequest] = r => r.recognizedRequest match {
+      case r if r.isInstanceOf[MultipartRequest] => Some(r.asInstanceOf[MultipartRequest])
+      case _                                     => None
+    }
+
+    val uploadId: Option[String] = toMultipartRequest(awsRequest).map(_.uploadId)
+    val multipartOrS3Action = toMultipartRequest(awsRequest) match {
+      case Some(r) => if (r.completeMultipartUpload) s3MuptipartUploadComplete(method.value) else s3MuptipartUpload(method.value)
+      case None    => s3Action
     }
 
     for {
@@ -65,13 +77,13 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
       "rokku:s3",
       "us-east-1",
       Instant.now().toString,
-      s3Action.value,
+      multipartOrS3Action.value,
       UserIdentity(principalId),
       RequestParameters(clientIP),
       ResponseElements(requestId.value, responseStatus.value),
       S3("1.0", "",
         BucketProps(bucketPath, OwnerIdentity(""), ""),
-        ObjectProps(s3object, 0, "", "", ""))))
+        ObjectProps(s3object, 0, "", "", uploadId.getOrElse("")))))
     ).toJson
   }
 

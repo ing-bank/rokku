@@ -12,6 +12,7 @@ import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data.{ AwsRequestCredential, AwsSecretKey, RequestId, S3Request, User, Write }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequest
 import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder.ExecutedRequestCmd
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
@@ -45,7 +46,9 @@ trait ProxyService {
 
   protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit
 
-  protected[this] def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String, responseStatus: StatusCode = StatusCodes.Processing)(implicit id: RequestId): Future[Done]
+  protected[this] def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String, awsRequest: AWSRequest, responseStatus: StatusCode = StatusCodes.Processing)(implicit id: RequestId): Future[Done]
+
+  protected[this] def awsRequestFromRequest(request: HttpRequest): AWSRequest
 
   val requestPersistenceEnabled: Boolean
   val configuredPersistenceId: String
@@ -111,7 +114,7 @@ trait ProxyService {
   }
 
   private def processRequestForValidUser(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId) = {
-    auditLog(s3Request, httpRequest, userSTS.userName.value).andThen({
+    auditLog(s3Request, httpRequest, userSTS.userName.value, awsRequestFromRequest(httpRequest)).andThen({
       case Failure(err) => logger.error(s"Error while sending audit log: ${err}")
     })
     if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
@@ -132,14 +135,14 @@ trait ProxyService {
         }
       } else {
         logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")
-        auditLog(s3Request, httpRequest, userSTS.userName.value, StatusCodes.Unauthorized).andThen({
+        auditLog(s3Request, httpRequest, userSTS.userName.value, awsRequestFromRequest(httpRequest), StatusCodes.Unauthorized).andThen({
           case Failure(err) => logger.error(s"Error while sending audit log: ${err}")
         })
         Future.successful(complete(StatusCodes.Unauthorized -> AwsErrorCodes.response(StatusCodes.Unauthorized)))
       }
     } else {
       logger.warn("Request not authenticated: {}", httpRequest)
-      auditLog(s3Request, httpRequest, userSTS.userName.value, StatusCodes.Forbidden).andThen({
+      auditLog(s3Request, httpRequest, userSTS.userName.value, awsRequestFromRequest(httpRequest), StatusCodes.Forbidden).andThen({
         case Failure(err) => logger.error(s"Error while sending audit log: ${err}")
       })
       Future.successful(complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden)))
