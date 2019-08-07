@@ -29,7 +29,6 @@ trait MemoryUserRequestQueue extends UserRequestQueue {
   override def addIfAllowedUserToRequestQueue(user: User)(implicit id: RequestId): Boolean = {
     if (isAllowedToAddToRequestQueue(user)) {
       increment(user)
-      logDebug(user)
       true
     } else {
       false
@@ -37,17 +36,17 @@ trait MemoryUserRequestQueue extends UserRequestQueue {
   }
 
   override def decrement(user: User)(implicit id: RequestId): Unit = {
-    queuePerUser(user.userName.value).updateAndGet(x => if (x > 0) x - 1 else 0)
-    queue.updateAndGet(x => if (x > 0) x - 1 else 0)
+    val userRequestCount = queuePerUser(user.userName.value).updateAndGet(x => if (x > 0) x - 1 else 0)
+    val queueRequestCount = queue.updateAndGet(x => if (x > 0) x - 1 else 0)
     MetricsFactory.decrementRequestQueue(metricName(user))
-    logDebug(user, "decrement")
+    logDebug(user, queueRequestCount, userRequestCount, "decrement")
   }
 
   private def increment(user: User)(implicit id: RequestId): Unit = {
-    queuePerUser(user.userName.value).incrementAndGet()
-    queue.incrementAndGet()
+    val userRequestCount = queuePerUser(user.userName.value).incrementAndGet()
+    val queueRequestCount = queue.incrementAndGet()
     MetricsFactory.incrementRequestQueue(metricName(user))
-    logDebug(user, "increment")
+    logDebug(user, queueRequestCount, userRequestCount, "increment")
   }
 
   /**
@@ -64,9 +63,9 @@ trait MemoryUserRequestQueue extends UserRequestQueue {
     }
   }
 
-  private def logDebug(user: User, method: String = "")(implicit id: RequestId): Unit = {
-    logger.debug("request queue = {}", queue.get())
-    logger.debug("user request queue = {}",method, user.userName.value, queuePerUser(user.userName.value).get())
+  private def logDebug(user: User, queueRequestCount: Long, userRequestCount: Long, method: String)(implicit id: RequestId): Unit = {
+    logger.debug("request queue = {}", queueRequestCount)
+    logger.debug(s" user request queue = {}", method, user.userName.value, userRequestCount)
   }
 
   private def metricName(user: User): String = {

@@ -1,8 +1,8 @@
 package com.ing.wbaa.rokku.proxy.data.queue
 
-import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsSecretKey, RequestId, User, UserName}
+import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsSecretKey, RequestId, User, UserName }
 import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
-import org.scalatest.{DiagrammedAssertions, WordSpec}
+import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
 class MemoryUserRequestQueueTest extends WordSpec with DiagrammedAssertions {
 
