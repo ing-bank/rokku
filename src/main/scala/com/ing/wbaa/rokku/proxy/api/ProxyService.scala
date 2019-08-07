@@ -100,7 +100,7 @@ trait ProxyService {
         case Success(response: HttpResponse) =>
           //add request recording after getting response and before executing postrequest actions, we skip ls requests
           val isListRequest = httpRequest.method.value == "GET" && httpRequest.uri.rawQueryString.getOrElse("empty").contains("prefix")
-          if (requestPersistenceEnabled && !isListRequest) {
+          if (requestPersistenceEnabled && !isListRequest && response.status == StatusCodes.OK) {
             lazy val lineageRecorderRef = system.actorSelection(s"/user/$configuredPersistenceId")
             lineageRecorderRef ! ExecutedRequestCmd(httpRequest, userSTS, s3Request.clientIPAddress)
           }

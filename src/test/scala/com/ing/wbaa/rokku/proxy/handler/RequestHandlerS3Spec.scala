@@ -6,11 +6,12 @@ import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.{ KafkaSettings, StorageS3Settings }
 import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsRequestCredential, HeaderIPs, RequestId, S3Request, User, UserRawJson }
 import com.ing.wbaa.rokku.proxy.provider.LineageProviderAtlas
+import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 import org.scalatest.{ AsyncWordSpec, DiagrammedAssertions }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with RequestHandlerS3 with LineageProviderAtlas {
+class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with RequestHandlerS3 with LineageProviderAtlas with MemoryUserRequestQueue {
 
   override implicit val system: ActorSystem = ActorSystem.create("test-system")
   override implicit val executionContext: ExecutionContext = system.dispatcher

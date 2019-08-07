@@ -77,7 +77,7 @@ abstract class AbstractIpCidrMatcher extends RangerAbstractConditionEvaluator wi
         inRange
       }
 
-    if (!remoteIpInCidr) logger.debug(s"RemoteIpAddress $remoteIpAddress doesn't match any CIDR range")
+    if (!remoteIpInCidr) logger.warn(s"RemoteIpAddress {} doesn't match any CIDR range", remoteIpAddress)
     remoteIpInCidr
   }
 }

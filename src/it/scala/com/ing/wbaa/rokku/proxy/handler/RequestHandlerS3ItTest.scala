@@ -13,6 +13,7 @@ import com.ing.wbaa.rokku.proxy.RokkuS3Proxy
 import com.ing.wbaa.rokku.proxy.config.{HttpSettings, KafkaSettings, StorageS3Settings}
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.provider.{AuditLogProvider, MessageProviderKafka, SignatureProviderAws}
+import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 import com.ing.wbaa.testkit.RokkuFixtures
 import org.scalatest._
 
@@ -38,7 +39,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
     */
   def withS3SdkToMockProxy(testCode: AmazonS3 => Assertion): Future[Assertion] = {
     val proxy: RokkuS3Proxy = new RokkuS3Proxy with RequestHandlerS3 with SignatureProviderAws
-      with FilterRecursiveListBucketHandler with MessageProviderKafka with AuditLogProvider {
+      with FilterRecursiveListBucketHandler with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = rokkuHttpSettings
 

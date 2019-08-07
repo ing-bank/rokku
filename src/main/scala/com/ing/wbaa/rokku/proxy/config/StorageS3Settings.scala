@@ -13,6 +13,7 @@ class StorageS3Settings(config: Config) extends Extension {
   val storageS3AdminSecretkey: String = config.getString("rokku.storage.s3.admin.secretkey")
   val awsRegion: String = config.getString("rokku.storage.s3.region")
   val v2SignatureEnabled: Boolean = config.getBoolean("rokku.storage.s3.v2SignatureEnabled")
+  val isRequestUserQueueEnabled: Boolean = config.getBoolean("rokku.storage.s3.request.queue.enable")
 }
 
 object StorageS3Settings extends ExtensionId[StorageS3Settings] with ExtensionIdProvider {
