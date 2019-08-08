@@ -28,9 +28,9 @@ trait RequestParser {
 
     method match {
       // aws multipart part upload eg. PUT /ObjectName?uploadId=UploadId
-      case HttpMethods.PUT if containsUploadId => MultipartRequestType(uploadId(queryString), false)
+      case HttpMethods.PUT if containsUploadId => MultipartRequestType(uploadId(queryString), completeMultipartUpload = false)
       // aws multipart complete eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
-      case HttpMethods.POST if containsUploadId && (isXML || isOctetStream) => MultipartRequestType(uploadId(queryString), true)
+      case HttpMethods.POST if containsUploadId && (isXML || isOctetStream) => MultipartRequestType(uploadId(queryString), completeMultipartUpload = true)
       case _ => RequestTypeUnknown()
     }
   }
