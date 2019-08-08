@@ -6,7 +6,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpMethods, RemoteAddress}
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
-import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsRequestCredential, Read, RequestId, S3Request}
+import com.ing.wbaa.rokku.proxy.data._
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.RequestTypeUnknown
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.scalatest.RecoverMethods._
 import org.scalatest.{DiagrammedAssertions, WordSpecLike}
@@ -40,7 +41,7 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
         Thread.sleep(3000)
         val createEventsTopic = "create_events"
         createCustomTopic(createEventsTopic)
-        emitEvent(s3Request, HttpMethods.PUT, "testUser")
+        emitEvent(s3Request, HttpMethods.PUT, "testUser", RequestTypeUnknown())
         val result = consumeFirstStringMessageFrom(createEventsTopic)
         assert(result.contains("s3:ObjectCreated:PUT"))
       }
@@ -53,13 +54,13 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
         Thread.sleep(3000)
         val deleteEventsTopic = "delete_events"
         createCustomTopic(deleteEventsTopic)
-        emitEvent(s3Request, HttpMethods.DELETE, "testUser")
+        emitEvent(s3Request, HttpMethods.DELETE, "testUser", RequestTypeUnknown())
         assert(consumeFirstStringMessageFrom(deleteEventsTopic).contains("s3:ObjectRemoved:DELETE"))
       }
     }
 
     "fail on incomplete data" in {
-      recoverToSucceededIf[Exception](emitEvent(s3Request.copy(s3Object = None), HttpMethods.PUT, "testUser"))
+      recoverToSucceededIf[Exception](emitEvent(s3Request.copy(s3Object = None), HttpMethods.PUT, "testUser", RequestTypeUnknown()))
     }
   }
 

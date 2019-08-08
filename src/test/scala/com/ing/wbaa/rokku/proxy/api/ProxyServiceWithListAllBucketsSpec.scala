@@ -9,7 +9,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.{ ActorMaterializer, Materializer }
-import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsRequestCredential, AwsSecretKey, RequestId, S3Request, User, UserGroup, UserName }
+import com.ing.wbaa.rokku.proxy.data._
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequestType, RequestTypeUnknown }
 import org.scalatest.{ DiagrammedAssertions, FlatSpec }
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -36,7 +37,9 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
 
     override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit = ()
     override protected[this] def listAllBuckets: Seq[String] = List("bucket1", "bucket2")
-    override def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String, responseStatus: StatusCode)(implicit id: RequestId): Future[Done] = Future(Done)
+    override def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String, awsRequest: AWSRequestType, responseStatus: StatusCode)(implicit id: RequestId): Future[Done] = Future(Done)
+
+    override def awsRequestFromRequest(request: HttpRequest): AWSRequestType = RequestTypeUnknown()
 
     override val requestPersistenceEnabled: Boolean = false
     override val configuredPersistenceId: String = "localhost-1"
