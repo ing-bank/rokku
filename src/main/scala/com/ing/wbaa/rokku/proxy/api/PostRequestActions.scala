@@ -4,7 +4,7 @@ import akka.Done
 import akka.http.scaladsl.model._
 import com.ing.wbaa.rokku.proxy.data.{ RequestId, S3Request, User }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
-import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequest
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
@@ -23,11 +23,11 @@ trait PostRequestActions {
 
   protected[this] def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done]
 
-  protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String, awsRequest: AWSRequest)(implicit id: RequestId): Future[Done]
+  protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String, awsRequest: AWSRequestType)(implicit id: RequestId): Future[Done]
 
   protected[this] def setDefaultBucketAclAndPolicy(bucketName: String): Future[Unit]
 
-  protected[this] def awsRequestFromRequest(request: HttpRequest): AWSRequest
+  protected[this] def awsRequestFromRequest(request: HttpRequest): AWSRequestType
 
   private[this] def createAtlasLineage(response: HttpResponse, httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] =
     if (atlasEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent)) {

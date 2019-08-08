@@ -12,7 +12,7 @@ import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data.{ AwsRequestCredential, AwsSecretKey, RequestId, S3Request, User, Write }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
-import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequest
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder.ExecutedRequestCmd
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
@@ -46,9 +46,9 @@ trait ProxyService {
 
   protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit
 
-  protected[this] def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String, awsRequest: AWSRequest, responseStatus: StatusCode = StatusCodes.Processing)(implicit id: RequestId): Future[Done]
+  protected[this] def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String, awsRequest: AWSRequestType, responseStatus: StatusCode = StatusCodes.Processing)(implicit id: RequestId): Future[Done]
 
-  protected[this] def awsRequestFromRequest(request: HttpRequest): AWSRequest
+  protected[this] def awsRequestFromRequest(request: HttpRequest): AWSRequestType
 
   val requestPersistenceEnabled: Boolean
   val configuredPersistenceId: String

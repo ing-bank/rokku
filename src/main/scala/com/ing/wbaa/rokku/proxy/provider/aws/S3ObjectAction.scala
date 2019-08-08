@@ -10,10 +10,10 @@ case class s3ObjectCreated(method: String = "*") extends S3ObjectAction {
 case class s3ObjectRemoved(method: String = "*") extends S3ObjectAction {
   val value = s"s3:ObjectRemoved:$method"
 }
-case class s3MuptipartUpload(method: String = "*") extends S3ObjectAction {
+case class s3MultipartUpload(method: String = "*") extends S3ObjectAction {
   val value = s"s3:MultipartUpload:$method"
 }
-case class s3MuptipartUploadComplete(method: String = "*") extends S3ObjectAction {
+case class s3MultipartUploadComplete(method: String = "*") extends S3ObjectAction {
   val value = s"s3:MultipartUploadComplete:$method"
 }
 
