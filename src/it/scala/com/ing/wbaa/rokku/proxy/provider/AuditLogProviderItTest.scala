@@ -32,7 +32,9 @@ class AuditLogProviderItTest extends WordSpecLike with DiagrammedAssertions with
   implicit val requestId: RequestId = RequestId("test")
 
   val s3Request = S3Request(AwsRequestCredential(AwsAccessKey("a"), None), Some("demobucket"), Some("s3object"), Read())
-    .copy(clientIPAddress = RemoteAddress(InetAddress.getByName("127.0.0.1")))
+    .copy(headerIPs = HeaderIPs(Some(RemoteAddress(InetAddress.getByName("127.0.0.1"))),
+      Some(Seq(RemoteAddress(InetAddress.getByName("1.1.1.1")))),
+      Some(RemoteAddress(InetAddress.getByName("2.2.2.2")))))
 
   "AuditLogProvider" should {
     "send audit" in {
@@ -45,7 +47,7 @@ class AuditLogProviderItTest extends WordSpecLike with DiagrammedAssertions with
         auditLog(s3Request, HttpRequest(HttpMethods.PUT, "http://localhost", Nil), "testUser", RequestTypeUnknown(), StatusCodes.Processing)
         val result = consumeFirstStringMessageFrom(createEventsTopic)
         assert(result.contains("\"eventName\":\"PUT\""))
-        assert(result.contains("\"sourceIPAddress\":\"127.0.0.1\""))
+        assert(result.contains("\"sourceIPAddress\":\"ClientIp=unknown|X-Real-IP=127.0.0.1|X-Forwarded-For=1.1.1.1|Remote-Address=2.2.2.2\""))
         assert(result.contains("\"x-amz-request-id\":\"test\""))
         assert(result.contains("\"principalId\":\"testUser\""))
       }

@@ -14,13 +14,13 @@ trait MessageProviderKafka extends EventProducer with AWSMessageEventJsonSupport
   def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String, awsRequest: AWSRequestType)(implicit id: RequestId): Future[Done] =
     method match {
       case HttpMethods.POST | HttpMethods.PUT =>
-        prepareAWSMessage(s3Request, method, principalId, s3Request.clientIPAddress, s3ObjectCreated(method.value), id, StatusCodes.OK, awsRequest)
+        prepareAWSMessage(s3Request, method, principalId, s3Request.userIps, s3ObjectCreated(method.value), id, StatusCodes.OK, awsRequest)
           .map(jse =>
             sendSingleMessage(jse.toString(), kafkaSettings.createEventsTopic))
           .getOrElse(Future(Done))
 
       case HttpMethods.DELETE =>
-        prepareAWSMessage(s3Request, method, principalId, s3Request.clientIPAddress, s3ObjectRemoved(method.value), id, StatusCodes.OK, awsRequest)
+        prepareAWSMessage(s3Request, method, principalId, s3Request.userIps, s3ObjectRemoved(method.value), id, StatusCodes.OK, awsRequest)
           .map(jse =>
             sendSingleMessage(jse.toString(), kafkaSettings.deleteEventsTopic))
           .getOrElse(Future(Done))

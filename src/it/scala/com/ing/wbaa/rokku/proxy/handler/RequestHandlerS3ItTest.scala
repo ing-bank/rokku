@@ -4,8 +4,8 @@ import java.io.File
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.{Authority, Host}
-import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
 import com.amazonaws.auth.SignerFactory
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.{CopyObjectRequest, ObjectMetadata}
@@ -33,11 +33,11 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
   }
 
   /**
-    * Fixture for starting and stopping a test proxy that tests can interact with.
-    *
-    * @param testCode Code that accepts the created sdk
-    * @return Assertion
-    */
+   * Fixture for starting and stopping a test proxy that tests can interact with.
+   *
+   * @param testCode Code that accepts the created sdk
+   * @return Assertion
+   */
   def withS3SdkToMockProxy(testCode: AmazonS3 => Assertion): Future[Assertion] = {
     val proxy: RokkuS3Proxy = new RokkuS3Proxy with RequestHandlerS3 with SignatureProviderAws
       with FilterRecursiveListBucketHandler with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue with RequestParser {
@@ -52,7 +52,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with DiagrammedAssertions wit
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] =
         Future(Some(User(UserRawJson("userId", Set("group"), "accesskey", "secretkey"))))
 
-      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] = Future.successful(Done)
+      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, userIPs: UserIps)(implicit id: RequestId): Future[Done] = Future.successful(Done)
 
       override val requestPersistenceEnabled: Boolean = false
       override val configuredPersistenceId: String = "localhost-1"

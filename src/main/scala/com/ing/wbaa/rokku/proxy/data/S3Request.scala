@@ -20,7 +20,9 @@ case class S3Request(
     clientIPAddress: RemoteAddress = Unknown,
     headerIPs: HeaderIPs = HeaderIPs(),
     mediaType: MediaType = MediaTypes.`text/plain`
-)
+) {
+  def userIps: UserIps = UserIps(clientIPAddress, headerIPs)
+}
 
 object S3Request extends LazyLogging {
   def extractObject(pathString: String): Option[String] =

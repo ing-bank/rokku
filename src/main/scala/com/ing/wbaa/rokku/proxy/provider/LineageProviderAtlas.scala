@@ -2,14 +2,14 @@ package com.ing.wbaa.rokku.proxy.provider
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, MediaTypes, RemoteAddress }
+import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, MediaTypes }
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.data.LineageLiterals._
+import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
-import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka.bucketEntity
-import com.ing.wbaa.rokku.proxy.data.{ BucketClassification, Read, RequestId, User, Write }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.provider.atlas.LineageHelpers
+import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka.bucketEntity
 
 import scala.concurrent.Future
 
@@ -19,7 +19,7 @@ trait LineageProviderAtlas extends LineageHelpers {
 
   private val logger = new LoggerHandlerWithId
 
-  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] = {
+  def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, userIPs: UserIps)(implicit id: RequestId): Future[Done] = {
     val lineageHeaders = getLineageHeaders(httpRequest)
     val pseudoDir = lineageHeaders.pseduoDir
     val bucketObject = lineageHeaders.bucketObject
@@ -42,17 +42,17 @@ trait LineageProviderAtlas extends LineageHelpers {
         // get object
         case HttpMethods.GET if lineageHeaders.queryParams.isEmpty || lineageHeaders.queryParams.contains("encoding-type") && bucketObject.isDefined =>
           val externalObject = s"$EXTERNAL_OBJECT_OUT/$extractObjectFromPath"
-          readOrWriteLineage(lineageHeaders, userSTS, Read(), clientIPAddress, Some(externalObject))
+          readOrWriteLineage(lineageHeaders, userSTS, Read(), userIPs, Some(externalObject))
 
         // put object from outside of ceph
         case HttpMethods.PUT if lineageHeaders.queryParams.isEmpty && lineageHeaders.copySource.isEmpty && (pseudoDir.isDefined || bucketObject.isDefined) =>
           val externalObject = s"$EXTERNAL_OBJECT_IN/${bucketObject.getOrElse(pseudoDir.get).split("/").takeRight(1).mkString}"
-          readOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress, Some(externalObject))
+          readOrWriteLineage(lineageHeaders, userSTS, Write(), userIPs, Some(externalObject))
 
         // put object - copy
         // if contains header x-amz-copy-source
         case HttpMethods.PUT if lineageHeaders.copySource.getOrElse("").length > 0 && (pseudoDir.isDefined || bucketObject.isDefined) =>
-          lineageForCopyOperation(lineageHeaders, userSTS, Write(), clientIPAddress)
+          lineageForCopyOperation(lineageHeaders, userSTS, Write(), userIPs)
 
         // multidelete by POST
         case HttpMethods.POST if isMultideletePost =>
@@ -65,7 +65,7 @@ trait LineageProviderAtlas extends LineageHelpers {
         // aws request eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
         case HttpMethods.POST if lineageHeaders.queryParams.getOrElse("").contains("uploadId") && bucketObject.isDefined =>
           val externalObject = s"$EXTERNAL_OBJECT_IN/$extractObjectFromPath"
-          readOrWriteLineage(lineageHeaders, userSTS, Write(), clientIPAddress, Some(externalObject))
+          readOrWriteLineage(lineageHeaders, userSTS, Write(), userIPs, Some(externalObject))
 
         // delete object
         case HttpMethods.DELETE if lineageHeaders.queryParams.isEmpty && (pseudoDir.isDefined || bucketObject.isDefined) =>

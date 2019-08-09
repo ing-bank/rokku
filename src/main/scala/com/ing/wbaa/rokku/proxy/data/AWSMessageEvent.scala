@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy.data
 import java.time.Instant
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.{ HttpMethod, RemoteAddress, StatusCode }
+import akka.http.scaladsl.model.{ HttpMethod, StatusCode }
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequestType, MultipartRequestType }
 import com.ing.wbaa.rokku.proxy.provider.aws.{ S3ObjectAction, s3MultipartUpload, s3MultipartUploadComplete }
 import spray.json.DefaultJsonProtocol
@@ -51,14 +51,10 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
   import spray.json._
 
   def prepareAWSMessage(s3Request: S3Request, method: HttpMethod, principalId: String,
-      clientIPAddress: RemoteAddress, s3Action: S3ObjectAction,
+      userIPs: UserIps, s3Action: S3ObjectAction,
       requestId: RequestId, responseStatus: StatusCode, awsRequest: AWSRequestType): Option[JsValue] = {
-    val clientIP = clientIPAddress.toIP match {
-      case Some(ip) => ip.toString()
-      case _        => "Unknown"
-    }
 
-    val toMultipartRequest: AWSRequestType => Option[MultipartRequestType] = r => r match {
+    val toMultipartRequest: AWSRequestType => Option[MultipartRequestType] = {
       case r: MultipartRequestType => Some(r)
       case _                       => None
     }
@@ -79,7 +75,7 @@ trait AWSMessageEventJsonSupport extends SprayJsonSupport with DefaultJsonProtoc
       Instant.now().toString,
       multipartOrS3Action.value,
       UserIdentity(principalId),
-      RequestParameters(clientIP),
+      RequestParameters(userIPs.toString),
       ResponseElements(requestId.value, responseStatus.value),
       S3("1.0", "",
         BucketProps(bucketPath, OwnerIdentity(""), ""),
