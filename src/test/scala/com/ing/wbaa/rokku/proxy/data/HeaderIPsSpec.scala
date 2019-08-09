@@ -30,6 +30,9 @@ class HeaderIPsSpec extends WordSpec with DiagrammedAssertions {
       "are in Remote-Address" in {
         assert(headerIPs.allIPs.contains(address4))
       }
+      "in toString method" in {
+        assert(headerIPs.toString == "X-Real-IP=1.1.1.1|X-Forwarded-For=1.1.1.2,1.1.1.3|Remote-Address=1.1.1.4")
+      }
     }
   }
 }
