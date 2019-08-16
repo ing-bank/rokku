@@ -65,8 +65,9 @@ trait AuthorizationProviderRanger {
       )
 
       rangerRequest.setAction(request.accessType.auditAction)
-      //clientIp is used in audit
-      rangerRequest.setClientIPAddress(request.userIps.toString.take(200))
+      val MAX_CHARACTER_NUMBERS = 100
+      //clientIp is used in audit - we limit the log length because user can put anything in ip headers
+      rangerRequest.setClientIPAddress(request.userIps.toString.take(MAX_CHARACTER_NUMBERS))
       //RemoteIp and Forwarded are used in policies (check - AbstractIpCidrMatcher)
       rangerRequest.setRemoteIPAddress(request.clientIPAddress.toOption.map(_.getHostAddress).orNull)
       rangerRequest.setForwardedAddresses(request.headerIPs.allIPs.map(_.toOption.map(_.getHostAddress).orNull).asJava)
