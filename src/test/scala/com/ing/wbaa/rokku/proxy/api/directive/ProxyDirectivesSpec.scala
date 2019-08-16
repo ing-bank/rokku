@@ -100,7 +100,7 @@ class ProxyDirectivesSpec extends WordSpec with ScalatestRouteTest with Diagramm
       def testClientIp = {
         ProxyDirectives.extracts3Request { s3Request =>
           complete(s"Client ip = ${s3Request.clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown")}, " +
-            s"Header ips = ${s3Request.headerIPs}")
+            s"Header ips = ${s3Request.headerIPs.toString}")
         }
       }
 

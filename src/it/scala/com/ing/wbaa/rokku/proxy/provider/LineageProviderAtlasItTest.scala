@@ -7,7 +7,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
-import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsSecretKey, RequestId, User, UserGroup, UserName}
+import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsSecretKey, HeaderIPs, RequestId, User, UserGroup, UserIps, UserName}
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.scalatest.{Assertion, DiagrammedAssertions, WordSpecLike}
 
@@ -31,7 +31,7 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
     }
   }
 
-  val remoteClientIP = RemoteAddress(InetAddress.getByName("127.0.0.1"))
+  val remoteClientIP = UserIps(RemoteAddress(InetAddress.getByName("127.0.0.1")), HeaderIPs(`X-Real-IP` = Some(RemoteAddress(InetAddress.getByName("127.0.0.2")))))
 
   val userSTS = User(UserName("fakeUser"), Set.empty[UserGroup], AwsAccessKey("a"), AwsSecretKey("k"))
 

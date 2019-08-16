@@ -17,7 +17,7 @@ trait AuditLogProvider extends EventProducer with AWSMessageEventJsonSupport {
   def auditLog(s3Request: S3Request, httpRequest: HttpRequest, user: String, awsRequest: AWSRequestType, responseStatus: StatusCode)(implicit id: RequestId): Future[Done] = {
 
     if (auditEnabled) {
-      prepareAWSMessage(s3Request, httpRequest.method, user, s3Request.clientIPAddress, s3ObjectAudit(httpRequest.method.value), id, responseStatus, awsRequest)
+      prepareAWSMessage(s3Request, httpRequest.method, user, s3Request.userIps, s3ObjectAudit(httpRequest.method.value), id, responseStatus, awsRequest)
         .map(jse =>
           sendSingleMessage(jse.toString(), kafkaSettings.auditEventsTopic))
         .getOrElse(Future(Done))

@@ -2,8 +2,8 @@ package com.ing.wbaa.rokku.proxy.persistence
 
 import akka.Done
 import akka.actor.{ActorSystem, Props}
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.{Authority, Host}
-import akka.http.scaladsl.model.{HttpRequest, RemoteAddress}
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.PersistenceQuery
 import akka.stream.ActorMaterializer
@@ -47,7 +47,7 @@ class HttpRequestRecorderItTest extends AsyncWordSpec with DiagrammedAssertions 
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] =
         Future(Some(User(UserRawJson("userId", Set("group"), "accesskey", "secretkey"))))
 
-      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, clientIPAddress: RemoteAddress)(implicit id: RequestId): Future[Done] = Future.successful(Done)
+      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, userIPs: UserIps)(implicit id: RequestId): Future[Done] = Future.successful(Done)
 
       override protected def auditEnabled: Boolean = false
 

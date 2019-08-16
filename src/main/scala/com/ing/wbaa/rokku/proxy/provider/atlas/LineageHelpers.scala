@@ -1,7 +1,7 @@
 package com.ing.wbaa.rokku.proxy.provider.atlas
 
 import akka.Done
-import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
+import akka.http.scaladsl.model.HttpRequest
 import com.ing.wbaa.rokku.proxy.data.LineageLiterals._
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
@@ -135,12 +135,12 @@ trait LineageHelpers extends EventProducer {
       lh: LineageHeaders,
       userSTS: User,
       method: AccessType,
-      clientIPAddress: RemoteAddress,
+      userIPs: UserIps,
       externalFsPath: Option[String] = None,
       guids: LineageObjectGuids = LineageObjectGuids())(implicit id: RequestId): Future[Done] = {
 
     val userName = userSTS.userName.value
-    val clientHost = clientIPAddress.getAddress().get().getHostAddress
+    val clientHost = userIPs.getRealIpOrClientIp
     val clientType = lh.clientType.getOrElse("generic")
     val bucketObject = lh.bucketObject
     val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
@@ -184,12 +184,12 @@ trait LineageHelpers extends EventProducer {
       lh: LineageHeaders,
       userSTS: User,
       method: AccessType,
-      clientIPAddress: RemoteAddress,
+      userIPs: UserIps,
       srcGuids: LineageObjectGuids = LineageObjectGuids(),
       destGuids: LineageObjectGuids = LineageObjectGuids())(implicit id: RequestId): Future[Done] = {
 
     val userName = userSTS.userName.value
-    val clientHost = clientIPAddress.getAddress().get().getHostAddress
+    val clientHost = userIPs.getRealIpOrClientIp
     val clientType = lh.clientType.getOrElse("generic")
     val bucketObject = lh.bucketObject
     val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
