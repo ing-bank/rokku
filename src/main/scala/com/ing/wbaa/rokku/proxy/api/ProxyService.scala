@@ -6,12 +6,13 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
-import com.ing.wbaa.rokku.proxy.data.{ AwsRequestCredential, AwsSecretKey, RequestId, S3Request, User, Write }
-import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
+import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.rokku.proxy.handler.exception.RokkuThrottlingException
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder.ExecutedRequestCmd
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
@@ -25,6 +26,7 @@ trait ProxyService {
 
   // no validation of request currently
   // once we get comfortable with get/put/del we can add permCheck
+
   import ProxyDirectives._
   import akka.http.scaladsl.server.Directives._
 
@@ -52,6 +54,12 @@ trait ProxyService {
 
   val requestPersistenceEnabled: Boolean
   val configuredPersistenceId: String
+
+  implicit def rokkuExceptionHandler: ExceptionHandler =
+    ExceptionHandler {
+      case _: RokkuThrottlingException =>
+        complete(StatusCodes.ServiceUnavailable -> AwsErrorCodes.response(StatusCodes.ServiceUnavailable))
+    }
 
   val proxyServiceRoute: Route =
 

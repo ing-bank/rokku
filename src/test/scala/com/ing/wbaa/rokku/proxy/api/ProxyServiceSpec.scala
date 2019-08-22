@@ -79,8 +79,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.InternalServerError)
       val response = responseAs[String].replaceAll("\\s", "")
-      assert(response == "<Error><Code>ServiceUnavailable</Code><Message>Reduceyourrequestrate.</Message>" +
-        "<Resource></Resource><RequestId></RequestId></Error>")
+      assert(response == "<Error><Code>InternalServerError</Code><Message>InternalServerError</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
 
