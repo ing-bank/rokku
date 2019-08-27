@@ -1,6 +1,7 @@
 package com.ing.wbaa.rokku.proxy.provider.aws
 
 import akka.http.scaladsl.model.{ StatusCode, StatusCodes }
+import com.ing.wbaa.rokku.proxy.data.RequestId
 
 import scala.xml.NodeSeq
 
@@ -16,13 +17,13 @@ object AwsErrorCodes {
       StatusCodes.Unauthorized -> (("Unauthorized", "Unauthorized")),
       StatusCodes.TooManyRequests -> (("TooManyRequests", "TooManyRequests")))
 
-  def response(code: StatusCode, resource: String = "", requestId: String = ""): NodeSeq = {
+  def response(code: StatusCode, resource: String = "")(implicit requestId: RequestId = RequestId("")): NodeSeq = {
     val responseError = errors.getOrElse(code, ("Unexpected Error", "Unexpected Error"))
     <Error>
       <Code>{ responseError._1 }</Code>
       <Message>{ responseError._2 }</Message>
       <Resource>{ resource }</Resource>
-      <RequestId>{ requestId }</RequestId>
+      <RequestId>{ requestId.value }</RequestId>
     </Error>
   }
 }
