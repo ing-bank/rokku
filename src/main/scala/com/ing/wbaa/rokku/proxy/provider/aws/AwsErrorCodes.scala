@@ -13,9 +13,10 @@ object AwsErrorCodes {
   val errors: Map[StatusCode, (String, String)] =
     Map(
       StatusCodes.Forbidden -> (("AccessDenied", "Access Denied")),
-      StatusCodes.InternalServerError -> (("ServiceUnavailable", "Reduce your request rate.")),
+      StatusCodes.InternalServerError -> (("InternalServerError", "Internal Server Error")),
       StatusCodes.Unauthorized -> (("Unauthorized", "Unauthorized")),
-      StatusCodes.TooManyRequests -> (("TooManyRequests", "TooManyRequests")))
+      StatusCodes.TooManyRequests -> (("TooManyRequests", "Too Many Requests")),
+      StatusCodes.ServiceUnavailable -> (("Throttling", "SLOW DOWN")))
 
   def response(code: StatusCode, resource: String = "")(implicit requestId: RequestId = RequestId("")): NodeSeq = {
     val responseError = errors.getOrElse(code, ("Unexpected Error", "Unexpected Error"))

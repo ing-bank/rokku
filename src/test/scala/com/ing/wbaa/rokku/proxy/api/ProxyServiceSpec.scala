@@ -67,7 +67,6 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
   it should "return an accessDenied when the user credentials cannot be authenticated" in {
     testRequest("notOkAccessKey") ~> new ProxyServiceMock {
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] = Future(None)
-
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
       val response = requestIdString.replaceAllIn(responseAs[String].replaceAll("\\s", ""), "")
@@ -81,8 +80,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.InternalServerError)
       val response = requestIdString.replaceAllIn(responseAs[String].replaceAll("\\s", ""), "")
-      assert(response == "<Error><Code>ServiceUnavailable</Code><Message>Reduceyourrequestrate.</Message>" +
-        "<Resource></Resource><RequestId></RequestId></Error>")
+      assert(response == "<Error><Code>InternalServerError</Code><Message>InternalServerError</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
 
