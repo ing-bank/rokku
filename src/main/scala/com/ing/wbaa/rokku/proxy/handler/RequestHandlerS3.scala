@@ -6,6 +6,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.{ RequestId, S3Request, User }
+import com.ing.wbaa.rokku.proxy.handler.exception.RokkuThrottlingException
 import com.ing.wbaa.rokku.proxy.handler.radosgw.RadosGatewayHandler
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 import com.ing.wbaa.rokku.proxy.queue.UserRequestQueue
@@ -74,8 +75,8 @@ trait RequestHandlerS3 extends RadosGatewayHandler with S3Client with UserReques
       if (addIfAllowedUserToRequestQueue(user)) {
         fireRequestToS3(request).andThen { case _ => decrement(user) }
       } else {
-        logger.info("user {} is sending to many requests", user.userName.value)
-        Future.successful(HttpResponse(StatusCodes.TooManyRequests))
+        logger.info("user {} is sending too many requests", user.userName.value)
+        Future.failed(new RokkuThrottlingException("Throttling"))
       }
     } else {
       fireRequestToS3(request)
