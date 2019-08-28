@@ -37,7 +37,9 @@ trait AuthenticationProviderSTS extends JsonProtocols with JwtToken {
 
     Http()
       .singleRequest(
-        HttpRequest(uri = uri).addHeader(RawHeader("Authorization", createInternalToken))
+        HttpRequest(uri = uri)
+          .addHeader(RawHeader("Authorization", createInternalToken))
+          .addHeader(RawHeader("x-rokku-request-id", id.value))
       )
       .flatMap { response =>
         response.status match {

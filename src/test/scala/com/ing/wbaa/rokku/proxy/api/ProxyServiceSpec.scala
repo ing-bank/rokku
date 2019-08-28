@@ -56,6 +56,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
       authority = Authority(Uri.Host("host"), 3456),
       path = Uri.Path(path))
   )
+  val requestIdString = """\S{8}-\S{4}-\S{4}-\S{4}-\S{12}""".r
 
   "A proxy service" should "Successfully execute a request" in {
     testRequest() ~> new ProxyServiceMock {}.proxyServiceRoute ~> check {
@@ -68,7 +69,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] = Future(None)
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
-      val response = responseAs[String].replaceAll("\\s", "")
+      val response = requestIdString.replaceAllIn(responseAs[String].replaceAll("\\s", ""), "")
       assert(response == "<Error><Code>AccessDenied</Code><Message>AccessDenied</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
@@ -78,7 +79,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] = Future(throw new Exception("BOOM"))
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.InternalServerError)
-      val response = responseAs[String].replaceAll("\\s", "")
+      val response = requestIdString.replaceAllIn(responseAs[String].replaceAll("\\s", ""), "")
       assert(response == "<Error><Code>InternalServerError</Code><Message>InternalServerError</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
@@ -88,7 +89,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
       override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Unauthorized)
-      val response = responseAs[String].replaceAll("\\s", "")
+      val response = requestIdString.replaceAllIn(responseAs[String].replaceAll("\\s", ""), "")
       assert(response == "<Error><Code>Unauthorized</Code><Message>Unauthorized</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
@@ -98,7 +99,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
       override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
-      val response = responseAs[String].replaceAll("\\s", "")
+      val response = requestIdString.replaceAllIn(responseAs[String].replaceAll("\\s", ""), "")
       assert(response == "<Error><Code>AccessDenied</Code><Message>AccessDenied</Message><Resource></Resource><RequestId></RequestId></Error>")
     }
   }
