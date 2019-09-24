@@ -30,6 +30,7 @@ trait SignatureHelpersCommon {
     "%3A" -> ":",
     "%3C" -> "<",
     "%3E" -> ">",
+    "%3D" -> "=",
     "%3F" -> "?",
     "%5B" -> "[",
     "%5D" -> "]",
@@ -51,7 +52,7 @@ trait SignatureHelpersCommon {
   final def cleanURLEncoding(param: String, utfCodes: List[String] = asciiEncodingTable.keys.toList): String =
     utfCodes match {
       case h :: t =>
-        val newParam = param.replace(h, asciiEncodingTable.get(h).get)
+        val newParam = param.replace(h, asciiEncodingTable(h))
         cleanURLEncoding(newParam, t)
       case Nil => param
     }
