@@ -17,12 +17,12 @@ trait MemoryUserRequestQueue extends UserRequestQueue {
 
   private val logger = new LoggerHandlerWithId
 
-  protected val queueSize: Long = ConfigFactory.load().getLong("rokku.storage.s3.request.queue.size")
+  protected val maxQueueSize: Long = ConfigFactory.load().getLong("rokku.storage.s3.request.queue.size")
   protected val maxQueueBeforeBlockInPercent: Int = ConfigFactory.load().getInt("rokku.storage.s3.request.queue.max.size.to.block.in.percent")
-  private val queue: AtomicLong = new AtomicLong(0)
+  private val currentQueueSize: AtomicLong = new AtomicLong(0)
   private val queuePerUser: TrieMap[String, AtomicLong] = TrieMap.empty[String, AtomicLong]
 
-  def getQueue: AtomicLong = queue
+  def getQueue: AtomicLong = currentQueueSize
 
   def getUserQueue: TrieMap[String, AtomicLong] = queuePerUser
 
@@ -36,36 +36,49 @@ trait MemoryUserRequestQueue extends UserRequestQueue {
   }
 
   override def decrement(user: User)(implicit id: RequestId): Unit = {
-    val userRequestCount = queuePerUser(user.userName.value).updateAndGet(x => if (x > 0) x - 1 else 0)
-    val queueRequestCount = queue.updateAndGet(x => if (x > 0) x - 1 else 0)
+    var userRequestCount: Long = 0
+    var queueRequestCount: Long = 0
+
+    synchronized {
+      userRequestCount = queuePerUser(user.userName.value).updateAndGet(x => if (x > 0) x - 1 else 0)
+      queueRequestCount = currentQueueSize.updateAndGet(x => if (x > 0) x - 1 else 0)
+      if (userRequestCount == 0) queuePerUser.remove(user.userName.value)
+    }
     MetricsFactory.decrementRequestQueue(metricName(user))
     logDebug(user, queueRequestCount, userRequestCount, "decrement")
   }
 
   private def increment(user: User)(implicit id: RequestId): Unit = {
-    val userRequestCount = queuePerUser(user.userName.value).incrementAndGet()
-    val queueRequestCount = queue.incrementAndGet()
+    var userRequestCount: Long = 0
+    var queueRequestCount: Long = 0
+    synchronized {
+      userRequestCount = queuePerUser(user.userName.value).incrementAndGet()
+      queueRequestCount = currentQueueSize.incrementAndGet()
+    }
     MetricsFactory.incrementRequestQueue(metricName(user))
     logDebug(user, queueRequestCount, userRequestCount, "increment")
   }
 
   /**
    * @param user the user to check
-   * @return true when the queue is not full and the user does not occupy the queue than the maxQueueBeforeBlockInPercent param
+   * @return true when the queue is not full
+   *         and the user does not occupy the queue more than the maxQueueBeforeBlockInPercent param divided by number of users in current queue.
    */
   private def isAllowedToAddToRequestQueue(user: User) = {
     synchronized {
       queuePerUser.putIfAbsent(user.userName.value, new AtomicLong(0))
       val userRequests = queuePerUser(user.userName.value)
-      val userOccupiedQueue = (100 * userRequests.get()) / queueSize
-      val isOverflown = userOccupiedQueue >= maxQueueBeforeBlockInPercent
-      queue.get() < queueSize && !isOverflown
+      val userOccupiedQueue = (100 * userRequests.get()) / maxQueueSize
+      val maxQueueBeforeBlockInPercentPerUser = maxQueueBeforeBlockInPercent / queuePerUser.size
+      val isOverflown = userOccupiedQueue >= maxQueueBeforeBlockInPercentPerUser
+      currentQueueSize.get() < maxQueueSize && !isOverflown
     }
   }
 
   private def logDebug(user: User, queueRequestCount: Long, userRequestCount: Long, method: String)(implicit id: RequestId): Unit = {
     logger.debug("request queue = {}", queueRequestCount)
-    logger.debug(s" user request queue = {}", method, user.userName.value, userRequestCount)
+    logger.debug("user request queue = {}", method, user.userName.value, userRequestCount)
+    logger.debug("active users size = {}", queuePerUser.size)
   }
 
   private def metricName(user: User): String = {
