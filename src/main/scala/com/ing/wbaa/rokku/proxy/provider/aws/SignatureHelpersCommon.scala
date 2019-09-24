@@ -1,7 +1,8 @@
 package com.ing.wbaa.rokku.proxy.provider.aws
 
 import java.io.ByteArrayInputStream
-import java.net.URI
+import java.net.{ URI, URLDecoder }
+import java.nio.charset.StandardCharsets
 import java.util
 
 import akka.http.scaladsl.model.HttpRequest
@@ -11,7 +12,6 @@ import com.amazonaws.http.HttpMethodName
 import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
-import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
 trait SignatureHelpersCommon {
@@ -23,39 +23,7 @@ trait SignatureHelpersCommon {
   def addHeadersToRequest(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit
   def getSignedHeaders(authorization: String): String
 
-  private val asciiEncodingTable = Map(
-    "%2A" -> "*",
-    "%2B" -> "+",
-    "%2F" -> "/",
-    "%3A" -> ":",
-    "%3C" -> "<",
-    "%3E" -> ">",
-    "%3D" -> "=",
-    "%3F" -> "?",
-    "%5B" -> "[",
-    "%5D" -> "]",
-    "%7E" -> "~",
-    "%7B" -> "{",
-    "%7D" -> "}",
-    "%20" -> " ",
-    "%21" -> "!",
-    "%24" -> "$",
-    "%23" -> "#",
-    "%24" -> "$",
-    "%26" -> "&",
-    "%28" -> "(",
-    "%29" -> ")"
-  )
-
-  // we need to decode unsafe ASCII characters from hex. Some AWS parameters are encoded while reaching proxy
-  @tailrec
-  final def cleanURLEncoding(param: String, utfCodes: List[String] = asciiEncodingTable.keys.toList): String =
-    utfCodes match {
-      case h :: t =>
-        val newParam = param.replace(h, asciiEncodingTable(h))
-        cleanURLEncoding(newParam, t)
-      case Nil => param
-    }
+  final def cleanURLEncoding(param: String) = URLDecoder.decode(param, StandardCharsets.UTF_8.toString)
 
   // we have different extract pattern for V2 and V4
   def getSignatureFromAuthorization(authorization: String): String =
