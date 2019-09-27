@@ -74,15 +74,18 @@ trait ProxyService {
                 onComplete(processRequestForValidUser(httpRequest, s3Request, userSTS)) {
                   case Success(r) => r
                   case Failure(exception) =>
+                    implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
                     logger.error("An error occurred while processing request for valid user", exception)
-                    complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+                    complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
                 }
               case Success(None) =>
+                implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
                 logger.warn("STS credentials not active: {}", s3Request)
-                complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+                complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
               case Failure(exception) =>
+                implicit val returnStatusCode: StatusCodes.ServerError = StatusCodes.InternalServerError
                 logger.error("An error occurred when checking credentials with STS service", exception)
-                complete(StatusCodes.InternalServerError -> AwsErrorCodes.response(StatusCodes.InternalServerError))
+                complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
             }
           }
         }
@@ -97,8 +100,9 @@ trait ProxyService {
       }
     }.map { permittedObjects =>
       if (permittedObjects.nonEmpty && permittedObjects.contains(false)) {
+        implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
         logger.warn("Multidelete - one of objects not allowed to be accessed")
-        complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden))
+        complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
       } else {
         logger.info(s"User (${userSTS.userName}) successfully authorized for multidelete request: $s3Request")
         processAuthorizedRequest(httpRequest, s3Request, userSTS)
@@ -142,18 +146,20 @@ trait ProxyService {
           Future(processAuthorizedRequest(httpRequest, s3Request, userSTS))
         }
       } else {
+        implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Unauthorized
         logger.warn(s"User (${userSTS.userName}) not authorized for request: $s3Request")
-        auditLog(s3Request, httpRequest, userSTS.userName.value, awsRequestFromRequest(httpRequest), StatusCodes.Unauthorized).andThen({
+        auditLog(s3Request, httpRequest, userSTS.userName.value, awsRequestFromRequest(httpRequest), returnStatusCode).andThen({
           case Failure(err) => logger.error(s"Error while sending audit log: ${err}")
         })
-        Future.successful(complete(StatusCodes.Unauthorized -> AwsErrorCodes.response(StatusCodes.Unauthorized)))
+        Future.successful(complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode)))
       }
     } else {
-      logger.warn("Request not authenticated: {}", httpRequest)
-      auditLog(s3Request, httpRequest, userSTS.userName.value, awsRequestFromRequest(httpRequest), StatusCodes.Forbidden).andThen({
+      implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
+        logger.warn("Request not authenticated: {}", httpRequest)
+      auditLog(s3Request, httpRequest, userSTS.userName.value, awsRequestFromRequest(httpRequest), returnStatusCode).andThen({
         case Failure(err) => logger.error(s"Error while sending audit log: ${err}")
       })
-      Future.successful(complete(StatusCodes.Forbidden -> AwsErrorCodes.response(StatusCodes.Forbidden)))
+      Future.successful(complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode)))
     }
   }
 }
