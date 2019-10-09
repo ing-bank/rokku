@@ -45,7 +45,7 @@ class HttpRequestRecorderItTest extends AsyncWordSpec with DiagrammedAssertions 
       override val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] =
-        Future(Some(User(UserRawJson("userId", Set("group"), "accesskey", "secretkey"))))
+        Future(Some(User(UserRawJson("userId", Some(Set("group")), "accesskey", "secretkey", None))))
 
       def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, userIPs: UserIps)(implicit id: RequestId): Future[Done] = Future.successful(Done)
 

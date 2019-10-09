@@ -87,7 +87,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
 
       override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
         user match {
-          case User(userName, _, _, _) if userName.value == "testuser" => true
+          case User(userName, _, _, _, _) if userName.value == "testuser" => true
           case _ => super.isUserAuthorizedForRequest(request, user)
         }
       }

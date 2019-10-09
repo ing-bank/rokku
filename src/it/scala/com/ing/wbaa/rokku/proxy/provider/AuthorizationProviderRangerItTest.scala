@@ -5,7 +5,7 @@ import java.net.InetAddress
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.RemoteAddress
 import com.ing.wbaa.rokku.proxy.config.RangerSettings
-import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsRequestCredential, AwsSecretKey, AwsSessionToken, Delete, HeaderIPs, NoAccess, Read, RequestId, S3Request, User, UserGroup, UserName, Write}
+import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsRequestCredential, AwsSecretKey, AwsSessionToken, Delete, HeaderIPs, NoAccess, Read, RequestId, S3Request, User, UserAssumeRole, UserGroup, UserName, Write}
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
 import scala.concurrent.Future
@@ -26,7 +26,8 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
     UserName("testuser"),
     Set(UserGroup("testgroup")),
     AwsAccessKey("accesskey"),
-    AwsSecretKey("secretkey")
+    AwsSecretKey("secretkey"),
+    UserAssumeRole("")
   )
 
   val clientIPAddress = RemoteAddress(InetAddress.getByName("1.7.8.9"), Some(1234))

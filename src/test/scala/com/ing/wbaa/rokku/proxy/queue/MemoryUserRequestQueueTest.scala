@@ -1,6 +1,6 @@
 package com.ing.wbaa.rokku.proxy.queue
 
-import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsSecretKey, RequestId, User, UserName }
+import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsSecretKey, RequestId, User, UserAssumeRole, UserName }
 //import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
@@ -11,11 +11,12 @@ class MemoryUserRequestQueueTest extends WordSpec with DiagrammedAssertions {
     override protected val maxQueueSize: Long = 4
     override protected val maxQueueBeforeBlockInPercent: Int = 50
   }
-  private val userOne = User(UserName("userOne"), Set.empty, AwsAccessKey(""), AwsSecretKey(""))
-  private val userTwo = User(UserName("userTwo"), Set.empty, AwsAccessKey(""), AwsSecretKey(""))
-  private val userThree = User(UserName("userThree"), Set.empty, AwsAccessKey(""), AwsSecretKey(""))
-  private val userFour = User(UserName("userFour"), Set.empty, AwsAccessKey(""), AwsSecretKey(""))
-  private val userFive = User(UserName("userFive"), Set.empty, AwsAccessKey(""), AwsSecretKey(""))
+  private val assumedRole = UserAssumeRole("")
+  private val userOne = User(UserName("userOne"), Set.empty, AwsAccessKey(""), AwsSecretKey(""), assumedRole)
+  private val userTwo = User(UserName("userTwo"), Set.empty, AwsAccessKey(""), AwsSecretKey(""), assumedRole)
+  private val userThree = User(UserName("userThree"), Set.empty, AwsAccessKey(""), AwsSecretKey(""), assumedRole)
+  private val userFour = User(UserName("userFour"), Set.empty, AwsAccessKey(""), AwsSecretKey(""), assumedRole)
+  private val userFive = User(UserName("userFive"), Set.empty, AwsAccessKey(""), AwsSecretKey(""), assumedRole)
 
   "MemoryUserRequestQueue" should {
 

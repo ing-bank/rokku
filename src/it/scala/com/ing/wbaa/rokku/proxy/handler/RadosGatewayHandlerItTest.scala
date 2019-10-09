@@ -26,9 +26,10 @@ class RadosGatewayHandlerItTest extends WordSpec with DiagrammedAssertions with 
 
   def testUser: User = User(UserRawJson(
     Random.alphanumeric.take(32).mkString,
-    Set.empty[String],
+    Some(Set.empty[String]),
     Random.alphanumeric.take(32).mkString,
-    Random.alphanumeric.take(32).mkString
+    Random.alphanumeric.take(32).mkString,
+    None
   ))
 
   "Rados Gateway Handler" should {

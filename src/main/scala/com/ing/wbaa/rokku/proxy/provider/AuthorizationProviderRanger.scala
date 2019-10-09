@@ -4,7 +4,7 @@ import java.net.URLDecoder
 
 import akka.http.scaladsl.model.MediaTypes
 import com.ing.wbaa.rokku.proxy.config.RangerSettings
-import com.ing.wbaa.rokku.proxy.data.{ Delete, Head, Read, RequestId, S3Request, User, Write }
+import com.ing.wbaa.rokku.proxy.data.{ Delete, Head, Read, RequestId, S3Request, User, UserAssumeRole, UserGroup, Write }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import org.apache.ranger.plugin.audit.RangerDefaultAuditHandler
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
@@ -49,20 +49,27 @@ trait AuthorizationProviderRanger {
    *  enabled in configuration. They are disabled by default
    */
   def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
+    import scala.collection.JavaConverters._
+
+    def prepareAccessRequest(rangerResource: RangerAccessResourceImpl, user: String, groups: Set[String]) = new RangerAccessRequestImpl(
+      rangerResource,
+      request.accessType.rangerName,
+      user,
+      groups.asJava
+    )
 
     def isAuthorisedByRanger(s3path: String): Boolean = {
-      import scala.collection.JavaConverters._
-
       val rangerResource = new RangerAccessResourceImpl(
         Map[String, AnyRef]("path" -> URLDecoder.decode(s3path, "UTF-8")).asJava
       )
 
-      val rangerRequest = new RangerAccessRequestImpl(
-        rangerResource,
-        request.accessType.rangerName,
-        user.userName.value + rangerSettings.userDomainPostfix,
-        user.userGroups.map(_.value.toLowerCase).asJava
-      )
+      val rangerRequest = user.userRole match {
+        case UserAssumeRole(roleValue) if !roleValue.isEmpty =>
+          prepareAccessRequest(rangerResource, null, Set(UserGroup(s"role_${roleValue}")).map(_.value.toLowerCase))
+        case _ =>
+          prepareAccessRequest(
+            rangerResource, user.userName.value + rangerSettings.userDomainPostfix, user.userGroups.map(_.value.toLowerCase))
+      }
 
       rangerRequest.setAction(request.accessType.auditAction)
       val MAX_CHARACTER_NUMBERS = 100

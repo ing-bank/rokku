@@ -28,7 +28,7 @@ class ProxyServiceSpec extends FlatSpec with DiagrammedAssertions with Scalatest
       Future(HttpResponse(status = StatusCodes.OK))
 
     override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] = Future(
-      Some(User(UserName("okUser"), Set(UserGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey")))
+      Some(User(UserName("okUser"), Set(UserGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey"), UserAssumeRole("")))
     )
 
     override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = true
