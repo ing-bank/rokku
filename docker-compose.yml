@@ -31,7 +31,7 @@ services:
       - "6080:6080"
 
   rokku-sts:
-    image: wbaa/rokku-sts:0.2.11
+    image: wbaa/rokku-sts:0.3.0
     environment:
       - STS_HOST=0.0.0.0
       - STS_PORT=12345
