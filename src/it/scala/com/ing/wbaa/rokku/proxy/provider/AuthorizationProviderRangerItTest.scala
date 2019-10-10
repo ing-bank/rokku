@@ -183,6 +183,11 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
         assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/home"),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
+
+      "does allow read shared bucket with assumedRole" in withAuthorizationProviderRanger() { apr =>
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/shared"),
+          clientIPAddress = clientIPAddress, headerIPs = headerIPs), user.copy(userName = UserName(""), userGroups = Set(), userRole = UserAssumeRole("test"))))
+      }
     }
   }
 }

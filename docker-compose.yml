@@ -21,7 +21,7 @@ services:
     image: wbaa/rokku-dev-apache-ranger-postgres:0.0.17
 
   ranger-admin:
-    image: wbaa/rokku-dev-apache-ranger:0.0.18
+    image: wbaa/rokku-dev-apache-ranger:0.0.19
     stdin_open: true
     tty: true
     depends_on:
@@ -31,7 +31,7 @@ services:
       - "6080:6080"
 
   rokku-sts:
-    image: wbaa/rokku-sts:0.2.8
+    image: wbaa/rokku-sts:0.2.11
     environment:
       - STS_HOST=0.0.0.0
       - STS_PORT=12345
@@ -47,7 +47,7 @@ services:
       - "mariadb"
 
   keycloak:
-    image: wbaa/rokku-dev-keycloak:0.0.5
+    image: wbaa/rokku-dev-keycloak:0.0.6
     environment:
       - KEYCLOAK_USER=admin
       - KEYCLOAK_PASSWORD=admin
@@ -63,7 +63,7 @@ services:
       - "kafka"
 
   mariadb:
-    image: wbaa/rokku-dev-mariadb:0.0.5
+    image: wbaa/rokku-dev-mariadb:0.0.8
     environment:
       - MYSQL_ROOT_PASSWORD=admin
     ports:

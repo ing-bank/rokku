@@ -21,7 +21,7 @@ case class User(
 object User {
 
   def apply(userRawJson: UserRawJson): User = userRawJson.userRole match {
-    case Some(role) =>
+    case Some(role) if !role.isEmpty =>
       User(
         UserName(userRawJson.userName),
         Set.empty.map(UserGroup),
