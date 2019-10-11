@@ -155,7 +155,7 @@ trait ProxyService {
       }
     } else {
       implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
-        logger.warn("Request not authenticated: {}", httpRequest)
+      logger.warn("Request not authenticated: {}", httpRequest)
       auditLog(s3Request, httpRequest, userSTS.userName.value, awsRequestFromRequest(httpRequest), returnStatusCode).andThen({
         case Failure(err) => logger.error(s"Error while sending audit log: ${err}")
       })

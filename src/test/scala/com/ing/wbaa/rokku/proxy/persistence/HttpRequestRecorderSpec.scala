@@ -44,7 +44,7 @@ class HttpRequestRecorderSpec extends TestKit(ActorSystem("RequestRecorderTest")
     HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`).toString(),
     HttpProtocols.`HTTP/1.1`
   )
-  val userSTS = User(UserName("okUser"), Set(UserGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey"))
+  val userSTS = User(UserName("okUser"), Set(UserGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey"), UserAssumeRole(""))
   val clientIPAddress = RemoteAddress(InetAddress.getByName("localhost"), Some(1234))
 
   "RequestRecorder" should {

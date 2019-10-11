@@ -80,6 +80,8 @@ before diving in here. That will introduce you to the various components used.
    
    This should give you an `accessKeyId`, `secretAccessKey`, `sessionToken` and `expirationDate`.
    
+> Note: Alternatively you can run script helper to get credentials [dev_sts_get_credentials.sh](./scripts/dev_sts_get_credentials.sh)
+   
 3. Setup your local environment to use the credentials received from STS. You can do this in 2 ways.
 
     1. Set them in your environment variables:

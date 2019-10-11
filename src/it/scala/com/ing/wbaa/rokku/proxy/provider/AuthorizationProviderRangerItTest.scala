@@ -5,7 +5,7 @@ import java.net.InetAddress
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.RemoteAddress
 import com.ing.wbaa.rokku.proxy.config.RangerSettings
-import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsRequestCredential, AwsSecretKey, AwsSessionToken, Delete, HeaderIPs, NoAccess, Read, RequestId, S3Request, User, UserGroup, UserName, Write}
+import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsRequestCredential, AwsSecretKey, AwsSessionToken, Delete, HeaderIPs, NoAccess, Read, RequestId, S3Request, User, UserAssumeRole, UserGroup, UserName, Write}
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
 import scala.concurrent.Future
@@ -26,7 +26,8 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
     UserName("testuser"),
     Set(UserGroup("testgroup")),
     AwsAccessKey("accesskey"),
-    AwsSecretKey("secretkey")
+    AwsSecretKey("secretkey"),
+    UserAssumeRole("")
   )
 
   val clientIPAddress = RemoteAddress(InetAddress.getByName("1.7.8.9"), Some(1234))
@@ -181,6 +182,11 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAss
       "does allow read all user dir" in withAuthorizationProviderRanger() { apr =>
         assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/home"),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
+      }
+
+      "does allow read shared bucket with assumedRole" in withAuthorizationProviderRanger() { apr =>
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some("/shared"),
+          clientIPAddress = clientIPAddress, headerIPs = headerIPs), user.copy(userName = UserName(""), userGroups = Set(), userRole = UserAssumeRole("test"))))
       }
     }
   }

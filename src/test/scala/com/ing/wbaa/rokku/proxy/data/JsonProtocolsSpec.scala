@@ -17,7 +17,7 @@ class JsonProtocolsSpec extends WordSpec with DiagrammedAssertions with JsonProt
             | "secretKey": "secretkey"
             |}""".stripMargin
         val result = jsonString.parseJson.convertTo[UserRawJson]
-        assert(result == UserRawJson("user", Set("group1"), "accesskey", "secretkey"))
+        assert(result == UserRawJson("user", Some(Set("group1")), "accesskey", "secretkey", None))
       }
 
       "does not have a group" in {
@@ -29,7 +29,7 @@ class JsonProtocolsSpec extends WordSpec with DiagrammedAssertions with JsonProt
             | "secretKey": "secretkey"
             |}""".stripMargin
         val result = jsonString.parseJson.convertTo[UserRawJson]
-        assert(result == UserRawJson("user", Set.empty[String], "accesskey", "secretkey"))
+        assert(result == UserRawJson("user", Some(Set.empty[String]), "accesskey", "secretkey", None))
       }
 
       "fail when fields are missing" in {

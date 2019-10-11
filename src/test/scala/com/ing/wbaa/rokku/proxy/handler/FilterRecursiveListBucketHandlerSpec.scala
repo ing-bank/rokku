@@ -21,8 +21,8 @@ class FilterRecursiveListBucketHandlerSpec extends AsyncWordSpec with Diagrammed
 
   def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
     user match {
-      case User(userName, _, _, _) if userName.value == "admin" => true
-      case User(userName, _, _, _) if userName.value == "user1" =>
+      case User(userName, _, _, _, _) if userName.value == "admin" => true
+      case User(userName, _, _, _, _) if userName.value == "user1" =>
         request match {
           case S3Request(_, s3BucketPath, _, _, _, _, _) =>
             if (s3BucketPath.get.startsWith("/demobucket/user/user2")) false else true
@@ -33,8 +33,8 @@ class FilterRecursiveListBucketHandlerSpec extends AsyncWordSpec with Diagrammed
 
   val listBucketXmlResponse: String = scala.io.Source.fromResource("listBucket.xml").mkString.stripMargin.trim
 
-  val adminUser = User(UserRawJson("admin", Set.empty[String], "a", "s"))
-  val user1 = User(UserRawJson("user1", Set.empty[String], "a", "s"))
+  val adminUser = User(UserRawJson("admin", Some(Set.empty[String]), "a", "s", None))
+  val user1 = User(UserRawJson("user1", Some(Set.empty[String]), "a", "s", None))
   val s3Request = S3Request(AwsRequestCredential(AwsAccessKey(""), None), Uri.Path("/demobucket/user"), HttpMethods.GET, RemoteAddress.Unknown, HeaderIPs(), MediaTypes.`text/plain`)
   val data: Source[ByteString, NotUsed] = Source.single(ByteString.fromString(listBucketXmlResponse))
 

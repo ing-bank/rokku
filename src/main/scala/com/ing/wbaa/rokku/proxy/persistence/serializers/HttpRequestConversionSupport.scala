@@ -4,7 +4,7 @@ import java.net.InetAddress
 
 import akka.http.scaladsl.model.HttpHeader.ParsingResult
 import akka.http.scaladsl.model.{ HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpProtocol, HttpRequest, RemoteAddress, Uri }
-import com.ing.wbaa.rokku.proxy.data.UserRawJson
+import com.ing.wbaa.rokku.proxy.data.{ UserAssumeRole, UserRawJson }
 import spray.json.DefaultJsonProtocol
 
 import scala.collection.immutable
@@ -21,7 +21,8 @@ trait HttpRequestConversionSupport extends DefaultJsonProtocol {
   case class SimplifiedHttpRequest(method: String, uri: String, headers: List[String], entity: String, httpProtocol: String)
 
   implicit val httpRequestF = jsonFormat5(SimplifiedHttpRequest)
-  implicit val userSTSF = jsonFormat4(UserRawJson)
+  implicit val userRoleF = jsonFormat1(UserAssumeRole)
+  implicit val userSTSF = jsonFormat5(UserRawJson)
   implicit val remoteAddressF = jsonFormat1(SimplifiedRemoteAddress)
 
   private[persistence] def convertAkkaHeadersToStrings(headers: Seq[HttpHeader]): List[String] = headers.map(h => s"${h.name()}=${h.value()}").toList

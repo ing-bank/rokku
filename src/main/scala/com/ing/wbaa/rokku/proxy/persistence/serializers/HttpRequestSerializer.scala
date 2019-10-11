@@ -27,9 +27,10 @@ class HttpRequestSerializer extends SerializerWithStringManifest with HttpReques
   def userSTSString(u: User) =
     UserRawJson(
       u.userName.value,
-      u.userGroups.map(g => g.value),
+      Option(u.userGroups.map(g => g.value)),
       u.accessKey.value,
-      u.secretKey.value).toJson.toString
+      u.secretKey.value,
+      Option(u.userRole.value)).toJson.toString
 
   def remoteIPString(a: RemoteAddress) = SimplifiedRemoteAddress(a.value).toJson.toString()
 
