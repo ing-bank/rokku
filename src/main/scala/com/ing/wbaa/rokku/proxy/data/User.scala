@@ -24,7 +24,7 @@ object User {
     case Some(role) if !role.isEmpty =>
       User(
         UserName(userRawJson.userName),
-        Set.empty.map(UserGroup),
+        Set.empty[UserGroup],
         AwsAccessKey(userRawJson.accessKey),
         AwsSecretKey(userRawJson.secretKey),
         UserAssumeRole(role)
