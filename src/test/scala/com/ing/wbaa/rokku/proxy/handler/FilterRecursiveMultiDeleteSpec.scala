@@ -5,10 +5,12 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import FilterRecursiveMultiDelete._
+import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete._
 import org.scalatest.{ AsyncWordSpec, DiagrammedAssertions }
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext
+import scala.util.Random
 
 class FilterRecursiveMultiDeleteSpec extends AsyncWordSpec with DiagrammedAssertions {
 
@@ -23,6 +25,8 @@ class FilterRecursiveMultiDeleteSpec extends AsyncWordSpec with DiagrammedAssert
   val data: Source[ByteString, NotUsed] = Source.single(ByteString.fromString(multiDeleteRequestXml))
   val dataV4: Source[ByteString, NotUsed] = Source.single(ByteString.fromString(multiDeleteRequestV4Xml))
   val otherData: Source[ByteString, NotUsed] = Source.single(ByteString.fromString(multiPartComplete))
+
+  val numberOfObjects = 1000
 
   "multiDelete request" should {
     "should be parsed to objects list" in {
@@ -41,6 +45,17 @@ class FilterRecursiveMultiDeleteSpec extends AsyncWordSpec with DiagrammedAssert
 
     "should return empty list" in {
       exctractMultideleteObjectsFlow(otherData).map(r => assert(r == Vector()))
+    }
+
+    "should return correct size for large xml objects" in {
+      val rand = new Random()
+      val doc = new ListBuffer[String]()
+      for (c <- 1 to numberOfObjects) doc +=
+        s"<Object><Key>testuser/one/two/three/four/five/six/seven/eight/nine/ten/eleven/twelve/sub$c/${rand.alphanumeric.take(32).mkString}=${rand.alphanumeric.take(12).mkString}.txt</Key></Object>"
+
+      exctractMultideleteObjectsFlow(Source.single(ByteString("<Delete>" + doc.mkString + "</Delete>"))).map { r =>
+        assert(r.length == numberOfObjects)
+      }
     }
   }
 }

@@ -61,35 +61,38 @@ class ProxyDirectivesSpec extends WordSpec with ScalatestRouteTest with Diagramm
     }
 
     "add forward headers to request" that {
-      def testRoute(headerToReturn: String) =
-        ProxyDirectives.updateHeadersForRequest { h =>
+      val requestWithRemoteIP = HttpRequest().withHeaders(RawHeader("Remote-Address", "1.2.3.4"))
+      val requestWithRemoteAndFW = HttpRequest().withHeaders(RawHeader("Remote-Address", "1.2.3.4"), RawHeader("X-Forwarded-For", "3.4.5.6"))
+      val requestWithNoXFW = HttpRequest().withHeaders(Nil)
+      def testRoute(headerToReturn: String, request: HttpRequest) =
+        ProxyDirectives.updateHeadersForRequest(request) { h =>
           complete(h.getHeader(headerToReturn).map[String](_.value).orElse("unknown"))
         }
 
       "return correct forward protocol" in {
-        HttpRequest() ~> testRoute("X-Forwarded-Proto") ~> check {
+        HttpRequest() ~> testRoute("X-Forwarded-Proto", requestWithRemoteAndFW) ~> check {
           val response = responseAs[String]
           assert(response == "HTTP/1.1")
         }
       }
 
       "add forward address unknown when remote-address not present" in {
-        HttpRequest() ~> testRoute("X-Forwarded-For") ~> check {
+        HttpRequest() ~> testRoute("X-Forwarded-For", requestWithNoXFW) ~> check {
           val response = responseAs[String]
           assert(response == "unknown")
         }
       }
 
       "add forward address with empty forwarded-for" in {
-        HttpRequest().withHeaders(RawHeader("Remote-Address", "1.2.3.4")) ~> testRoute("X-Forwarded-For") ~> check {
+        requestWithRemoteIP ~> testRoute("X-Forwarded-For", requestWithRemoteIP) ~> check {
           val response = responseAs[String]
           assert(response == "1.2.3.4")
         }
       }
 
       "add forward address with filled forwarded-for" in {
-        HttpRequest().withHeaders(RawHeader("Remote-Address", "1.2.3.4"), RawHeader("X-Forwarded-For", "3.4.5.6")) ~>
-          testRoute("X-Forwarded-For") ~> check {
+        requestWithRemoteAndFW ~>
+          testRoute("X-Forwarded-For", requestWithRemoteAndFW) ~> check {
             val response = responseAs[String]
             assert(response == "3.4.5.6, 1.2.3.4")
           }

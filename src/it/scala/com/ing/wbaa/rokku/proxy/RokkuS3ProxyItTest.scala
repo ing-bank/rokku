@@ -13,15 +13,17 @@ import com.ing.wbaa.rokku.proxy.config._
 import com.ing.wbaa.rokku.proxy.data.{RequestId, S3Request, User}
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser
 import com.ing.wbaa.rokku.proxy.handler.{FilterRecursiveListBucketHandler, RequestHandlerS3}
-import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 import com.ing.wbaa.rokku.proxy.provider._
+import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 import com.ing.wbaa.testkit.RokkuFixtures
 import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
 import com.ing.wbaa.testkit.oauth.{KeycloackToken, OAuth2TokenRequest}
 import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.Random
 
 class RokkuS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
   with S3SdkHelpers
@@ -116,6 +118,16 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
     getAmazonS3(s3ProxyAuthority, sessionCredentials)
   }
 
+  val numberOfObjects = 1000
+
+  private val generateMultideleteRequest = {
+    val rand = new Random()
+    val keys = new ListBuffer[String]()
+    for (c <- 1 to numberOfObjects) keys +=
+      s"testuser/one/two/three/four/five/six/seven/eight/nine/ten/eleven/twelve/sub$c/${rand.alphanumeric.take(32).mkString}=${rand.alphanumeric.take(12).mkString}.txt"
+    keys
+  }
+
   "Rokku" should {
     "not allow to multi delete others objects" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
       retrieveKeycloackToken(validKeycloakCredentialsUserone) flatMap { keycloackToken =>
@@ -143,6 +155,19 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
         ).asJava)
 
         assert(s3Client.deleteObjects(deleteRequest).getDeletedObjects.asScala.length == 1)
+      }
+    }
+
+    "multidelete for multiple hundreds of objects" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
+      retrieveKeycloackToken(validKeycloakCredentialsTestuser) flatMap { keycloackToken =>
+        val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
+
+        val deleteRequest = new DeleteObjectsRequest("home")
+        deleteRequest.setKeys(generateMultideleteRequest.map(k => new KeyVersion(k)).asJava)
+        deleteRequest.setQuiet(false)
+
+        val r = s3Client.deleteObjects(deleteRequest)
+        assert(r.getDeletedObjects.size() == numberOfObjects)
       }
     }
 
