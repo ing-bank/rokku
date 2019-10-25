@@ -92,25 +92,34 @@ trait ProxyService {
       }
     }
 
-  private def checkExtractedPostContents(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Future[Route] =
-    exctractMultideleteObjectsFlow(httpRequest.entity.dataBytes)(ActorMaterializer()).map { s3Objects =>
-      s3Objects.map { s3Object =>
-        val bucket = s3Request.s3BucketPath.getOrElse("")
-        isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some(s"$bucket/$s3Object"), s3Object = Some(s3Object)), userSTS)
-      }
-    }.map { permittedObjects =>
-      if (permittedObjects.nonEmpty && permittedObjects.contains(false)) {
-        implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
-        logger.warn("Multidelete - one of objects not allowed to be accessed")
-        complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
-      } else {
-        logger.info(s"User (${userSTS.userName}) successfully authorized for multidelete request: $s3Request")
-        processAuthorizedRequest(httpRequest, s3Request, userSTS)
+  private def checkExtractedPostContents(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Future[Route] = {
+    import scala.concurrent.duration._
+    implicit val mat = ActorMaterializer()
+
+    // we need to materialize here to avoid error - failed to materialize stream more than once, when http client in handler will
+    // try to send the same entity to s3
+    // also this prevents line spits to chunks for large requests
+    httpRequest.entity.toStrict(3.seconds).flatMap { strictE =>
+      exctractMultideleteObjectsFlow(strictE.dataBytes).map { s3Objects =>
+        s3Objects.map { s3Object =>
+          val bucket = s3Request.s3BucketPath.getOrElse("")
+          isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = Some(s"$bucket/$s3Object"), s3Object = Some(s3Object)), userSTS)
+        }
+      }.map { permittedObjects =>
+        if (permittedObjects.nonEmpty && permittedObjects.contains(false)) {
+          implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
+          logger.warn("Multidelete - one of objects not allowed to be accessed")
+          complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
+        } else {
+          logger.info(s"User (${userSTS.userName}) successfully authorized for multidelete request: $s3Request")
+          processAuthorizedRequest(httpRequest.withEntity(strictE), s3Request, userSTS)
+        }
       }
     }
+  }
 
   protected[this] def processAuthorizedRequest(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Route = {
-    updateHeadersForRequest { newHttpRequest =>
+    updateHeadersForRequest(httpRequest) { newHttpRequest =>
       val httpResponse = executeRequest(newHttpRequest, userSTS, s3Request).andThen {
         case Success(response: HttpResponse) =>
           //add request recording after getting response and before executing postrequest actions, we skip ls requests
