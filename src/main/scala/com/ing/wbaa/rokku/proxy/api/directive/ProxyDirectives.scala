@@ -66,9 +66,7 @@ object ProxyDirectives extends LazyLogging {
             case Tuple1(optionalSessionToken) =>
               headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
 
-                val rootPath =
-                  if (httpRequest.uri.path.endsWithSlash) httpRequest.uri.path.toString().dropRight(1)
-                  else httpRequest.uri.path.toString()
+                val pathName: String = getPathName(httpRequest)
 
                 // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
                 val s3path = httpRequest.uri.rawQueryString match {
@@ -85,13 +83,12 @@ object ProxyDirectives extends LazyLogging {
                       }
 
                     if (queryPrefixPair.length == 2) {
-                      Uri.Path(s"$rootPath/${queryPrefixPair.last.replace(delimiter, "/")}")
+                      Uri.Path(s"$pathName/${queryPrefixPair.last.replace(delimiter, "/")}")
                     } else {
-                      Uri.Path(s"$rootPath")
+                      Uri.Path(s"$pathName")
                     }
-                  case _         => Uri.Path(s"$rootPath")
+                  case _         => Uri.Path(s"$pathName")
                 }
-
                 val s3Request = S3Request(
                   AwsRequestCredential(awsAccessKey, optionalSessionToken.map(AwsSessionToken)),
                   s3path,
@@ -108,6 +105,26 @@ object ProxyDirectives extends LazyLogging {
         }
       }
     }
+
+  /**
+   * To support "path" and "virtual" s3 access style we need to check if the bucket name is in the hostname or url
+   * The method assumed that the hostname contains ".s3" and everything before ".s3" is the bucket name
+   * @param httpRequest
+   * @return path to an object
+   */
+  private def getPathName(httpRequest: HttpRequest): String = {
+    val host = httpRequest.uri.authority.host.toString()
+    val path = if (httpRequest.uri.path.endsWithSlash) httpRequest.uri.path.toString().dropRight(1)
+    else httpRequest.uri.path.toString()
+    val virtualHostNameIndex = host.indexOf(".s3")
+    if (virtualHostNameIndex > 0) {
+      logger.debug("virtual hosted address style host = {}", host)
+      s"/${host.substring(0, virtualHostNameIndex)}$path"
+    } else {
+      logger.debug("path address style path = {}", path)
+      path
+    }
+  }
 
   /**
    * Updates the forward headers for a request.
