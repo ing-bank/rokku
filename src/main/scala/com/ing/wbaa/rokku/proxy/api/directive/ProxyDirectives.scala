@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.{ Directive0, Directive1 }
 import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsRequestCredential, AwsSessionToken, HeaderIPs, S3Request }
 import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
+import com.ing.wbaa.rokku.proxy.util.S3Utils
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.language.postfixOps
@@ -66,7 +67,7 @@ object ProxyDirectives extends LazyLogging {
             case Tuple1(optionalSessionToken) =>
               headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
 
-                val pathName: String = getPathName(httpRequest)
+                val pathName: String = S3Utils.getPathName(httpRequest)
 
                 // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
                 val s3path = httpRequest.uri.rawQueryString match {
@@ -105,26 +106,6 @@ object ProxyDirectives extends LazyLogging {
         }
       }
     }
-
-  /**
-   * To support "path" and "virtual" s3 access style we need to check if the bucket name is in the hostname or url
-   * The method assumed that the hostname contains ".s3" and everything before ".s3" is the bucket name
-   * @param httpRequest
-   * @return path to an object
-   */
-  private def getPathName(httpRequest: HttpRequest): String = {
-    val host = httpRequest.uri.authority.host.toString()
-    val path = if (httpRequest.uri.path.endsWithSlash) httpRequest.uri.path.toString().dropRight(1)
-    else httpRequest.uri.path.toString()
-    val virtualHostNameIndex = host.indexOf(".s3")
-    if (virtualHostNameIndex > 0) {
-      logger.debug("virtual hosted address style host = {}", host)
-      s"/${host.substring(0, virtualHostNameIndex)}$path"
-    } else {
-      logger.debug("path address style path = {}", path)
-      path
-    }
-  }
 
   /**
    * Updates the forward headers for a request.
