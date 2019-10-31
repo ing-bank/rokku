@@ -15,7 +15,7 @@ import scala.collection.JavaConverters._
 
 
 trait S3SdkHelpers {
-  private val awsRegion = ConfigFactory.load().getString("rokku.storage.s3.region")
+  val awsRegion = ConfigFactory.load().getString("rokku.storage.s3.region")
 
   def getAmazonS3(authority: Authority,
                   credentials: AWSCredentials = new BasicSessionCredentials("accesskey", "secretkey", "token")
@@ -27,7 +27,8 @@ trait S3SdkHelpers {
       .standard()
       .withClientConfiguration(cliConf)
       .withCredentials(new AWSStaticCredentialsProvider(credentials))
-      .withEndpointConfiguration(new EndpointConfiguration(s"http://${authority.host.address}:${authority.port}", awsRegion))
+      .withPathStyleAccessEnabled(true)
+      .withEndpointConfiguration(new EndpointConfiguration(s"http://s3.localhost:${authority.port}", awsRegion))
       .build()
   }
 

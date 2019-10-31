@@ -7,6 +7,7 @@ import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka._
 import com.ing.wbaa.rokku.proxy.provider.kafka.EventProducer
+import com.ing.wbaa.rokku.proxy.util.S3Utils
 import spray.json.JsObject
 
 import scala.concurrent.Future
@@ -46,7 +47,7 @@ trait LineageHelpers extends EventProducer {
   }
 
   def getLineageHeaders(httpRequest: HttpRequest)(implicit id: RequestId): LineageHeaders = {
-    val fullPath = httpRequest.uri.path.toString()
+    val fullPath = S3Utils.getPathName(httpRequest)
     val bucketName = getBucketName(fullPath)
     val pseudoDir = getPathDir(fullPath)
     val bucketObjectFQN = getObjectName(fullPath)
