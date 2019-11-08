@@ -1,5 +1,7 @@
 package com.ing.wbaa.rokku.proxy.provider.atlas
 
+import java.security.MessageDigest
+
 import akka.Done
 import akka.http.scaladsl.model.HttpRequest
 import com.ing.wbaa.rokku.proxy.data.LineageLiterals._
@@ -159,7 +161,7 @@ trait LineageHelpers extends EventProducer {
         logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
         sendSingleMessage(
           prepareEntityFullCreateMessage(userSTS, Vector(serverEntityJs, bucketEntityJs, pseudoDirEntityJs, s3ObjectEntityJs, externalPathEntityJs,
-            processEntity(s"${clientType}_$timestamp", userName, method.rangerName,
+            processEntity(s"${clientType}_${getMD5HashForObjects(bucketObject.getOrElse(pseudoDir), externalPath)}", userName, method.rangerName,
               clientHost, guids.serverGuid,
               bucketObject.getOrElse(pseudoDir), bucketObject.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE),
               bucketObject.map(_ => guids.objectGuid).getOrElse(guids.pseudoDir),
@@ -170,7 +172,7 @@ trait LineageHelpers extends EventProducer {
         logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
         sendSingleMessage(
           prepareEntityFullCreateMessage(userSTS, Vector(serverEntityJs, bucketEntityJs, pseudoDirEntityJs, s3ObjectEntityJs, externalPathEntityJs,
-            processEntity(s"${clientType}_$timestamp", userName, method.rangerName,
+            processEntity(s"${clientType}_${getMD5HashForObjects(externalPath, bucketObject.getOrElse(pseudoDir))}", userName, method.rangerName,
               clientHost, guids.serverGuid,
               externalPath, HADOOP_FS_PATH, guids.externalPathGuid,
               bucketObject.getOrElse(pseudoDir), bucketObject.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE),
@@ -193,7 +195,7 @@ trait LineageHelpers extends EventProducer {
     val clientHost = userIPs.getRealIpOrClientIp
     val clientType = lh.clientType.getOrElse("generic")
     val bucketObject = lh.bucketObject
-    val pseudoDir = lh.pseduoDir.getOrElse(s"${lh.bucket}/")
+    val pseudoDir = lh.pseduoDir.getOrElse(s"/")
     val objectNameFromCopySrc = getObjectName(lh.copySource.getOrElse(""))
     val bucketNameFromCopySrc = getBucketName(lh.copySource.getOrElse(""))
     val pseudoDirFromCopySrc = getPathDir(lh.copySource.getOrElse("")).getOrElse("")
@@ -211,7 +213,7 @@ trait LineageHelpers extends EventProducer {
         pseudoDirEntity(pseudoDir, lh.bucket, destGuids.bucketGuid, userName, destGuids.pseudoDir, lh.classifications.getOrElse(DirClassification(), List.empty))
       }
     val destS3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, destGuids.pseudoDir, userName, lh.contentType.toString(), destGuids.objectGuid, lh.metadata, lh.classifications.getOrElse(ObjectClassification(), List.empty))
-    val copyProcessEntityJs = processEntity(s"${clientType}_$timestamp", userName, method.rangerName, clientHost, srcGuids.serverGuid,
+    val copyProcessEntityJs = processEntity(s"${clientType}_${getMD5HashForObjects(objectNameFromCopySrc.getOrElse(pseudoDirFromCopySrc), bucketObject.getOrElse(pseudoDir))}", userName, method.rangerName, clientHost, srcGuids.serverGuid,
       objectNameFromCopySrc.getOrElse(pseudoDirFromCopySrc), objectNameFromCopySrc.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE),
       objectNameFromCopySrc.map(_ => srcGuids.objectGuid).getOrElse(srcGuids.pseudoDir),
       bucketObject.getOrElse(pseudoDir), bucketObject.map(_ => AWS_S3_OBJECT_TYPE).getOrElse(AWS_S3_PSEUDO_DIR_TYPE),
@@ -230,5 +232,12 @@ trait LineageHelpers extends EventProducer {
           Vector(serverEntityJs, srcBucketEntityJs, srcPseudoDirEntityJs, srcS3ObjectEntityJs, destBucketEntityJs, destPseudoDirEntityJs, destS3ObjectEntityJs, copyProcessEntityJs)).toString(),
         ATLAS_HOOK_TOPIC)
     }
+  }
+
+  private def getMD5HashForObjects(in: String, out: String)(implicit id: RequestId): String = {
+    val msgDigest = MessageDigest.getInstance("MD5")
+    val MD5Hash = msgDigest.digest((in + out).getBytes()).map(0xFF & _).map { "%02x".format(_) }.foldLeft("") { _ + _ }
+    logger.debug("hash for {} {} = {}", in, out, MD5Hash)
+    MD5Hash.substring(0, 10)
   }
 }
