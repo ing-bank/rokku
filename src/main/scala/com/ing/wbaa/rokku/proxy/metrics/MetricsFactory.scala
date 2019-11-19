@@ -17,6 +17,7 @@ object MetricsFactory {
   val REQUEST_QUEUE_OCCUPIED = "request.queue.occupied"
   val REQUEST_USER = "{user}"
   val REQUEST_QUEUE_OCCUPIED_BY_USER = s"request.queue.occupied.by.$REQUEST_USER"
+  val ERROR_REPORTED_TOTAL = "errors.reported.total"
 
   private[this] val metrics = new MetricRegistry()
 
@@ -42,5 +43,9 @@ object MetricsFactory {
   def decrementRequestQueue(name: String): Unit = {
     metrics.counter(name).dec()
     metrics.counter(REQUEST_QUEUE_OCCUPIED).dec()
+  }
+
+  def countLogErrors(name: String): Unit = {
+    metrics.counter(name).inc()
   }
 }
