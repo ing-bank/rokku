@@ -35,14 +35,20 @@ object ModelKafka extends DefaultJsonProtocol {
       "user" -> JsString(userSTS.userName.value)
     )
 
-  private def baseEntityValues(name: String, owner: String, created: Long, description: String = "Request via Rokku") =
-    JsObject(
-      "qualifiedName" -> JsString(name),
+  private def baseEntityValues(name: String, qualifiedName: String, owner: String, created: Long, addCreateTime: Boolean = true, description: String = "Request via Rokku") = {
+    val jObj = JsObject(
+      "qualifiedName" -> JsString(qualifiedName),
       "owner" -> JsString(owner),
       "description" -> JsString(description),
-      "name" -> JsString(name),
-      "createTime" -> JsString(created.toString) // we always update timestamp when lineage changes
+      "name" -> JsString(name)
     )
+
+    if (addCreateTime) {
+      JsObject(jObj.fields ++ Map("createTime" -> JsString(created.toString)))
+    } else {
+      jObj
+    }
+  }
 
   def prepareEntity(userName: String, typeName: String, typeValues: JsObject, entityState: String, guid: Long, classifications: JsArray): Option[JsObject] =
     Some(JsObject(
@@ -59,26 +65,32 @@ object ModelKafka extends DefaultJsonProtocol {
     )
   }
 
-  def bucketEntity(name: String, userName: String, guid: Long, classifications: Seq[String], created: Long = System.currentTimeMillis()): Option[JsObject] =
+  def bucketEntity(name: String, userName: String, guid: Long, classifications: Seq[String], created: Long = System.currentTimeMillis()): Option[JsObject] = {
+    val bucketNameWithPrefix = s"s3://$name"
     prepareEntity(userName, AWS_S3_BUCKET_TYPE,
-      JsObject(baseEntityValues(name, userName, created).fields ++
+      JsObject(baseEntityValues(name, bucketNameWithPrefix, userName, created, addCreateTime = false).fields ++
         Map(
           "createtime" -> JsString(created.toString) // not a typo, this is actual filed name in Atlas 1.x/2.x
         )), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
+  }
 
   def pseudoDirEntity(name: String, bucketName: String, bucketGuid: Long, userName: String, guid: Long, classifications: Seq[String],
-      created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): Option[JsObject] =
+      created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): Option[JsObject] = {
+    val dirWithoutBucketName = name.split("/").drop(1).mkString("/")
+    val dirName = if (dirWithoutBucketName.isEmpty) "/" else s"/$dirWithoutBucketName/"
+    val dirNameWithPrefix = s"s3://$name"
     prepareEntity(userName, AWS_S3_PSEUDO_DIR_TYPE,
-      JsObject(baseEntityValues(name, userName, created).fields ++
+      JsObject(baseEntityValues(dirName, dirNameWithPrefix, userName, created).fields ++
         Map(
-          "objectPrefix" -> JsString(name),
+          "objectPrefix" -> JsString(dirNameWithPrefix),
           "bucket" -> referencedObject(bucketName, AWS_S3_BUCKET_TYPE, bucketGuid, entityState))
       ), ENTITY_ACTIVE, guid, JsArray(classifications.map(classification => JsObject("typeName" -> JsString(classification))).toVector))
+  }
 
   def s3ObjectEntity(objName: Option[String], pseudoDir: String, pseudoDirGuid: Long, userName: String, dataType: String, guid: Long,
       metadata: Option[Map[String, String]], classifications: Seq[String], created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): Option[JsObject] =
     objName.flatMap(name => prepareEntity(userName, AWS_S3_OBJECT_TYPE,
-      JsObject(baseEntityValues(name, userName, created).fields ++
+      JsObject(baseEntityValues(name.split("/").last.mkString(""), name, userName, created).fields ++
         Map(
           "dataType" -> JsString(dataType),
           "pseudoDirectory" -> referencedObject(pseudoDir, AWS_S3_PSEUDO_DIR_TYPE, pseudoDirGuid, entityState),
@@ -91,7 +103,7 @@ object ModelKafka extends DefaultJsonProtocol {
 
   def serverEntity(host: String, userName: String, guid: Long, created: Long = System.currentTimeMillis()): Option[JsObject] =
     prepareEntity(userName, ROKKU_SERVER_TYPE,
-      JsObject(baseEntityValues(host, userName, created).fields ++
+      JsObject(baseEntityValues(host, host, userName, created, addCreateTime = false).fields ++
         Map(
           "server_name" -> JsString(host),
           "ip_address" -> JsString(host))
@@ -99,7 +111,7 @@ object ModelKafka extends DefaultJsonProtocol {
 
   def fsPathEntity(name: String, userName: String, path: String, guid: Long, modified: Long = System.currentTimeMillis()): Option[JsObject] =
     prepareEntity(userName, HADOOP_FS_PATH,
-      JsObject(baseEntityValues(name, userName, modified).fields ++
+      JsObject(baseEntityValues(name, name, userName, modified).fields ++
         Map(
           "path" -> JsString(path),
           "modifiedTime" -> JsString(modified.toString))
@@ -109,7 +121,7 @@ object ModelKafka extends DefaultJsonProtocol {
       inName: String, inType: String, inGuid: Long, outName: String, outType: String, outGuid: Long, guid: Long,
       created: Long = System.currentTimeMillis(), entityState: String = "ACTIVE"): Option[JsObject] =
     prepareEntity(userName, ROKKU_CLIENT_TYPE,
-      JsObject(baseEntityValues(name, userName, created).fields ++
+      JsObject(baseEntityValues(name, name, userName, created, addCreateTime = false).fields ++
         Map(
           "operation" -> JsString(operation),
           "run_as" -> JsString(userName),
