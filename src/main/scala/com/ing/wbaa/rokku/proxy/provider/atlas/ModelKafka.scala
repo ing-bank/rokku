@@ -26,13 +26,10 @@ object ModelKafka extends DefaultJsonProtocol {
       "state" -> JsString(entityState)
     )
 
-  private def deleteEntity(userSTS: User, name: String, typeName: String) =
+  private def deleteEntity(name: String, typeName: String) =
     JsObject(
       "typeName" -> JsString(typeName),
-      "attribute" -> JsString("qualifiedName"),
-      "attributeValue" -> JsString(name),
-      "type" -> JsString("ENTITY_DELETE"),
-      "user" -> JsString(userSTS.userName.value)
+      "uniqueAttributes" -> JsObject("qualifiedName" -> JsString(name))
     )
 
   private def baseEntityValues(name: String, qualifiedName: String, owner: String, created: Long, addCreateTime: Boolean = true, description: String = "Request via Rokku") = {
@@ -140,8 +137,9 @@ object ModelKafka extends DefaultJsonProtocol {
 
   def prepareEntityDeleteMessage(userSTS: User, name: String, typeName: String): JsValue = {
     JsObject(
-      "version" -> JsObject("version" -> JsString("1.0.0")),
-      "message" -> deleteEntity(userSTS, name, typeName)
+      "entities" -> JsArray(deleteEntity(name, typeName)),
+      "type" -> JsString("ENTITY_DELETE_V2"),
+      "user" -> JsString(userSTS.userName.value)
     ).toJson
   }
 }

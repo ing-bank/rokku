@@ -1,7 +1,7 @@
 package com.ing.wbaa.rokku.proxy.provider
 
-import com.ing.wbaa.rokku.proxy.data.{ Read, Write }
-import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka.{ bucketEntity, fsPathEntity, processEntity, pseudoDirEntity, s3ObjectEntity, serverEntity }
+import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsSecretKey, Read, User, UserAssumeRole, UserGroup, UserName, Write }
+import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka._
 import org.scalatest.{ DiagrammedAssertions, WordSpec }
 import spray.json.DefaultJsonProtocol
 
@@ -26,6 +26,7 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
   val ROKKU_CLIENT_TYPE = "rokku_client"
   val ROKKU_SERVER_TYPE = "server"
   val created = System.currentTimeMillis()
+  val user = User(UserName("okUser"), Set(UserGroup("okGroup")), AwsAccessKey("accesskey"), AwsSecretKey("secretkey"), UserAssumeRole(""))
 
   "Json serverEntities" should {
     "match current schema" in {
@@ -103,6 +104,14 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
       val jsonEntities =
         """{"attributes":{"description":"Request via Rokku","inputs":[{"guid":"-200","state":"ACTIVE","typeName":"fs_path","version":0}],"name":"aws-cli_500","operation":"write","outputs":[{"guid":"-300","state":"ACTIVE","typeName":"aws_s3_object","version":0}],"owner":"testuser","qualifiedName":"aws-cli_500","run_as":"testuser","server":{"guid":"-100","state":"ACTIVE","typeName":"server","version":0}},"classifications":[],"guid":"-400","typeName":"rokku_client"}"""
       assert(writeProcess == jsonEntities.parseJson)
+    }
+  }
+
+  "Json prepareEntityDeleteMessage" should {
+    "match current schema" in {
+      val deleteMessage = prepareEntityDeleteMessage(user, "deleteName", "deleteType")
+      val jsonEntities = """{"entities":[{"typeName":"deleteType","uniqueAttributes":{"qualifiedName":"deleteName"}}],"type":"ENTITY_DELETE_V2","user":"okUser"}"""
+      assert(deleteMessage == jsonEntities.parseJson)
     }
   }
 
