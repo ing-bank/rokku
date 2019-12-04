@@ -9,7 +9,7 @@ import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.provider.atlas.LineageHelpers
-import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka.bucketEntity
+import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka.createBucketEntity
 
 import scala.concurrent.Future
 
@@ -33,7 +33,7 @@ trait LineageProviderAtlas extends LineageHelpers {
       lineageHeaders.method match {
         // mb bucket
         case HttpMethods.PUT if !lineageHeaders.bucket.isEmpty && pseudoDir.isEmpty && bucketObject.isEmpty =>
-          createSingleEntity(lineageHeaders.bucket, userSTS, bucketEntity(lineageHeaders.bucket, userSTS.userName.value, System.nanoTime(), lineageHeaders.classifications.getOrElse(BucketClassification(), List.empty)))
+          createSingleEntity(lineageHeaders.bucket, userSTS, createBucketEntity(lineageHeaders.bucket, userSTS.userName.value, System.nanoTime(), lineageHeaders.classifications.getOrElse(BucketClassification(), List.empty)))
 
         // rm bucket
         case HttpMethods.DELETE if !lineageHeaders.bucket.isEmpty && pseudoDir.isEmpty && bucketObject.isEmpty =>

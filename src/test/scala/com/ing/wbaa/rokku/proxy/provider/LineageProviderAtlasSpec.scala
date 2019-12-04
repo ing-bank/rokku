@@ -37,11 +37,21 @@ class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with D
     }
   }
 
-  "Json bucketEntities" should {
+  "Json create bucketEntities" should {
     "match current schema" in {
-      val testBucketEntities = bucketEntity(bucket, userName, 100, List.empty[String], created).get
+      val testBucketEntities = createBucketEntity(bucket, userName, 100, List.empty[String], created).get
       val jsonEntities =
         """{"attributes":{"createtime":"""" + created + """","description":"Request via Rokku","name":"user","owner":"testuser","qualifiedName":"s3://user"},"classifications":[],"guid":"-100","typeName":"aws_s3_bucket"}"""
+
+      assert(testBucketEntities == jsonEntities.parseJson)
+    }
+  }
+
+  "Json update bucketEntities" should {
+    "match current schema" in {
+      val testBucketEntities = updateBucketEntity(bucket, 100).get
+      val jsonEntities =
+        """{"attributes":{"name":"user","qualifiedName":"s3://user"},"classifications":[],"guid":"-100","typeName":"aws_s3_bucket"}"""
 
       assert(testBucketEntities == jsonEntities.parseJson)
     }

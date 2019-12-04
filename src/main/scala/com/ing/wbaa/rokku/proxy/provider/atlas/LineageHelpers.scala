@@ -151,7 +151,7 @@ trait LineageHelpers extends EventProducer {
 
     // entity definitions
     val serverEntityJs = serverEntity(clientHost, userName, guids.serverGuid)
-    val bucketEntityJs = bucketEntity(lh.bucket, userName, guids.bucketGuid, List.empty)
+    val bucketEntityJs = updateBucketEntity(lh.bucket, guids.bucketGuid)
     val pseudoDirEntityJs = pseudoDirEntity(pseudoDir, lh.bucket, guids.bucketGuid, userName, guids.pseudoDir, lh.classifications.getOrElse(DirClassification(), List.empty))
     val s3ObjectEntityJs = s3ObjectEntity(bucketObject, pseudoDir, guids.pseudoDir, userName, lh.contentType.toString(), guids.objectGuid, lh.metadata, lh.classifications.getOrElse(ObjectClassification(), List.empty))
     val externalPathEntityJs = fsPathEntity(externalPath, userName, externalPath, guids.externalPathGuid)
@@ -202,10 +202,10 @@ trait LineageHelpers extends EventProducer {
 
     // entity definitions
     val serverEntityJs = serverEntity(clientHost, userName, srcGuids.serverGuid)
-    val srcBucketEntityJs = bucketEntity(bucketNameFromCopySrc, userName, srcGuids.bucketGuid, List.empty)
+    val srcBucketEntityJs = updateBucketEntity(bucketNameFromCopySrc, srcGuids.bucketGuid)
     val srcPseudoDirEntityJs = pseudoDirEntity(pseudoDirFromCopySrc, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, srcGuids.pseudoDir, lh.classifications.getOrElse(DirClassification(), List.empty))
     val srcS3ObjectEntityJs = s3ObjectEntity(objectNameFromCopySrc, pseudoDirFromCopySrc, srcGuids.pseudoDir, userName, lh.contentType.toString(), srcGuids.objectGuid, lh.metadata, lh.classifications.getOrElse(BucketClassification(), List.empty))
-    val destBucketEntityJs = bucketEntity(lh.bucket, userName, destGuids.bucketGuid, List.empty)
+    val destBucketEntityJs = updateBucketEntity(lh.bucket, destGuids.bucketGuid)
     val destPseudoDirEntityJs =
       if (bucketNameFromCopySrc == lh.bucket) {
         pseudoDirEntity(pseudoDir, bucketNameFromCopySrc, srcGuids.bucketGuid, userName, destGuids.pseudoDir, lh.classifications.getOrElse(DirClassification(), List.empty))
