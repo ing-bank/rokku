@@ -75,7 +75,7 @@ trait ProxyService {
                   case Success(r) => r
                   case Failure(exception) =>
                     implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
-                    logger.error("An error occurred while processing request for valid user", exception)
+                    logger.error("An error occurred while processing request for valid user ex={}", exception)
                     complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
                 }
               case Success(None) =>
@@ -84,7 +84,7 @@ trait ProxyService {
                 complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
               case Failure(exception) =>
                 implicit val returnStatusCode: StatusCodes.ServerError = StatusCodes.InternalServerError
-                logger.error("An error occurred when checking credentials with STS service", exception)
+                logger.error("An error occurred when checking credentials with STS service ex={}", exception)
                 complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
             }
           }
