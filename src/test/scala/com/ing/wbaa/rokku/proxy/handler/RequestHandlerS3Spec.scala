@@ -2,7 +2,6 @@ package com.ing.wbaa.rokku.proxy.handler
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.{ KafkaSettings, StorageS3Settings }
 import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsRequestCredential, HeaderIPs, RequestId, S3Request, User, UserRawJson }
 import com.ing.wbaa.rokku.proxy.provider.LineageProviderAtlas
@@ -19,7 +18,6 @@ class RequestHandlerS3Spec extends AsyncWordSpec with DiagrammedAssertions with 
     override val storageS3Authority: Uri.Authority = Uri.Authority(Uri.Host("1.2.3.4"), 1234)
   }
 
-  override implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
   override val kafkaSettings: KafkaSettings = new KafkaSettings(system.settings.config)
 
   implicit val requestId: RequestId = RequestId("test")

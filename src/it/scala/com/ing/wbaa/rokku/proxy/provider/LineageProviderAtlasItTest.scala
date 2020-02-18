@@ -5,7 +5,6 @@ import java.net.InetAddress
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsSecretKey, HeaderIPs, RequestId, User, UserAssumeRole, UserGroup, UserIps, UserName}
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
@@ -42,8 +41,6 @@ class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions 
       override protected[this] implicit def system: ActorSystem = ActorSystem.create("test-system")
 
       override protected[this] implicit val executionContext: ExecutionContext = system.dispatcher
-
-      override protected[this] implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
 
       override val kafkaSettings: KafkaSettings = new KafkaSettings(testSystem.settings.config) {
         override val bootstrapServers: String = s"localhost:$testKafkaPort"

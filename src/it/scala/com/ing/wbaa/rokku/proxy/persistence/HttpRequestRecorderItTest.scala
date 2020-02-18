@@ -6,7 +6,6 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.{Authority, Host}
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.PersistenceQuery
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import com.amazonaws.services.s3.AmazonS3
 import com.ing.wbaa.rokku.proxy.RokkuS3Proxy
@@ -24,7 +23,6 @@ import scala.concurrent.{Await, Future}
 
 class HttpRequestRecorderItTest extends AsyncWordSpec with DiagrammedAssertions with RokkuFixtures {
   implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
-  implicit val mat: ActorMaterializer = ActorMaterializer()
 
   val rokkuHttpSettings: HttpSettings = new HttpSettings(testSystem.settings.config) {
     override val httpPort: Int = 0

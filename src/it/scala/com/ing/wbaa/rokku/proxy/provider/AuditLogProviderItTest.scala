@@ -4,7 +4,6 @@ import java.net.InetAddress
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, RemoteAddress, StatusCodes}
-import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.RequestTypeUnknown
@@ -24,8 +23,6 @@ class AuditLogProviderItTest extends WordSpecLike with DiagrammedAssertions with
   override implicit val kafkaSettings: KafkaSettings = new KafkaSettings(testSystem.settings.config) {
     override val bootstrapServers: String = s"localhost:$testKafkaPort"
   }
-
-  override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override implicit val executionContext: ExecutionContext = testSystem.dispatcher
 

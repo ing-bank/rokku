@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.stream.{ ActorMaterializer, Materializer }
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequestType, RequestTypeUnknown }
 import org.scalatest.{ DiagrammedAssertions, FlatSpec }
@@ -21,8 +20,6 @@ class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAsserti
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
 
     override implicit def executionContext: ExecutionContext = system.dispatcher
-
-    implicit def materializer: Materializer = ActorMaterializer()
 
     override def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse] =
       Future(HttpResponse(status = StatusCodes.OK))

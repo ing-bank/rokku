@@ -19,8 +19,8 @@ scalacOptions += "-Xfatal-warnings"
 // Experimental: improved update resolution.
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
-val akkaHttpVersion = "10.1.9"
-val akkaVersion = "2.5.25"
+val akkaHttpVersion = "10.1.11"
+val akkaVersion = "2.6.3"
 val logbackJson = "0.1.5"
 val metricVersion = "3.2.2" // align with C* driver core, can be updated with new C* persistence from akka
 
@@ -40,7 +40,7 @@ libraryDependencies ++= Seq(
     "net.manub"                    %% "scalatest-embedded-kafka" % "2.0.0" % IntegrationTest,
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11") exclude("org.apache.htrace","htrace-core"),
     "io.github.twonote"            %  "radosgw-admin4j"        % "2.0.2",
-    "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.1.2",
+    "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.1.2" exclude("com.typesafe.akka", "akka-stream_2.12"),
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
 //    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion, // bring back after persistence update
     "com.auth0"                    % "java-jwt"                % "3.9.0",
@@ -53,7 +53,9 @@ libraryDependencies ++= Seq(
 val persistenceDependencies = Seq (
   "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
   "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
-  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.102",
+  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.102" exclude("com.typesafe.akka", "akka-cluster-tools_2.12")
+    exclude("com.typesafe.akka", "akka-persistence_2.12") exclude("com.typesafe.akka", "akka-persistence-query_2.12")
+    exclude("com.typesafe.akka", "akka-stream_2.12"),
   "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % "0.102" % Test
 )
 

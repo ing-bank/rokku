@@ -2,7 +2,6 @@ package com.ing.wbaa.rokku.proxy.handler
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete._
@@ -16,8 +15,6 @@ class FilterRecursiveMultiDeleteSpec extends AsyncWordSpec with DiagrammedAssert
 
   implicit val system: ActorSystem = ActorSystem.create("test-system")
   override implicit val executionContext: ExecutionContext = system.dispatcher
-
-  implicit def materializer: ActorMaterializer = ActorMaterializer()(system)
 
   val multiDeleteRequestXml: String = scala.io.Source.fromResource("multiDeleteRequest.xml").mkString.stripMargin.trim
   val multiDeleteRequestV4Xml: String = scala.io.Source.fromResource("multiDeleteRequestV4.xml").mkString.stripMargin.trim
