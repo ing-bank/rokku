@@ -6,7 +6,7 @@ val rokkuVersion = scala.sys.env.getOrElse("ROKKU_VERSION", "SNAPSHOT")
 
 name := "rokku"
 version := rokkuVersion
-scalaVersion := "2.12.8"
+scalaVersion := "2.12.10"
 
 scalacOptions += "-unchecked"
 scalacOptions += "-deprecation"
@@ -25,7 +25,7 @@ val logbackJson = "0.1.5"
 val metricVersion = "3.2.2" // align with C* driver core, can be updated with new C* persistence from akka
 
 libraryDependencies ++= Seq(
-    "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.0",
+    "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.2",
     "ch.qos.logback"               %  "logback-classic"        % "1.2.3",
     "ch.qos.logback.contrib"       %  "logback-json-classic"   % logbackJson,
     "ch.qos.logback.contrib"       %  "logback-jackson"        % logbackJson,
@@ -35,32 +35,32 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-stream"            % akkaVersion,
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaHttpVersion,
     "com.typesafe.akka"            %% "akka-http-xml"          % akkaHttpVersion,
-    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.505",
+    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.11.723",
     "org.apache.kafka"             %  "kafka-clients"           % "2.0.0",
     "net.manub"                    %% "scalatest-embedded-kafka" % "2.0.0" % IntegrationTest,
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11") exclude("org.apache.htrace","htrace-core"),
-    "io.github.twonote"            %  "radosgw-admin4j"        % "1.0.2",
-    "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.0-M2",
+    "io.github.twonote"            %  "radosgw-admin4j"        % "2.0.2",
+    "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "1.1.2",
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
 //    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion, // bring back after persistence update
-    "com.auth0"                    % "java-jwt"                % "3.8.0",
+    "com.auth0"                    % "java-jwt"                % "3.9.0",
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.0.5"           % "it,test",
-    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.505"        % IntegrationTest
+    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.723"        % IntegrationTest
 ) ++ persistenceDependencies
 
 val persistenceDependencies = Seq (
   "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
   "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
-  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.99",
-  "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % "0.99" % Test
+  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.102",
+  "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % "0.102" % Test
 )
 
 // Fix logging dependencies:
 //  - Our logging implementation is Logback, via the Slf4j API.
 //  - Therefore we suppress the Log4j implentation and re-route its API calls over Slf4j.
-libraryDependencies += "org.slf4j" % "log4j-over-slf4j" % "1.7.25" % Runtime
+libraryDependencies += "org.slf4j" % "log4j-over-slf4j" % "1.7.30" % Runtime
 excludeDependencies += "org.slf4j" % "slf4j-log4j12"
 excludeDependencies += "log4j" % "log4j"
 
@@ -79,7 +79,7 @@ javaOptions += "-XX:+UseG1GC"
 javaOptions += "-Djava.awt.headless=true"
 javaOptions += "-Dlogback.configurationFile=/etc/rokku/logback.xml"
 
-dockerExposedPorts := Seq(8080) // should match PROXY_PORT
+dockerExposedPorts := Seq(8987) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
 dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
 dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("wbaa"), "rokku", Some(rokkuVersion))
