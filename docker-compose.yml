@@ -32,7 +32,7 @@ services:
       - "6080:6080"
 
   rokku-sts:
-    image: wbaa/rokku-sts:0.3.0
+    image: wbaa/rokku-sts:0.3.4
     environment:
       - STS_HOST=0.0.0.0
       - STS_PORT=12345
@@ -48,7 +48,7 @@ services:
       - "mariadb"
 
   keycloak:
-    image: wbaa/rokku-dev-keycloak:0.0.6
+    image: wbaa/rokku-dev-keycloak:0.0.7
     environment:
       - KEYCLOAK_USER=admin
       - KEYCLOAK_PASSWORD=admin
