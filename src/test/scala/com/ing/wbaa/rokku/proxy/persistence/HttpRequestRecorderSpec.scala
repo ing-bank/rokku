@@ -8,12 +8,14 @@ import akka.http.scaladsl.model._
 import akka.testkit.{ ImplicitSender, TestKit }
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder.{ ExecutedRequestCmd, LatestRequests, LatestRequestsResult }
-import org.scalatest.{ BeforeAndAfterAll, DiagrammedAssertions, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.collection.immutable
 
 class HttpRequestRecorderSpec extends TestKit(ActorSystem("RequestRecorderTest")) with ImplicitSender
-  with WordSpecLike with DiagrammedAssertions with BeforeAndAfterAll {
+  with AnyWordSpecLike with Diagrams with BeforeAndAfterAll {
 
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)

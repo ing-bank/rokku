@@ -3,9 +3,10 @@ package com.ing.wbaa.rokku.proxy.data
 import java.net.InetAddress
 
 import akka.http.scaladsl.model.RemoteAddress
-import org.scalatest.{ DiagrammedAssertions, WordSpec }
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 
-class HeaderIPsSpec extends WordSpec with DiagrammedAssertions {
+class HeaderIPsSpec extends AnyWordSpec with Diagrams {
 
   private[this] val address1 = RemoteAddress(InetAddress.getByName("1.1.1.1"), None)
   private[this] val address2 = RemoteAddress(InetAddress.getByName("1.1.1.2"), None)

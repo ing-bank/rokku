@@ -8,11 +8,12 @@ import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.RequestTypeUnknown
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
-import org.scalatest.{DiagrammedAssertions, WordSpecLike}
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.ExecutionContext
 
-class AuditLogProviderItTest extends WordSpecLike with DiagrammedAssertions with EmbeddedKafka with AuditLogProvider {
+class AuditLogProviderItTest extends AnyWordSpecLike with Diagrams with EmbeddedKafka with AuditLogProvider {
 
   implicit val testSystem: ActorSystem = ActorSystem("kafkaTest")
 

@@ -6,13 +6,15 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
-import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsSecretKey, HeaderIPs, RequestId, User, UserAssumeRole, UserGroup, UserIps, UserName}
+import com.ing.wbaa.rokku.proxy.data._
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
-import org.scalatest.{Assertion, DiagrammedAssertions, WordSpecLike}
+import org.scalatest.Assertion
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.ExecutionContext
 
-class LineageProviderAtlasItTest extends WordSpecLike with DiagrammedAssertions with EmbeddedKafka {
+class LineageProviderAtlasItTest extends AnyWordSpecLike with Diagrams with EmbeddedKafka {
 
   implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
   implicit val requestId: RequestId = RequestId("test")

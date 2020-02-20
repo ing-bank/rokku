@@ -1,11 +1,12 @@
 package com.ing.wbaa.rokku.proxy.provider
 
-import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsSecretKey, Read, User, UserAssumeRole, UserGroup, UserName, Write }
+import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.provider.atlas.ModelKafka._
-import org.scalatest.{ DiagrammedAssertions, WordSpec }
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 import spray.json.DefaultJsonProtocol
 
-class LineageProviderAtlasSpec extends WordSpec with DiagrammedAssertions with DefaultJsonProtocol {
+class LineageProviderAtlasSpec extends AnyWordSpec with Diagrams with DefaultJsonProtocol {
 
   import spray.json._
 

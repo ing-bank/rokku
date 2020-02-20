@@ -5,11 +5,13 @@ import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data.{ BucketClassification, DirClassification, ObjectClassification, RequestId }
 import com.ing.wbaa.rokku.proxy.provider.atlas.LineageHelpers
-import org.scalatest.{ DiagrammedAssertions, PrivateMethodTester, WordSpec }
+import org.scalatest.PrivateMethodTester
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.ExecutionContext
 
-class LineageHelperSpec extends WordSpec with DiagrammedAssertions with PrivateMethodTester {
+class LineageHelperSpec extends AnyWordSpec with Diagrams with PrivateMethodTester {
 
   object LineageHelpersTest extends LineageHelpers {
     override protected[this] implicit val kafkaSettings: KafkaSettings = null

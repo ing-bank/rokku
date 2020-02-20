@@ -16,12 +16,14 @@ import com.ing.wbaa.rokku.proxy.handler.{FilterRecursiveListBucketHandler, Reque
 import com.ing.wbaa.rokku.proxy.provider.{AuditLogProvider, MessageProviderKafka, SignatureProviderAws}
 import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 import com.ing.wbaa.testkit.RokkuFixtures
-import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
+import org.scalatest.Assertion
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class HttpRequestRecorderItTest extends AsyncWordSpec with DiagrammedAssertions with RokkuFixtures {
+class HttpRequestRecorderItTest extends AsyncWordSpec with Diagrams with RokkuFixtures {
   implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
   val rokkuHttpSettings: HttpSettings = new HttpSettings(testSystem.settings.config) {

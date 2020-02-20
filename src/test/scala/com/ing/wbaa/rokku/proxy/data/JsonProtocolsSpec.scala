@@ -1,8 +1,9 @@
 package com.ing.wbaa.rokku.proxy.data
 
-import org.scalatest.{ DiagrammedAssertions, WordSpec }
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 
-class JsonProtocolsSpec extends WordSpec with DiagrammedAssertions with JsonProtocols {
+class JsonProtocolsSpec extends AnyWordSpec with Diagrams with JsonProtocols {
 
   import spray.json._
 

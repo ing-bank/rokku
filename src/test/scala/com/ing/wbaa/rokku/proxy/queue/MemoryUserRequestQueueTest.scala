@@ -1,10 +1,11 @@
 package com.ing.wbaa.rokku.proxy.queue
 
-import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsSecretKey, RequestId, User, UserAssumeRole, UserName }
+import com.ing.wbaa.rokku.proxy.data._
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 //import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
-import org.scalatest.{ DiagrammedAssertions, WordSpec }
 
-class MemoryUserRequestQueueTest extends WordSpec with DiagrammedAssertions {
+class MemoryUserRequestQueueTest extends AnyWordSpec with Diagrams {
 
   implicit val id: RequestId = RequestId("test")
   private val queueRequest = new MemoryUserRequestQueue {

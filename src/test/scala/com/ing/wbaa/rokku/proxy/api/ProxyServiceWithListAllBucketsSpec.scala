@@ -10,11 +10,12 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequestType, RequestTypeUnknown }
-import org.scalatest.{ DiagrammedAssertions, FlatSpec }
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-class ProxyServiceWithListAllBucketsSpec extends FlatSpec with DiagrammedAssertions with ScalatestRouteTest {
+class ProxyServiceWithListAllBucketsSpec extends AnyFlatSpec with Diagrams with ScalatestRouteTest {
 
   private trait ProxyServiceMock extends ProxyServiceWithListAllBuckets {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")

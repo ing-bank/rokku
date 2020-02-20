@@ -7,9 +7,11 @@ import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.ing.wbaa.rokku.proxy.data.AwsAccessKey
-import org.scalatest.{ DiagrammedAssertions, PrivateMethodTester, WordSpec }
+import org.scalatest.PrivateMethodTester
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 
-class ProxyDirectivesSpec extends WordSpec with ScalatestRouteTest with DiagrammedAssertions with PrivateMethodTester {
+class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagrams with PrivateMethodTester {
 
   "Proxy Directives" should {
 

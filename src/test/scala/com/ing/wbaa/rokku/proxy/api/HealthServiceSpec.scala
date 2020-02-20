@@ -5,11 +5,12 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
-import org.scalatest.{ DiagrammedAssertions, FlatSpec }
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.concurrent.ExecutionContext
 
-class HealthServiceSpec extends FlatSpec with ScalatestRouteTest with DiagrammedAssertions {
+class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagrams {
 
   private trait HealthServiceMock extends HealthService with S3Client {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")

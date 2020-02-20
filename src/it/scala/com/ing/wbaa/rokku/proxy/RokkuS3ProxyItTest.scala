@@ -18,13 +18,15 @@ import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 import com.ing.wbaa.testkit.RokkuFixtures
 import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
 import com.ing.wbaa.testkit.oauth.{KeycloackToken, OAuth2TokenRequest}
-import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
+import org.scalatest.Assertion
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Random
 
-class RokkuS3ProxyItTest extends AsyncWordSpec with DiagrammedAssertions
+class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
   with S3SdkHelpers
   with StsSdkHelpers
   with RokkuFixtures

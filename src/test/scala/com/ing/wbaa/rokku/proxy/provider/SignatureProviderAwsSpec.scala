@@ -6,9 +6,10 @@ import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.{ AwsSecretKey, RequestId }
 import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.awsVersion
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ DiagrammedAssertions, WordSpec }
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 
-class SignatureProviderAwsSpec extends WordSpec with DiagrammedAssertions with SignatureProviderAws {
+class SignatureProviderAwsSpec extends AnyWordSpec with Diagrams with SignatureProviderAws {
 
   implicit val requestId: RequestId = RequestId("test")
   override val storageS3Settings: StorageS3Settings = new StorageS3Settings(ConfigFactory.load()) {

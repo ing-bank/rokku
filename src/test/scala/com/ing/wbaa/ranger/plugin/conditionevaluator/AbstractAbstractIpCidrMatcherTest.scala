@@ -1,9 +1,10 @@
 package com.ing.wbaa.ranger.plugin.conditionevaluator
 
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequest, RangerAccessRequestImpl }
-import org.scalatest.{ DiagrammedAssertions, WordSpec }
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 
-abstract class AbstractAbstractIpCidrMatcherTest extends WordSpec with DiagrammedAssertions {
+abstract class AbstractAbstractIpCidrMatcherTest extends AnyWordSpec with Diagrams {
 
   import scala.collection.JavaConverters._
 
