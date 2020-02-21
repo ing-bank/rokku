@@ -4,20 +4,18 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ HttpMethods, MediaTypes, RemoteAddress, Uri }
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.ByteString
-import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsRequestCredential, HeaderIPs, RequestId, S3Request, User, UserRawJson }
-import org.scalatest.{ AsyncWordSpec, DiagrammedAssertions }
+import com.ing.wbaa.rokku.proxy.data._
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.ExecutionContext
 
-class FilterRecursiveListBucketHandlerSpec extends AsyncWordSpec with DiagrammedAssertions with FilterRecursiveListBucketHandler {
+class FilterRecursiveListBucketHandlerSpec extends AsyncWordSpec with Diagrams with FilterRecursiveListBucketHandler {
 
   implicit val system: ActorSystem = ActorSystem.create("test-system")
   override implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val requestId: RequestId = RequestId("test")
-
-  implicit def materializer: Materializer = ActorMaterializer()(system)
 
   def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
     user match {

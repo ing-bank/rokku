@@ -1,9 +1,10 @@
 package com.ing.wbaa.rokku.proxy.data
 
 import akka.http.scaladsl.model.{ HttpMethods, MediaTypes, RemoteAddress, Uri }
-import org.scalatest.{ DiagrammedAssertions, FlatSpec }
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.flatspec.AnyFlatSpec
 
-class S3RequestSpec extends FlatSpec with DiagrammedAssertions {
+class S3RequestSpec extends AnyFlatSpec with Diagrams {
 
   val testCred = AwsRequestCredential(AwsAccessKey("ak"), Some(AwsSessionToken("st")))
 

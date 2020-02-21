@@ -5,12 +5,14 @@ import java.net.InetAddress
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.RemoteAddress
 import com.ing.wbaa.rokku.proxy.config.RangerSettings
-import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsRequestCredential, AwsSecretKey, AwsSessionToken, Delete, HeaderIPs, NoAccess, Read, RequestId, S3Request, User, UserAssumeRole, UserGroup, UserName, Write}
-import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
+import com.ing.wbaa.rokku.proxy.data._
+import org.scalatest.Assertion
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
 
-class AuthorizationProviderRangerItTest extends AsyncWordSpec with DiagrammedAssertions {
+class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
   final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
   implicit val requestId: RequestId = RequestId("test")

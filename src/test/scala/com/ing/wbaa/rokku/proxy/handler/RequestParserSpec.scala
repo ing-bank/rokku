@@ -3,9 +3,10 @@ package com.ing.wbaa.rokku.proxy.handler
 import akka.http.scaladsl.model._
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ MultipartRequestType, RequestTypeUnknown }
-import org.scalatest.{ DiagrammedAssertions, WordSpec }
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 
-class RequestParserSpec extends WordSpec with DiagrammedAssertions with RequestParser {
+class RequestParserSpec extends AnyWordSpec with Diagrams with RequestParser {
 
   val uri = Uri("http://localhost:8987/demobucket/ObjectName?uploadId=1")
   val httpRequest: HttpMethod => HttpRequest = m => HttpRequest(m, uri)

@@ -1,11 +1,12 @@
 package com.ing.wbaa.rokku.proxy.provider
 
 import akka.actor.ActorSystem
-import AuthorizationProviderRanger.RangerException
 import com.ing.wbaa.rokku.proxy.config.RangerSettings
-import org.scalatest.{ DiagrammedAssertions, WordSpec }
+import com.ing.wbaa.rokku.proxy.provider.AuthorizationProviderRanger.RangerException
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 
-class AuthorizationProviderSpec extends WordSpec with DiagrammedAssertions with AuthorizationProviderRanger {
+class AuthorizationProviderSpec extends AnyWordSpec with Diagrams with AuthorizationProviderRanger {
 
   private[this] final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 

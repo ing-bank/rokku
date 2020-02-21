@@ -1,8 +1,9 @@
 package com.ing.wbaa.rokku.proxy.data
 
-import org.scalatest.{ DiagrammedAssertions, WordSpec }
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpec
 
-class UserSpec extends WordSpec with DiagrammedAssertions {
+class UserSpec extends AnyWordSpec with Diagrams {
   "UserRawJson" should {
     "convert to User in apply of UserRawJson" in {
       assert(

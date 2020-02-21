@@ -1,7 +1,6 @@
 package com.ing.wbaa.rokku.proxy.provider.kafka
 
 import akka.Done
-import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
@@ -18,8 +17,6 @@ trait EventProducer {
   import scala.collection.JavaConverters._
 
   protected[this] implicit val kafkaSettings: KafkaSettings
-
-  protected[this] implicit val materializer: ActorMaterializer
 
   protected[this] implicit val executionContext: ExecutionContext
 

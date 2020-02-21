@@ -4,17 +4,17 @@ import java.net.InetAddress
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpMethods, RemoteAddress}
-import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.RequestTypeUnknown
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.scalatest.RecoverMethods._
-import org.scalatest.{DiagrammedAssertions, WordSpecLike}
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.ExecutionContext
 
-class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions with EmbeddedKafka with MessageProviderKafka {
+class MessageProviderKafkaItTest extends AnyWordSpecLike with Diagrams with EmbeddedKafka with MessageProviderKafka {
 
   implicit val testSystem: ActorSystem = ActorSystem("kafkaTest")
 
@@ -23,8 +23,6 @@ class MessageProviderKafkaItTest extends WordSpecLike with DiagrammedAssertions 
   override implicit val kafkaSettings: KafkaSettings = new KafkaSettings(testSystem.settings.config) {
     override val bootstrapServers: String = s"localhost:$testKafkaPort"
   }
-
-  override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   override implicit val executionContext: ExecutionContext = testSystem.dispatcher
 

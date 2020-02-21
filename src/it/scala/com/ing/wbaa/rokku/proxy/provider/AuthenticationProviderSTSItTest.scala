@@ -1,24 +1,24 @@
 package com.ing.wbaa.rokku.proxy.provider
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import com.amazonaws.services.securitytoken.model.{AssumeRoleRequest, GetSessionTokenRequest}
 import com.ing.wbaa.rokku.proxy.config.StsSettings
-import com.ing.wbaa.rokku.proxy.data.{AwsAccessKey, AwsRequestCredential, AwsSessionToken, RequestId, UserAssumeRole, UserGroup, UserName}
+import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.testkit.awssdk.StsSdkHelpers
 import com.ing.wbaa.testkit.oauth.OAuth2TokenRequest
-import org.scalatest.{Assertion, AsyncWordSpec, DiagrammedAssertions}
+import org.scalatest.Assertion
+import org.scalatest.diagrams.Diagrams
+import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthenticationProviderSTSItTest extends AsyncWordSpec with DiagrammedAssertions
+class AuthenticationProviderSTSItTest extends AsyncWordSpec with Diagrams
   with AuthenticationProviderSTS
   with StsSdkHelpers
   with OAuth2TokenRequest {
   override implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
   override implicit val system: ActorSystem = testSystem
   override implicit val executionContext: ExecutionContext = testSystem.dispatcher
-  override implicit val materializer: ActorMaterializer = ActorMaterializer()(testSystem)
 
   override val stsSettings: StsSettings = StsSettings(testSystem)
 
