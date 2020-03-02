@@ -27,7 +27,7 @@ trait PostRequestActions {
 
   protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String, awsRequest: AWSRequestType)(implicit id: RequestId): Future[Done]
 
-  protected[this] def setDefaultBucketAclAndPolicy(bucketName: String): Future[Unit]
+  protected[this] def setDefaultBucketAclAndPolicy(bucketName: String)(implicit id: RequestId): Future[Unit]
 
   protected[this] def awsRequestFromRequest(request: HttpRequest): AWSRequestType
 
@@ -48,8 +48,9 @@ trait PostRequestActions {
       case _ => Future.successful(Done)
     }
 
-  private[this] def updateBucketPermissions(httpRequest: HttpRequest, s3Request: S3Request): Future[Done] = {
+  private[this] def updateBucketPermissions(httpRequest: HttpRequest, s3Request: S3Request)(implicit id: RequestId): Future[Done] = {
     lazy val bucketName = bucketRegex findFirstMatchIn httpRequest.uri.path.toString() map (_.group(1))
+    logger.debug("trying updateBucketPermissions for bucket={}", bucketName)
     if (httpRequest.method == HttpMethods.PUT &&
       bucketName.isDefined) {
       setDefaultBucketAclAndPolicy(bucketName.get) map (_ => Done)
