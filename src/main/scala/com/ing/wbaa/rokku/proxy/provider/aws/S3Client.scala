@@ -10,6 +10,7 @@ import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
 import scala.concurrent.Future
+import scala.util.{ Failure, Success, Try }
 
 trait S3Client {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -39,13 +40,17 @@ trait S3Client {
    * @return A future which completes when the policy is set
    */
   protected[this] def setDefaultBucketAclAndPolicy(bucketName: String)(implicit id: RequestId): Future[Unit] = Future {
-    logger.info("setting bucket acls and policies for bucket {}", bucketName)
-    val acl = s3Client.getBucketAcl(bucketName)
-    acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Read)
-    acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Write)
-    s3Client.setBucketAcl(bucketName, acl)
-    s3Client.setBucketPolicy(bucketName, """{"Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": "*","Resource": ["arn:aws:s3:::*"]}],"Version": "2012-10-17"}""")
-    logger.info("acls and policies for bucket {} done", bucketName)
+    Try {
+      logger.info("setting bucket acls and policies for bucket {}", bucketName)
+      val acl = s3Client.getBucketAcl(bucketName)
+      acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Read)
+      acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Write)
+      s3Client.setBucketAcl(bucketName, acl)
+      s3Client.setBucketPolicy(bucketName, """{"Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": "*","Resource": ["arn:aws:s3:::*"]}],"Version": "2012-10-17"}""")
+    } match {
+      case Failure(exception) => logger.error("setting bucket acls and policies ex={}", exception)
+      case Success(_)         => logger.info("acls and policies for bucket {} done", bucketName)
+    }
   }
 
   def getBucketAcl(bucketName: String): Future[AccessControlList] = Future {
