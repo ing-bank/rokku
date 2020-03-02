@@ -6,12 +6,16 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.model.{ AccessControlList, BucketPolicy, GroupGrantee, Permission }
 import com.amazonaws.services.s3.{ AmazonS3, AmazonS3ClientBuilder }
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
+import com.ing.wbaa.rokku.proxy.data.RequestId
+import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
 import scala.concurrent.Future
+import scala.util.{ Failure, Success, Try }
 
 trait S3Client {
   import scala.concurrent.ExecutionContext.Implicits.global
 
+  private val logger = new LoggerHandlerWithId
   protected[this] def storageS3Settings: StorageS3Settings
 
   protected[this] lazy val s3Client: AmazonS3 = {
@@ -35,12 +39,18 @@ trait S3Client {
    * @param bucketName The name of the bucket to set the policy
    * @return A future which completes when the policy is set
    */
-  protected[this] def setDefaultBucketAclAndPolicy(bucketName: String): Future[Unit] = Future {
-    val acl = s3Client.getBucketAcl(bucketName)
-    acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Read)
-    acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Write)
-    s3Client.setBucketAcl(bucketName, acl)
-    s3Client.setBucketPolicy(bucketName, """{"Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": "*","Resource": ["arn:aws:s3:::*"]}],"Version": "2012-10-17"}""")
+  protected[this] def setDefaultBucketAclAndPolicy(bucketName: String)(implicit id: RequestId): Future[Unit] = Future {
+    Try {
+      logger.info("setting bucket acls and policies for bucket {}", bucketName)
+      val acl = s3Client.getBucketAcl(bucketName)
+      acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Read)
+      acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Write)
+      s3Client.setBucketAcl(bucketName, acl)
+      s3Client.setBucketPolicy(bucketName, """{"Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": "*","Resource": ["arn:aws:s3:::*"]}],"Version": "2012-10-17"}""")
+    } match {
+      case Failure(exception) => logger.error("setting bucket acls and policies ex={}", exception)
+      case Success(_)         => logger.info("acls and policies for bucket {} done", bucketName)
+    }
   }
 
   def getBucketAcl(bucketName: String): Future[AccessControlList] = Future {
