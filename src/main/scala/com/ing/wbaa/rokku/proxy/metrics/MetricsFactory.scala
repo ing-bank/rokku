@@ -1,5 +1,6 @@
 package com.ing.wbaa.rokku.proxy.metrics
 
+import akka.http.scaladsl.model.{ HttpMethod, HttpMethods }
 import com.codahale.metrics.{ JmxReporter, MetricRegistry }
 
 object MetricsFactory {
@@ -18,6 +19,9 @@ object MetricsFactory {
   val REQUEST_USER = "{user}"
   val REQUEST_QUEUE_OCCUPIED_BY_USER = s"request.queue.occupied.by.$REQUEST_USER"
   val ERROR_REPORTED_TOTAL = "errors.reported.total"
+  val OBJECTS_UPLOAD_OPERATIONS_TOTAL = s"requests.method.$HTTP_METHOD.operations.total"
+  val KAFKA_SENT_NOTIFICATION_TOTAL = "requests.kafka.notification.sent.total"
+  val KAFKA_SENT_NOTIFICATION_ERROR_TOTAL = "requests.kafka.notification.sent.errors.total"
 
   private[this] val metrics = new MetricRegistry()
 
@@ -47,5 +51,21 @@ object MetricsFactory {
 
   def countLogErrors(name: String): Unit = {
     metrics.counter(name).inc()
+  }
+
+  def incrementObjectsUploaded(requestMethodName: String): Unit = {
+    metrics.counter(
+      OBJECTS_UPLOAD_OPERATIONS_TOTAL.replace(MetricsFactory.HTTP_METHOD, requestMethodName)).inc()
+  }
+
+  def incrementKafkaNotificationsSent(operation: HttpMethod): Unit = {
+    operation match {
+      case HttpMethods.PUT | HttpMethods.POST => metrics.counter(KAFKA_SENT_NOTIFICATION_TOTAL).inc()
+      case _                                  =>
+    }
+  }
+
+  def incrementKafkaSendErrors(): Unit = {
+    metrics.counter(KAFKA_SENT_NOTIFICATION_ERROR_TOTAL).inc()
   }
 }
