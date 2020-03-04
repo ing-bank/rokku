@@ -5,6 +5,7 @@ import akka.http.scaladsl.model._
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
+import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
@@ -44,6 +45,7 @@ trait PostRequestActions {
       userSTS: User)(implicit id: RequestId): Future[Done] =
     httpRequest.method match {
       case HttpMethods.POST | HttpMethods.PUT | HttpMethods.DELETE if bucketNotificationEnabled && (response.status == StatusCodes.OK || response.status == StatusCodes.NoContent) =>
+        MetricsFactory.incrementObjectsUploaded(httpRequest.method)
         emitEvent(s3Request, httpRequest.method, userSTS.userName.value, awsRequestFromRequest(httpRequest))
       case _ => Future.successful(Done)
     }
