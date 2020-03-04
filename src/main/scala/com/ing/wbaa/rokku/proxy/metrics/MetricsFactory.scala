@@ -53,13 +53,16 @@ object MetricsFactory {
     metrics.counter(name).inc()
   }
 
-  def incrementObjectsUploaded(requestMethodName: String): Unit = {
-    metrics.counter(
-      OBJECTS_UPLOAD_OPERATIONS_TOTAL.replace(MetricsFactory.HTTP_METHOD, requestMethodName)).inc()
+  def incrementObjectsUploaded(requestMethodName: HttpMethod): Unit = {
+    requestMethodName match {
+      case HttpMethods.PUT | HttpMethods.POST =>
+        metrics.counter(OBJECTS_UPLOAD_OPERATIONS_TOTAL.replace(MetricsFactory.HTTP_METHOD, requestMethodName.value)).inc()
+      case _                                  =>
+    }
   }
 
-  def incrementKafkaNotificationsSent(operation: HttpMethod): Unit = {
-    operation match {
+  def incrementKafkaNotificationsSent(requestMethodName: HttpMethod): Unit = {
+    requestMethodName match {
       case HttpMethods.PUT | HttpMethods.POST => metrics.counter(KAFKA_SENT_NOTIFICATION_TOTAL).inc()
       case _                                  =>
     }
