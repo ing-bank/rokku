@@ -1,7 +1,7 @@
 package com.ing.wbaa.rokku.proxy.provider.kafka
 
 import akka.Done
-import akka.http.scaladsl.model.{ HttpMethod, HttpMethods }
+import akka.http.scaladsl.model.HttpMethod
 import com.ing.wbaa.rokku.proxy.config.KafkaSettings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
@@ -40,7 +40,7 @@ trait EventProducer {
 
   private lazy val kafkaProducer: KafkaProducer[String, String] = new KafkaProducer(config.asJava, new StringSerializer, new StringSerializer)
 
-  def sendSingleMessage(event: String, topic: String, httpMethod: HttpMethod = HttpMethods.PUT)(implicit id: RequestId): Future[Done] = {
+  def sendSingleMessage(event: String, topic: String, httpMethod: Option[HttpMethod] = None)(implicit id: RequestId): Future[Done] = {
     kafkaProducer
       .send(new ProducerRecord[String, String](topic, event), (metadata: RecordMetadata, exception: Exception) => {
         exception match {
@@ -49,7 +49,7 @@ trait EventProducer {
             logger.error("error in sending event {} to topic {}, error={}", event, topic, e)
             throw new Exception(e)
           case _ =>
-            MetricsFactory.incrementKafkaNotificationsSent(httpMethod)
+            httpMethod.map { m => MetricsFactory.incrementKafkaNotificationsSent(m) }
             logger.debug("Message sent {} to kafka, offset {}", event, metadata.offset())
         }
       }) match {
