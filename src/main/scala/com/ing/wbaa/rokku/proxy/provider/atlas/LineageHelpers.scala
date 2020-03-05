@@ -50,7 +50,7 @@ trait LineageHelpers extends EventProducer {
 
   def getLineageHeaders(httpRequest: HttpRequest)(implicit id: RequestId): LineageHeaders = {
     val fullPath = S3Utils.getPathName(httpRequest)
-    val bucketName = getBucketName(fullPath)
+    val bucketName = S3Utils.getBucketName(fullPath)
     val pseudoDir = getPathDir(fullPath)
     val bucketObjectFQN = getObjectName(fullPath)
 
@@ -70,8 +70,6 @@ trait LineageHelpers extends EventProducer {
       extractMetadataHeader(extractHeaderOption(httpRequest, METADATA_HEADER))
     )
   }
-
-  def getBucketName(fullPath: String): String = fullPath.split("/").filter(_.nonEmpty).head
 
   def getObjectName(fullPath: String): Option[String] = {
     val path = fullPath.split("/").filter(_.nonEmpty)
@@ -197,7 +195,7 @@ trait LineageHelpers extends EventProducer {
     val bucketObject = lh.bucketObject
     val pseudoDir = lh.pseduoDir.getOrElse(s"/")
     val objectNameFromCopySrc = getObjectName(lh.copySource.getOrElse(""))
-    val bucketNameFromCopySrc = getBucketName(lh.copySource.getOrElse(""))
+    val bucketNameFromCopySrc = S3Utils.getBucketName(lh.copySource.getOrElse(""))
     val pseudoDirFromCopySrc = getPathDir(lh.copySource.getOrElse("")).getOrElse("")
 
     // entity definitions

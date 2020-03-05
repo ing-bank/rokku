@@ -6,15 +6,13 @@ import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
+import com.ing.wbaa.rokku.proxy.util.S3Utils
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
 import scala.util.Failure
-import scala.util.matching.Regex
 
 trait PostRequestActions {
-
-  import PostRequestActions._
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -51,12 +49,14 @@ trait PostRequestActions {
     }
 
   private[this] def updateBucketPermissions(httpRequest: HttpRequest, s3Request: S3Request)(implicit id: RequestId): Future[Done] = {
-    lazy val bucketName = bucketRegex findFirstMatchIn httpRequest.uri.path.toString() map (_.group(1))
-    logger.debug("trying updateBucketPermissions for bucket={}", bucketName)
-    if (httpRequest.method == HttpMethods.PUT &&
-      bucketName.isDefined) {
-      setDefaultBucketAclAndPolicy(bucketName.get) map (_ => Done)
+    val fullPath = S3Utils.getPathName(httpRequest)
+    val bucketName = S3Utils.getBucketName(fullPath)
+    logger.debug("trying updateBucketPermissions for bucket={}, fullPath={}", bucketName, fullPath)
+    val isPathOnlyWithBucketName = fullPath.split("/").length == 2
+    if (httpRequest.method == HttpMethods.PUT && isPathOnlyWithBucketName) {
+      setDefaultBucketAclAndPolicy(bucketName) map (_ => Done)
     } else {
+      logger.debug("not create bucket command so updateBucketPermissions is not needed")
       Future.successful(Done)
     }
   }
@@ -77,8 +77,4 @@ trait PostRequestActions {
       case Failure(err) => logger.error(s"Error while setting bucket permissions: $err")
     })
   }
-}
-
-object PostRequestActions {
-  private val bucketRegex: Regex = new Regex("^/([a-zA-Z0-9]+)/?$")
 }
