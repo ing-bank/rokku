@@ -61,4 +61,8 @@ trait S3Client {
     s3Client.getBucketPolicy(bucketName)
   }
 
+  def listBucket: String = {
+    s3Client.listObjects(storageS3Settings.bucketName).getBucketName
+  }
+
 }
