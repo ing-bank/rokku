@@ -12,31 +12,35 @@ import scala.collection.mutable
 import scala.util.{ Failure, Success, Try }
 
 object HealthService {
-  val statusMap = mutable.Map[Long, StandardRoute](System.currentTimeMillis() -> complete("pong"))
+  private def timestamp: Long = System.currentTimeMillis()
+  private val statusMap = mutable.Map[Long, StandardRoute](System.currentTimeMillis() -> complete("pong"))
+
+  private def clearStatus(): Unit = synchronized(statusMap.clear())
+  private def addStatus(probeResult: StandardRoute): HealthService.statusMap.type = synchronized(statusMap += (timestamp -> probeResult))
+  private def getCurrentStatus: mutable.Map[Long, StandardRoute] = statusMap
 }
 
 trait HealthService extends RadosGatewayHandler with S3Client with LazyLogging {
-  import HealthService.statusMap
+  import HealthService.{ addStatus, getCurrentStatus, clearStatus, timestamp }
 
   private lazy val interval = storageS3Settings.hcInterval
-  private def timestamp: Long = System.currentTimeMillis()
 
   private def updateStatus(): mutable.Map[Long, StandardRoute] = {
-    synchronized(statusMap.clear())
+    clearStatus()
     storageS3Settings.hcMethod match {
-      case RGWListBuckets => synchronized(statusMap += (timestamp -> execProbe(listAllBuckets _)))
-      case S3ListBucket   => synchronized(statusMap += (timestamp -> execProbe(listBucket _)))
+      case RGWListBuckets => addStatus(execProbe(listAllBuckets _))
+      case S3ListBucket   => addStatus(execProbe(listBucket _))
     }
   }
 
   private def getStatus(currentTime: Long): Option[StandardRoute] =
-    statusMap.keys.map {
+    getCurrentStatus.keys.map {
       case entryTime if (entryTime + interval) < currentTime =>
         logger.debug("Status entry expired, renewing")
         updateStatus().toMap.headOption.map { case (_, r) => r }
       case _ =>
         logger.debug("Serving status from cache")
-        statusMap.headOption.map { case (_, r) => r }
+        getCurrentStatus.headOption.map { case (_, r) => r }
     }.head
 
   private def execProbe[A](p: () => A): StandardRoute =
