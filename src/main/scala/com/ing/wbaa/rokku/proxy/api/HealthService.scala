@@ -1,7 +1,5 @@
 package com.ing.wbaa.rokku.proxy.api
 
-import java.util.concurrent.TimeUnit
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{ Route, StandardRoute }
 import com.ing.wbaa.rokku.proxy.data.HealthCheck.{ RGWListBuckets, S3ListBucket }
@@ -9,24 +7,34 @@ import com.ing.wbaa.rokku.proxy.handler.radosgw.RadosGatewayHandler
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration.{ Duration, _ }
+import scala.collection.mutable
 import scala.util.{ Failure, Success, Try }
 
 trait HealthService extends RadosGatewayHandler with S3Client with LazyLogging {
 
   import akka.http.scaladsl.server.Directives._
 
-  private val statusBuffer = new ListBuffer[StandardRoute]()
+  private val statusMap = mutable.Map[Long, StandardRoute](System.currentTimeMillis() -> complete("pong"))
+  private lazy val interval = storageS3Settings.hcInterval
+  private def timestamp: Long = System.currentTimeMillis()
 
-  lazy val startHCSchedule = system.scheduler.scheduleAtFixedRate(0.seconds, Duration(storageS3Settings.hcInterval, TimeUnit.MILLISECONDS)) {
-    () =>
-      statusBuffer.clear()
-      storageS3Settings.hcMethod match {
-        case RGWListBuckets => statusBuffer += execProbe(listAllBuckets _)
-        case S3ListBucket   => statusBuffer += execProbe(listBucket _)
-      }
-  }(system.dispatcher)
+  private def updateStatus(): mutable.Map[Long, StandardRoute] = {
+    statusMap.clear()
+    storageS3Settings.hcMethod match {
+      case RGWListBuckets => statusMap += (timestamp -> execProbe(listAllBuckets _))
+      case S3ListBucket   => statusMap += (timestamp -> execProbe(listBucket _))
+    }
+  }
+
+  private def getStatus(currentTime: Long): Option[StandardRoute] =
+    statusMap.keys.map {
+      case entryTime if (entryTime + interval) < currentTime =>
+        logger.debug("Status entry expired, renewing")
+        updateStatus().toMap.headOption.map { case (_, r) => r }
+      case _ =>
+        logger.debug("Serving status from cache")
+        statusMap.headOption.map { case (_, r) => r }
+    }.head
 
   private def execProbe[A](p: () => A): StandardRoute =
     Try {
@@ -39,8 +47,7 @@ trait HealthService extends RadosGatewayHandler with S3Client with LazyLogging {
   final val healthRoute: Route =
     path("ping") {
       get {
-        // we should start with assumption that S3 is ok and then run probe
-        statusBuffer.toList.headOption.getOrElse(complete(StatusCodes.OK -> "pong"))
+        getStatus(timestamp).getOrElse(complete(StatusCodes.InternalServerError -> "Failed to read status cache"))
       }
     }
 }

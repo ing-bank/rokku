@@ -16,12 +16,12 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
   private trait HealthServiceMock extends HealthService with S3Client {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
     override def storageS3Settings: StorageS3Settings = StorageS3Settings(system)
-    startHCSchedule
   }
 
   "A health service" should "respond to /ping with 'pong' when probe is RGWListBuckets" in new HealthServiceMock() {
     override def storageS3Settings: StorageS3Settings = new StorageS3Settings(system.settings.config) {
       override val hcMethod: HealthCheck.HCMethod = RGWListBuckets
+      override val hcInterval: Long = 0
     }
     override protected[this] def listAllBuckets: Seq[String] = List("a")
     Get("/ping") ~> healthRoute ~> check {
@@ -33,6 +33,7 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
   it should "fail when storage returns an exception' when probe is RGWListBuckets" in new HealthServiceMock() {
     override def storageS3Settings: StorageS3Settings = new StorageS3Settings(system.settings.config) {
       override val hcMethod: HealthCheck.HCMethod = RGWListBuckets
+      override val hcInterval: Long = 0
     }
     override protected[this] def listAllBuckets: Seq[String] = throw new Exception("RGW not available")
     Get("/ping") ~> healthRoute ~> check {
@@ -43,6 +44,7 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
   it should "respond to /ping with 'pong' when probe is S3ListBucket" in new HealthServiceMock() {
     override def storageS3Settings: StorageS3Settings = new StorageS3Settings(system.settings.config) {
       override val hcMethod: HealthCheck.HCMethod = S3ListBucket
+      override val hcInterval: Long = 0
     }
     override def listBucket: String = "rokku_hc_bucket"
     Get("/ping") ~> healthRoute ~> check {
@@ -54,6 +56,7 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
   it should "fail when storage returns an exception' when probe is S3ListBucket" in new HealthServiceMock() {
     override def storageS3Settings: StorageS3Settings = new StorageS3Settings(system.settings.config) {
       override val hcMethod: HealthCheck.HCMethod = S3ListBucket
+      override val hcInterval: Long = 0
     }
     override def listBucket: String = throw new Exception("S3 not available")
     Get("/ping") ~> healthRoute ~> check {

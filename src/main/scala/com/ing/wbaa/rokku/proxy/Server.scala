@@ -30,9 +30,6 @@ object Server extends App {
       system.actorOf(Props(classOf[HttpRequestRecorder]), configuredPersistenceId)
     }
 
-    // start Health check status update scheduler
-    startHCSchedule
-
     // Force Ranger plugin to initialise on startup
     rangerPluginForceInit
   }.startup
