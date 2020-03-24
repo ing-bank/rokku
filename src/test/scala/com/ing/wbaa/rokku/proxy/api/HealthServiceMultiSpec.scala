@@ -36,7 +36,7 @@ class HealthServiceMultiSpec extends AsyncFlatSpec with ScalatestRouteTest with 
       }
     }
 
-    Thread.sleep(3000)
+    Thread.sleep(6000)
     val f = getStatus(System.currentTimeMillis())
     val route = for {
       r <- f
