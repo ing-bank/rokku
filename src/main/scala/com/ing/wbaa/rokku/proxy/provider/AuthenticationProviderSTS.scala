@@ -5,6 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, Uri }
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.Materializer
 import com.ing.wbaa.rokku.proxy.config.StsSettings
 import com.ing.wbaa.rokku.proxy.data.{ AwsRequestCredential, JsonProtocols, RequestId, User, UserRawJson }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
@@ -21,6 +22,7 @@ trait AuthenticationProviderSTS extends JsonProtocols with JwtToken {
 
   protected[this] implicit def system: ActorSystem
   protected[this] implicit def executionContext: ExecutionContext
+  protected[this] implicit def materializer: Materializer
 
   protected[this] def stsSettings: StsSettings
 

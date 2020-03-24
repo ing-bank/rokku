@@ -20,7 +20,7 @@ scalacOptions += "-Xfatal-warnings"
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
 val akkaHttpVersion = "10.1.9"
-val akkaVersion = "2.6.3"
+val akkaVersion = "2.5.30"
 val logbackJson = "0.1.5"
 val metricVersion = "3.2.2" // align with C* driver core, can be updated with new C* persistence from akka
 
