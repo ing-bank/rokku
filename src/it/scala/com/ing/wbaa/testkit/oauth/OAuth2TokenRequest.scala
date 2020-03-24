@@ -3,6 +3,7 @@ package com.ing.wbaa.testkit.oauth
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,6 +16,8 @@ case class KeycloackToken(access_token: String)
 trait OAuth2TokenRequest {
 
   protected[this] implicit def testSystem: ActorSystem
+
+  protected[this] implicit def materializer: ActorMaterializer
 
   protected[this] implicit def executionContext: ExecutionContext
 

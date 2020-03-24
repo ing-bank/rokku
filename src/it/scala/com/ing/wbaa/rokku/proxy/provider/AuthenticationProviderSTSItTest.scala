@@ -1,6 +1,7 @@
 package com.ing.wbaa.rokku.proxy.provider
 
 import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import com.amazonaws.services.securitytoken.model.{AssumeRoleRequest, GetSessionTokenRequest}
 import com.ing.wbaa.rokku.proxy.config.StsSettings
 import com.ing.wbaa.rokku.proxy.data._
@@ -19,6 +20,7 @@ class AuthenticationProviderSTSItTest extends AsyncWordSpec with Diagrams
   override implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
   override implicit val system: ActorSystem = testSystem
   override implicit val executionContext: ExecutionContext = testSystem.dispatcher
+  override implicit val materializer: ActorMaterializer = ActorMaterializer()(testSystem)
 
   override val stsSettings: StsSettings = StsSettings(testSystem)
 

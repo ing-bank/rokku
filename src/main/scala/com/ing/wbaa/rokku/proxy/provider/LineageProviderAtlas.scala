@@ -3,6 +3,7 @@ package com.ing.wbaa.rokku.proxy.provider
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, MediaTypes }
+import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.data.LineageLiterals._
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
@@ -55,7 +56,7 @@ trait LineageProviderAtlas extends LineageHelpers {
 
         // multidelete by POST
         case HttpMethods.POST if isMultideletePost =>
-          exctractMultideleteObjectsFlow(httpRequest.entity.dataBytes).map { objects =>
+          exctractMultideleteObjectsFlow(httpRequest.entity.dataBytes)(ActorMaterializer()).map { objects =>
             objects.map(o => deleteEntityLineage(s"${lineageHeaders.bucket}/$o", userSTS, AWS_S3_OBJECT_TYPE))
           }
           Future(Done)

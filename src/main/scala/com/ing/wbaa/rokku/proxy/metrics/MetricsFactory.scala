@@ -57,7 +57,7 @@ object MetricsFactory {
     requestMethodName match {
       case HttpMethods.PUT | HttpMethods.POST =>
         metrics.counter(OBJECTS_UPLOAD_OPERATIONS_TOTAL.replace(MetricsFactory.HTTP_METHOD, requestMethodName.value)).inc()
-      case _                                  =>
+      case _ =>
     }
   }
 
