@@ -22,6 +22,11 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
       override val hcMethod: HealthCheck.HCMethod = RGWListBuckets
       override val hcInterval: Long = 0
     }
+    override protected[this] def listAllBuckets: Seq[String] = List("b")
+    Get("/ping") ~> healthRoute ~> check {
+      assert(status == StatusCodes.OK)
+      assert(responseAs[String] == "pong")
+    }
   }
 
   it should "fail when storage returns an exception' when probe is RGWListBuckets" in new HealthServiceMock() {
@@ -54,7 +59,6 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
     }
 
     override def listBucket: String = throw new Exception("S3 not available")
-
     Get("/ping") ~> healthRoute ~> check {
       assert(status == StatusCodes.InternalServerError)
     }

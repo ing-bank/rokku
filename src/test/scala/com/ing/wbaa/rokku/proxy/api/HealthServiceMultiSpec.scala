@@ -30,13 +30,13 @@ class HealthServiceMultiSpec extends AsyncFlatSpec with ScalatestRouteTest with 
     }
 
   "A health service concurrent" should "respond to 'pong'" in {
-    for (_ <- 1 to 100) {
-      for (_ <- 1 to 100) {
+    for (_ <- 1 to 50) {
+      for (_ <- 1 to 50) {
         threadPool.execute(runProbe())
       }
     }
 
-    Thread.sleep(6000)
+    Thread.sleep(1000)
     val f = getStatus(System.currentTimeMillis())
     val route = for {
       r <- f
