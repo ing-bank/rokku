@@ -24,15 +24,15 @@ object HealthService {
 
   private def addStatus(probeResult: StandardRoute): StandardRoute = statusMap.put(timestamp, probeResult)
 
-  private def getCurrentStatus: Future[mutable.Map[Long, StandardRoute]] = Future.successful(statusMap.asScala)
+  private def getCurrentStatusMap: Future[mutable.Map[Long, StandardRoute]] = Future.successful(statusMap.asScala)
 
-  private def getRouteStatus: Future[Option[StandardRoute]] = getCurrentStatus.map(_.headOption.map { case (_, r) => r })
+  private def getRouteStatus: Future[Option[StandardRoute]] = getCurrentStatusMap.map(_.headOption.map { case (_, r) => r })
 
 }
 
 trait HealthService extends RadosGatewayHandler with S3Client with LazyLogging {
 
-  import HealthService.{ addStatus, getCurrentStatus, clearStatus, getRouteStatus, timestamp }
+  import HealthService.{ addStatus, getCurrentStatusMap, clearStatus, getRouteStatus, timestamp }
 
   private lazy val interval = storageS3Settings.hcInterval
 
@@ -50,7 +50,7 @@ trait HealthService extends RadosGatewayHandler with S3Client with LazyLogging {
     } yield s
 
   def getStatus(currentTime: Long): Future[Option[StandardRoute]] =
-    getCurrentStatus.flatMap(_ match {
+    getCurrentStatusMap.flatMap(_ match {
       case m if m.isEmpty =>
         logger.debug("Status cache empty, running probe")
         updateStatusAndGet
@@ -60,7 +60,7 @@ trait HealthService extends RadosGatewayHandler with S3Client with LazyLogging {
           updateStatusAndGet
         case _ =>
           logger.debug("Serving status from cache")
-          getRouteStatus
+          Future.successful(m.map { case (_, r) => r }.headOption)
       }.head
     })
 
