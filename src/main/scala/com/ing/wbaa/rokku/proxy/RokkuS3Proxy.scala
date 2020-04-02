@@ -15,7 +15,7 @@ import scala.util.{ Failure, Success }
 trait RokkuS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets with PostRequestActions with HealthService {
 
   protected[this] implicit def system: ActorSystem
-  protected[this] implicit lazy val materializer: ActorMaterializer = ActorMaterializer()(system)
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
 
   protected[this] def httpSettings: HttpSettings
 

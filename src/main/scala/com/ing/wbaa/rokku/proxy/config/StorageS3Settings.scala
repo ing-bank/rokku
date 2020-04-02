@@ -22,6 +22,7 @@ class StorageS3Settings(config: Config) extends Extension {
   }
   val hcInterval = config.getLong("rokku.storage.s3.healthCheck.interval")
   val bucketName = config.getString("rokku.storage.s3.healthCheck.bucketName")
+  val isCacheEnabled = config.getBoolean("rokku.storage.s3.enabledCache")
 }
 
 object StorageS3Settings extends ExtensionId[StorageS3Settings] with ExtensionIdProvider {
