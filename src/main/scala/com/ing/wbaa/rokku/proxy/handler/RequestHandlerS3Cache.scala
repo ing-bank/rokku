@@ -5,6 +5,7 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import com.ing.wbaa.rokku.proxy.cache.MemoryStorageCache
 import com.ing.wbaa.rokku.proxy.data.RequestId
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequestType, CreateObject, GetObject }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -15,7 +16,7 @@ trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 {
   private val logger = new LoggerHandlerWithId
   implicit val materializer: ActorMaterializer
 
-  import com.ing.wbaa.rokku.proxy.util.AwsS3TypeRules._
+  def awsRequestFromRequest(request: HttpRequest): AWSRequestType
 
   override protected[this] def fireRequestToS3(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
 
@@ -23,7 +24,7 @@ trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 {
       if (isEligibleToBeCached(request)) {
         getObjectFromCacheOrStorage(request)
       } else {
-        invalidateCacheIfNeeded(request)
+        invalidateEntryIfObjectInCache(request)
         super.fireRequestToS3(request)
       }
     } else {
@@ -42,7 +43,7 @@ trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 {
     if (obj.isDefined) {
       Future.successful(HttpResponse.apply(entity = obj.get))
     } else {
-      putObject(request)
+      readFromStorageAndUpdateCache(request)
       super.fireRequestToS3(request)
     }
   }
@@ -53,9 +54,9 @@ trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 {
    * @param id
    * @return true if the object can be in cache
    */
-  private def isEligibleToBeCached(request: HttpRequest)(implicit id: RequestId): Boolean = request match {
+  private def isEligibleToBeCached(request: HttpRequest)(implicit id: RequestId): Boolean = awsRequestFromRequest(request) match {
     //TODO define all rules
-    case isGetObject(_) =>
+    case GetObject() =>
       logger.debug("canBeInCache = {}", request)
       true
     case _ => false
@@ -66,9 +67,9 @@ trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 {
    * @param request
    * @param id
    */
-  def invalidateCacheIfNeeded(request: HttpRequest)(implicit id: RequestId): Unit = request match {
+  def invalidateEntryIfObjectInCache(request: HttpRequest)(implicit id: RequestId): Unit = awsRequestFromRequest(request) match {
     //TODO define all rules when object has to be removed from cache
-    case isCreatObject(_) =>
+    case _: CreateObject =>
       logger.debug("cache need to be invalidated {}", request)
       removeObject(getKey(request))
     case _ => logger.debug("nothing to be invalidated {}", request)
@@ -80,7 +81,7 @@ trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 {
    * @param id
    * @return
    */
-  private def putObject(request: HttpRequest)(implicit id: RequestId): Future[Unit] = {
+  private def readFromStorageAndUpdateCache(request: HttpRequest)(implicit id: RequestId): Future[Unit] = {
     Future {
       val key = getKey(request)
       super.fireRequestToS3(request).flatMap { response =>
