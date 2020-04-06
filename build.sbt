@@ -47,7 +47,9 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.1.0"           % "it,test",
-    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.723"        % IntegrationTest
+    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.723"        % IntegrationTest,
+    "com.hazelcast"                % "hazelcast"               % "4.0"
+
 ) ++ persistenceDependencies
 
 val persistenceDependencies = Seq (

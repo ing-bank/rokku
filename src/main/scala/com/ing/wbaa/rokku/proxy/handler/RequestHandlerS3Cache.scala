@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy.handler
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import com.ing.wbaa.rokku.proxy.cache.{ CacheRulesV1, MemoryStorageCache }
+import com.ing.wbaa.rokku.proxy.cache.{ CacheRulesV1, HazelcastCache }
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 
@@ -11,7 +11,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 with CacheRulesV1 {
+trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with CacheRulesV1 {
 
   private val logger = new LoggerHandlerWithId
   implicit val materializer: ActorMaterializer
@@ -44,7 +44,7 @@ trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 wit
    * @return requested object
    */
   private def getObjectFromCacheOrStorage(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
-    val obj = getObject(request)
+    val obj = getObject(getKey(request))
     if (obj.isDefined) {
       Future.successful(HttpResponse.apply(entity = obj.get))
     } else {
@@ -80,7 +80,7 @@ trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 wit
           r.dataBytes.runFold(ByteString.empty) { case (acc, b) => acc ++ b }
         }
       }.onComplete {
-        case Failure(exception) => logger.error("cannot store object () in cache {}", key, exception)
+        case Failure(exception) => logger.error("Cannot store object () in cache {}", key, exception)
         case Success(value) =>
           putObject(key, value)
       }

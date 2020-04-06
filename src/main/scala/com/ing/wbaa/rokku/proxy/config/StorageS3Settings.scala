@@ -24,6 +24,7 @@ class StorageS3Settings(config: Config) extends Extension {
   val bucketName: String = config.getString("rokku.storage.s3.healthCheck.bucketName")
   val isCacheEnabled: Boolean = config.getBoolean("rokku.storage.s3.enabledCache")
   val eligibleCachePaths: Array[String] = config.getString("rokku.storage.s3.eligibleCachePaths").trim().split(",")
+  val cacheInstanceName: String = config.getString("rokku.storage.s3.cacheInstanceName")
 }
 
 object StorageS3Settings extends ExtensionId[StorageS3Settings] with ExtensionIdProvider {
