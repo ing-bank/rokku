@@ -1,7 +1,7 @@
 package com.ing.wbaa.rokku.proxy.handler.parsers
 
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest, MediaTypes}
-import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{AWSRequestType, GetObject, MultipartRequestType, PostObject, PutObject, RequestTypeUnknown}
+import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, MediaTypes }
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequestType, GetObject, MultipartRequestType, PostObject, PutObject, RequestTypeUnknown }
 
 object RequestParser {
 

@@ -17,7 +17,7 @@ trait MemoryStorageCache extends StorageCache {
   private val cache = mutable.Map.empty[String, ByteString]
 
   override def getKey(request: HttpRequest)(implicit id: RequestId): String = {
-    //TODO key is very importent to be unique!
+    //TODO key is very important to be unique!
     s"${request.getUri().getPathString}-${request.getUri().queryString(Charset.forName("UTF-8"))}"
   }
 

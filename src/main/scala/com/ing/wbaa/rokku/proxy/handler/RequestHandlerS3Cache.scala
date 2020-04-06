@@ -3,20 +3,24 @@ package com.ing.wbaa.rokku.proxy.handler
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import com.ing.wbaa.rokku.proxy.cache.MemoryStorageCache
+import com.ing.wbaa.rokku.proxy.cache.{ CacheRulesV1, MemoryStorageCache }
 import com.ing.wbaa.rokku.proxy.data.RequestId
-import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequestType, CreateObject, GetObject }
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 {
+trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 with CacheRulesV1 {
 
   private val logger = new LoggerHandlerWithId
   implicit val materializer: ActorMaterializer
 
   def awsRequestFromRequest(request: HttpRequest): AWSRequestType
+
+  def isEligibleToBeCached(request: HttpRequest)(implicit id: RequestId): Boolean
+
+  def isEligibleToBeInvalidated(request: HttpRequest)(implicit id: RequestId): Boolean
 
   override protected[this] def fireRequestToS3(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
 
@@ -34,6 +38,7 @@ trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 {
 
   /**
    * Get object from cache or from a strorage if is not in cache
+   *
    * @param request
    * @param id
    * @return requested object
@@ -49,34 +54,20 @@ trait RequestHandlerS3Cache extends MemoryStorageCache with RequestHandlerS3 {
   }
 
   /**
-   * Check if object can be kept in cache
-   * @param request
-   * @param id
-   * @return true if the object can be in cache
-   */
-  private def isEligibleToBeCached(request: HttpRequest)(implicit id: RequestId): Boolean = awsRequestFromRequest(request) match {
-    //TODO define all rules
-    case GetObject() =>
-      logger.debug("canBeInCache = {}", request)
-      true
-    case _ => false
-  }
-
-  /**
    * For PUT/POST/DELETE ... we need to remove an object from cache
+   *
    * @param request
    * @param id
    */
-  def invalidateEntryIfObjectInCache(request: HttpRequest)(implicit id: RequestId): Unit = awsRequestFromRequest(request) match {
-    //TODO define all rules when object has to be removed from cache
-    case _: CreateObject =>
-      logger.debug("cache need to be invalidated {}", request)
+  def invalidateEntryIfObjectInCache(request: HttpRequest)(implicit id: RequestId): Unit = {
+    if (isEligibleToBeInvalidated(request)) {
       removeObject(getKey(request))
-    case _ => logger.debug("nothing to be invalidated {}", request)
+    }
   }
 
   /**
    * Reads the object from a storage and put in cache
+   *
    * @param request
    * @param id
    * @return
