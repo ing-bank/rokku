@@ -49,7 +49,7 @@ trait PostRequestActions {
     }
 
   private[this] def updateBucketPermissions(httpRequest: HttpRequest, s3Request: S3Request)(implicit id: RequestId): Future[Done] = {
-    val fullPath = S3Utils.getPathName(httpRequest)
+    val fullPath = S3Utils.getPathNameFromUrlOrHost(httpRequest)
     val bucketName = S3Utils.getBucketName(fullPath)
     logger.debug("trying updateBucketPermissions for bucket={}, fullPath={}", bucketName, fullPath)
     val isPathOnlyWithBucketName = fullPath.split("/").length == 2

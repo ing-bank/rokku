@@ -2,7 +2,7 @@ package com.ing.wbaa.rokku.proxy.cache
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.{HttpMethod, HttpMethods, HttpRequest, Uri}
+import akka.http.scaladsl.model.{ HttpMethod, HttpMethods, HttpRequest, Uri }
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser
@@ -21,7 +21,6 @@ class CacheRulesV1Spec extends AnyWordSpec with Diagrams with CacheRulesV1 with 
   private val uri = Uri("http", Uri.Authority(Uri.Host("1.2.3.4")), Path(""), None, None)
 
   private val methods = Seq(HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE, HttpMethods.HEAD)
-
 
   "Cache rules v1 set isEligibleToBeCached " should {
 

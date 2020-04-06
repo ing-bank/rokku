@@ -56,6 +56,6 @@ trait CacheRulesV1 {
    * @param request
    * @return true if the request path is eligible
    */
-  private def isEligiblePath(request: HttpRequest) = storageS3Settings.eligibleCachePaths.exists(S3Utils.getPathName(request).startsWith(_))
+  private def isEligiblePath(request: HttpRequest) = storageS3Settings.eligibleCachePaths.exists(S3Utils.getPathNameFromUrlOrHost(request).startsWith(_))
 
 }
