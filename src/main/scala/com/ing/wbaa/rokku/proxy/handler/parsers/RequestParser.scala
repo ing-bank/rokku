@@ -1,7 +1,7 @@
 package com.ing.wbaa.rokku.proxy.handler.parsers
 
 import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, MediaTypes }
-import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequestType, GetObject, MultipartRequestType, PostObject, PutObject, RequestTypeUnknown }
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser._
 
 object RequestParser {
 
@@ -11,13 +11,17 @@ object RequestParser {
 
   case class MultipartRequestType(uploadId: String, completeMultipartUpload: Boolean) extends AWSRequestType
 
-  class CreateObject() extends AWSRequestType
+  class ModifyObjectRequestType() extends AWSRequestType
 
-  case class GetObject() extends AWSRequestType
+  case class GetObjectRequestType() extends AWSRequestType
 
-  case class PutObject() extends CreateObject
+  case class ListObjectRequestType() extends AWSRequestType
 
-  case class PostObject() extends CreateObject
+  case class PutObjectRequestType() extends ModifyObjectRequestType
+
+  case class PostObjectRequestType() extends ModifyObjectRequestType
+
+  case class DeleteObjectRequestType() extends ModifyObjectRequestType
 
 }
 
@@ -39,9 +43,11 @@ trait RequestParser {
       case HttpMethods.PUT if containsUploadId => MultipartRequestType(uploadId(queryString), completeMultipartUpload = false)
       // aws multipart complete eg. POST /ObjectName?uploadId=UploadId and content-type application/xml
       case HttpMethods.POST if containsUploadId && (isXML || isOctetStream) => MultipartRequestType(uploadId(queryString), completeMultipartUpload = true)
-      case HttpMethods.GET if queryString.isEmpty => GetObject()
-      case HttpMethods.PUT if queryString.isEmpty => PutObject()
-      case HttpMethods.POST if queryString.isEmpty => PostObject()
+      //TODO verify create right rules
+      case HttpMethods.GET if queryString.isEmpty => GetObjectRequestType()
+      case HttpMethods.PUT if queryString.isEmpty => PutObjectRequestType()
+      case HttpMethods.POST if queryString.isEmpty => PostObjectRequestType()
+      case HttpMethods.DELETE if queryString.isEmpty => DeleteObjectRequestType()
       case _ => RequestTypeUnknown()
     }
   }
