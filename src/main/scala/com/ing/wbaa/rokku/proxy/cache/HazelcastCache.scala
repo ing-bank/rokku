@@ -21,6 +21,7 @@ object HazelcastCache {
   private lazy val clientConfig: Config = {
     val conf = new Config(instanceName)
     conf.setProperty("hazelcast.logging.type", "slf4j")
+    conf.setClusterName("rokku-prod")
     conf.getMapConfig(s"$mapName-conf").getEvictionConfig()
       .setEvictionPolicy(EvictionPolicy.LFU)
       .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
