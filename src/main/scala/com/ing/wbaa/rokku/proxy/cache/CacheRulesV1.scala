@@ -1,6 +1,6 @@
 package com.ing.wbaa.rokku.proxy.cache
 
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
@@ -51,11 +51,25 @@ trait CacheRulesV1 {
   }
 
   /**
+   * check if the response size is in the limit
+   * @param response
+   * @param id
+   * @return true if the response content length is not bigger than the max
+   */
+  def isEligibleSize(response: HttpResponse)(implicit id: RequestId): Boolean = {
+    val contentLength = response.entity.contentLengthOption.getOrElse(0L)
+    logger.debug("content length {}", contentLength)
+    contentLength < storageS3Settings.maxEligibleCacheObjectSizeInBytes
+  }
+
+  /**
    * check if the request path starts with the allowed ones from settings
    *
    * @param request
    * @return true if the request path is eligible
    */
-  private def isEligiblePath(request: HttpRequest) = storageS3Settings.eligibleCachePaths.exists(S3Utils.getPathNameFromUrlOrHost(request).startsWith(_))
+  private def isEligiblePath(request: HttpRequest) = {
+    storageS3Settings.eligibleCachePaths.exists(S3Utils.getPathNameFromUrlOrHost(request).startsWith(_))
+  }
 
 }
