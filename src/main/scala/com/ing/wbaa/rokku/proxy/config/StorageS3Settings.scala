@@ -20,8 +20,11 @@ class StorageS3Settings(config: Config) extends Extension {
     case "rgwListBuckets" => RGWListBuckets
     case "s3ListBucket"   => S3ListBucket
   }
-  val hcInterval = config.getLong("rokku.storage.s3.healthCheck.interval")
-  val bucketName = config.getString("rokku.storage.s3.healthCheck.bucketName")
+  val hcInterval: Long = config.getLong("rokku.storage.s3.healthCheck.interval")
+  val bucketName: String = config.getString("rokku.storage.s3.healthCheck.bucketName")
+  val isCacheEnabled: Boolean = config.getBoolean("rokku.storage.s3.enabledCache")
+  val eligibleCachePaths: Array[String] = config.getString("rokku.storage.s3.eligibleCachePaths").trim().split(",")
+  val maxEligibleCacheObjectSizeInBytes: Long = config.getLong("rokku.storage.s3.maxEligibleCacheObjectSizeInBytes")
 }
 
 object StorageS3Settings extends ExtensionId[StorageS3Settings] with ExtensionIdProvider {

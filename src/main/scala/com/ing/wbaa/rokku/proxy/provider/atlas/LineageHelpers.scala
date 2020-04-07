@@ -49,7 +49,7 @@ trait LineageHelpers extends EventProducer {
   }
 
   def getLineageHeaders(httpRequest: HttpRequest)(implicit id: RequestId): LineageHeaders = {
-    val fullPath = S3Utils.getPathName(httpRequest)
+    val fullPath = S3Utils.getPathNameFromUrlOrHost(httpRequest)
     val bucketName = S3Utils.getBucketName(fullPath)
     val pseudoDir = getPathDir(fullPath)
     val bucketObjectFQN = getObjectName(fullPath)

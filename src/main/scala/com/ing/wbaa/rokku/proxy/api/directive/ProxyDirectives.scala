@@ -67,29 +67,8 @@ object ProxyDirectives extends LazyLogging {
             case Tuple1(optionalSessionToken) =>
               headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
 
-                val pathName: String = S3Utils.getPathName(httpRequest)
-
                 // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
-                val s3path = httpRequest.uri.rawQueryString match {
-                  case Some(queryString) if queryString.contains("prefix") =>
-                    val queryPrefixPair = queryString
-                      .split("&")
-                      .filter(_.contains("prefix"))
-                      .head.split("=")
-
-                    val delimiter = queryString
-                      .split("&").find(_.contains("delimiter")) match {
-                        case Some(d)         => d.split("=").last
-                        case None            => "/"
-                      }
-
-                    if (queryPrefixPair.length == 2) {
-                      Uri.Path(s"$pathName/${queryPrefixPair.last.replace(delimiter, "/")}")
-                    } else {
-                      Uri.Path(s"$pathName")
-                    }
-                  case _         => Uri.Path(s"$pathName")
-                }
+                val s3path = S3Utils.getS3FullPathWithBucketName(httpRequest)
                 val s3Request = S3Request(
                   AwsRequestCredential(awsAccessKey, optionalSessionToken.map(AwsSessionToken)),
                   s3path,
