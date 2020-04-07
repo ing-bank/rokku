@@ -23,7 +23,10 @@ object S3Utils {
     }
   }
 
-  def getBucketName(fullPath: String): String = fullPath.split("/").filter(_.nonEmpty).head
+  def getBucketName(fullPath: String): String =
+    if (fullPath.length > 0)
+      fullPath.split("/").filter(_.nonEmpty).head
+    else ""
 
   /**
    * Parses the request path and set the right aws s3 prefix and delimiter
