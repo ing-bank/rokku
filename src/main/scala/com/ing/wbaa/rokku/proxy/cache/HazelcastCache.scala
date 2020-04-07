@@ -2,7 +2,7 @@ package com.ing.wbaa.rokku.proxy.cache
 
 import akka.http.scaladsl.model.HttpRequest
 import akka.util.ByteString
-import com.hazelcast.config.Config
+import com.hazelcast.config.{ Config, EvictionPolicy, MaxSizePolicy }
 import com.hazelcast.core.{ Hazelcast, HazelcastInstance }
 import com.hazelcast.map.IMap
 import com.ing.wbaa.rokku.proxy.data.RequestId
@@ -16,10 +16,15 @@ object HazelcastCache {
   private val conf = ConfigFactory.load()
   private val instanceName = conf.getString("rokku.storage.s3.cacheInstanceName")
   private val mapName = conf.getString("rokku.storage.s3.cacheDStructName")
+  private val cacheSize = conf.getInt("rokku.storage.s3.cacheSize")
 
   private lazy val clientConfig: Config = {
     val conf = new Config(instanceName)
     conf.setProperty("hazelcast.logging.type", "slf4j")
+    conf.getMapConfig(s"$mapName-conf").getEvictionConfig()
+      .setEvictionPolicy(EvictionPolicy.LFU)
+      .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
+      .setSize(cacheSize)
     conf
   }
 }
