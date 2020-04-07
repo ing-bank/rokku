@@ -25,19 +25,19 @@ object RequestParser {
 
   case class DeleteObjectRequestType() extends ModifyObjectRequestType
 
-  case class ListBucketsRequestType() extends AWSRequestType
+  case class ListBucketsRequestType() extends ModifyObjectRequestType
 
-  case class BucketOpsRequestType() extends AWSRequestType
+  case class BucketOpsRequestType() extends ModifyObjectRequestType
 
-  case class ObjectOpsRequestType() extends AWSRequestType
+  case class ObjectOpsRequestType() extends ModifyObjectRequestType
 
-  case class SubFolderOpsRequestType() extends AWSRequestType
+  case class SubFolderOpsRequestType() extends ModifyObjectRequestType
 
-  case class MultiDeleteRequestType() extends AWSRequestType
+  case class MultiDeleteRequestType() extends ModifyObjectRequestType
 
-  case class HeadObjectRequestType() extends AWSMetaRequestType
+  case class HeadObjectRequestType() extends ModifyObjectRequestType
 
-  case class HeadBucketRequestType() extends AWSMetaRequestType
+  case class HeadBucketRequestType() extends ModifyObjectRequestType
 }
 
 trait RequestParser {
@@ -68,10 +68,10 @@ trait RequestParser {
 
       //TODO verify create right rules
       // if queryString is empty multipart os are not covered
-      case HttpMethods.GET if s3Object.isDefined && queryString.isEmpty => GetObjectRequestType()
-      case HttpMethods.PUT if s3Object.isDefined && queryString.isEmpty => PutObjectRequestType()
-      case HttpMethods.POST if s3Object.isDefined && queryString.isEmpty => PostObjectRequestType() // I think it is not needed if no queryString?
-      case HttpMethods.DELETE if s3Object.isDefined && queryString.isEmpty => DeleteObjectRequestType()
+      case HttpMethods.GET if queryString.isEmpty => GetObjectRequestType()
+      case HttpMethods.PUT if queryString.isEmpty => PutObjectRequestType()
+      case HttpMethods.POST if queryString.isEmpty => PostObjectRequestType() // I think it is not needed if no queryString?
+      case HttpMethods.DELETE if queryString.isEmpty => DeleteObjectRequestType()
 
       // object operations, put / delete etc.
       //case S3Request(_, Some(s3path), Some(_), _, _, _, _) => GetOrPutObjectRequestType()

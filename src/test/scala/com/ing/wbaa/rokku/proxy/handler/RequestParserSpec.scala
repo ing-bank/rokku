@@ -23,7 +23,7 @@ class RequestParserSpec extends AnyWordSpec with Diagrams with RequestParser {
       assert(completeParseResult.uploadId == "1" && completeParseResult.completeMultipartUpload)
     }
     "return RequestUnknown for other type of request" in {
-      assert(awsRequestFromRequest(httpRequest(HttpMethods.HEAD)).isInstanceOf[RequestTypeUnknown])
+      assert(awsRequestFromRequest(httpRequest(HttpMethods.PATCH)).isInstanceOf[RequestTypeUnknown])
     }
   }
 }
