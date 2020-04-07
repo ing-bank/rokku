@@ -5,23 +5,33 @@ import akka.util.ByteString
 import com.hazelcast.config.Config
 import com.hazelcast.core.{ Hazelcast, HazelcastInstance }
 import com.hazelcast.map.IMap
-import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
+import com.typesafe.config.ConfigFactory
 
 import scala.util.{ Failure, Success, Try }
 
-trait HazelcastCache extends StorageCache {
+object HazelcastCache {
+  // implementation specific settings
+  private val conf = ConfigFactory.load()
+  private val instanceName = conf.getString("rokku.storage.s3.cacheInstanceName")
+  private val mapName = conf.getString("rokku.storage.s3.cacheDStructName")
 
-  protected[this] def storageS3Settings: StorageS3Settings
+  private lazy val clientConfig: Config = {
+    val conf = new Config(instanceName)
+    conf.setProperty("hazelcast.logging.type", "slf4j")
+    conf
+  }
+}
+
+trait HazelcastCache extends StorageCache {
+  import HazelcastCache.{ mapName, clientConfig }
 
   private val logger = new LoggerHandlerWithId
 
-  private val clientConfig: Config = new Config(storageS3Settings.cacheInstanceName)
-
   private val hInstance: HazelcastInstance = Hazelcast.newHazelcastInstance(clientConfig)
 
-  private val getIMap: IMap[String, ByteString] = hInstance.getMap("S3Cache")
+  private def getIMap: IMap[String, ByteString] = hInstance.getMap(mapName)
 
   override def getKey(request: HttpRequest)(implicit id: RequestId): String = request.uri.path.toString
 
