@@ -75,15 +75,22 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
   private def readFromStorageAndUpdateCache(request: HttpRequest)(implicit id: RequestId): Future[Unit] = {
     Future {
       val key = getKey(request)
-      super.fireRequestToS3(request).filter(isEligibleSize).flatMap { response =>
-        response.entity.toStrict(3.seconds).flatMap { r =>
-          r.dataBytes.runFold(ByteString.empty) { case (acc, b) => acc ++ b }
+      super.fireRequestToS3(request).flatMap { response =>
+        if (isEligibleSize(response)) {
+          response.entity.toStrict(3.seconds).flatMap { r =>
+            r.dataBytes.runFold(ByteString.empty) { case (acc, b) => acc ++ b }
+          }
+        } else {
+          response.entity.discardBytes()
+          Future.failed(new ObjectTooBigException())
         }
       }.onComplete {
-        case Failure(exception: NoSuchElementException) => logger.debug("Object to big to be stored in cache {}", key, exception)
-        case Failure(exception)                         => logger.error("Cannot store object () in cache {}", key, exception)
-        case Success(value)                             => if (value.nonEmpty) putObject(key, value)
+        case Failure(exception: ObjectTooBigException) => logger.debug("Object too big to be stored in cache {}", key, exception)
+        case Failure(exception)                       => logger.error("Cannot store object () in cache {}", key, exception)
+        case Success(value)                           => if (value.nonEmpty) putObject(key, value)
       }
     }
   }
+
+  class ObjectTooBigException extends Exception
 }
