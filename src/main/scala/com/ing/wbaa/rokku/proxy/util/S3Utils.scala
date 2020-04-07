@@ -62,7 +62,7 @@ object S3Utils {
 
   /**
    * Get s3 path without bucket name
-   * @param s3Path - the path returned from {@link #getS3FullPathWithBucketName(httpRequest: HttpRequest)}
+   * @param s3Path - the path returned from {#getS3FullPathWithBucketName(httpRequest: HttpRequest)}
    * @return path on None if in there is only bucket name
    */
   def getS3PathWithoutBucketName(s3Path: String): Option[String] = {
@@ -71,7 +71,7 @@ object S3Utils {
 
   /**
    * If the s3 path ends with slash there is no object request otherwise it is
-   * @param s3Path - the path returned from {@link #getS3FullPathWithBucketName(httpRequest: HttpRequest)}
+   * @param s3Path - the path returned from {#getS3FullPathWithBucketName(httpRequest: HttpRequest)}
    * @return s3 object ful path or None
    */
   def getS3FullObjectPath(s3Path: String): Option[String] = {
