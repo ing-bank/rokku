@@ -48,7 +48,9 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.1.0"           % "it,test",
     "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.723"        % IntegrationTest,
-    "com.hazelcast"                % "hazelcast"               % "4.0"
+    "com.hazelcast"                % "hazelcast"               % "4.0",
+    "com.hazelcast"                % "hazelcast-kubernetes"    % "2.0.1"
+
 
 ) ++ persistenceDependencies
 

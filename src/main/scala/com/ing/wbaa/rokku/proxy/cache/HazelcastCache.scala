@@ -17,6 +17,9 @@ object HazelcastCache {
   private val instanceName = conf.getString("rokku.storage.s3.cacheInstanceName")
   private val mapName = conf.getString("rokku.storage.s3.cacheDStructName")
   private val cacheSize = conf.getInt("rokku.storage.s3.cacheSize")
+  private val namespace = conf.getString("rokku.storage.s3.namespace")
+  private val serviceName = conf.getString("rokku.storage.s3.serviceName")
+  private val discoveryMode = conf.getString("rokku.storage.s3.discoveryMode")
 
   private lazy val clientConfig: Config = {
     val conf = new Config(instanceName)
@@ -26,12 +29,19 @@ object HazelcastCache {
       .setEvictionPolicy(EvictionPolicy.LFU)
       .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
       .setSize(cacheSize)
+
+    if (discoveryMode == "K8S") {
+      conf.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false)
+      conf.getNetworkConfig().getJoin().getKubernetesConfig().setEnabled(true)
+        .setProperty("namespace", namespace)
+        .setProperty("service-name", serviceName);
+    }
     conf
   }
 }
 
 trait HazelcastCache extends StorageCache {
-  import HazelcastCache.{ mapName, clientConfig }
+  import HazelcastCache.{ clientConfig, mapName }
 
   private val logger = new LoggerHandlerWithId
 
