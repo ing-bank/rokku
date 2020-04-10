@@ -19,10 +19,10 @@ services:
     command: demo
 
   postgres-server:
-    image: wbaa/rokku-dev-apache-ranger-postgres:0.0.17
+    image: wbaa/rokku-dev-apache-ranger-postgres:0.0.21
 
   ranger-admin:
-    image: wbaa/rokku-dev-apache-ranger:0.0.19
+    image: wbaa/rokku-dev-apache-ranger:0.0.21
     stdin_open: true
     tty: true
     depends_on:
@@ -48,7 +48,7 @@ services:
       - "mariadb"
 
   keycloak:
-    image: wbaa/rokku-dev-keycloak:0.0.7
+    image: wbaa/rokku-dev-keycloak:0.0.8
     environment:
       - KEYCLOAK_USER=admin
       - KEYCLOAK_PASSWORD=admin

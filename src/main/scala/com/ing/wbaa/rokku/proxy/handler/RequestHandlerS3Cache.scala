@@ -86,8 +86,8 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
         }
       }.onComplete {
         case Failure(exception: ObjectTooBigException) => logger.debug("Object too big to be stored in cache {}", key, exception)
-        case Failure(exception)                       => logger.error("Cannot store object () in cache {}", key, exception)
-        case Success(value)                           => if (value.nonEmpty) putObject(key, value)
+        case Failure(exception)                        => logger.error("Cannot store object () in cache {}", key, exception)
+        case Success(value)                            => if (value.nonEmpty) putObject(key, value)
       }
     }
   }
