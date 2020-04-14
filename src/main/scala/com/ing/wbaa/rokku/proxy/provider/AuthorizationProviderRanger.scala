@@ -109,10 +109,8 @@ trait AuthorizationProviderRanger {
         true
 
       // create / delete bucket operation
-      case S3Request(_, Some(bucket), None, accessType, _, _, _) if (accessType.isInstanceOf[Write] || accessType.isInstanceOf[Delete]) && rangerSettings.createBucketsEnabled =>
-        logger.debug(s"Skipping ranger for creation/deletion of bucket with request: $request")
-        logger.info(s"bucket $bucket has been ${accessType.auditAction}")
-        true
+      case S3Request(_, Some(bucket), None, accessType, _, _, _) if (accessType.isInstanceOf[Write] || accessType.isInstanceOf[Delete]) =>
+        isAuthorisedByRanger("/")
 
       // list buckets
       case S3Request(_, None, None, accessType, _, _, _) if accessType.isInstanceOf[Read] && rangerSettings.listBucketsEnabled =>

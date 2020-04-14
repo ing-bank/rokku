@@ -7,7 +7,6 @@ class RangerSettings(config: Config) extends Extension {
   val serviceType: String = config.getString("rokku.ranger.service_type")
   val appId: String = config.getString("rokku.ranger.app_id")
   val listBucketsEnabled: Boolean = config.getBoolean("rokku.ranger.allow-list-buckets")
-  val createBucketsEnabled: Boolean = config.getBoolean("rokku.ranger.allow-create-buckets")
   val userDomainPostfix: String = config.getString("rokku.ranger.user-domain-postfix")
   val auditEnabled: Boolean = config.getBoolean("rokku.ranger.enabled-audit")
   val rolePrefix: String = config.getString("rokku.ranger.role-prefix")

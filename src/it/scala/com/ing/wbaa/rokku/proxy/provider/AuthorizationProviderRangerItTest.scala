@@ -32,6 +32,14 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
     UserAssumeRole("")
   )
 
+  val adminUser = User(
+    UserName("rokkuadmin"),
+    Set.empty,
+    AwsAccessKey("accesskey"),
+    AwsSecretKey("secretkey"),
+    UserAssumeRole("")
+  )
+
   val clientIPAddress = RemoteAddress(InetAddress.getByName("1.7.8.9"), Some(1234))
   val unauthorizedIPAddress = RemoteAddress(InetAddress.getByName("1.2.3.4"), Some(1234))
   val headerIPs = HeaderIPs(
@@ -107,17 +115,27 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
           accessType = Read(), clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
-      "does authorize allow-create-buckets set to true" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
-        override val createBucketsEnabled: Boolean = true
+      "does authorize creating bucket for an admin" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
       }) { apr =>
         assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Write(),
+          clientIPAddress = clientIPAddress, headerIPs = headerIPs), adminUser))
+      }
+
+      "does authorize deleting bucket for an admin" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
+      }) { apr =>
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Delete(),
+          clientIPAddress = clientIPAddress, headerIPs = headerIPs), adminUser))
+      }
+
+      "does not authorize creating bucket for a user" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
+      }) { apr =>
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Write(),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
-      "does authorize delete buckets set to true" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
-        override val createBucketsEnabled: Boolean = true
+      "does not authorize deleting bucket for a user" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
       }) { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Delete(),
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Delete(),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
