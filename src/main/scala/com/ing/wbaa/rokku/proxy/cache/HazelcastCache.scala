@@ -2,7 +2,6 @@ package com.ing.wbaa.rokku.proxy.cache
 
 import akka.http.scaladsl.model.HttpRequest
 import akka.util.ByteString
-import com.hazelcast.config.{ Config, EvictionPolicy, MaxSizePolicy }
 import com.hazelcast.core.{ Hazelcast, HazelcastInstance }
 import com.hazelcast.map.IMap
 import com.ing.wbaa.rokku.proxy.data.RequestId
@@ -14,46 +13,31 @@ import scala.util.{ Failure, Success, Try }
 object HazelcastCache {
   // implementation specific settings
   private val conf = ConfigFactory.load()
-  private val instanceName = conf.getString("rokku.storage.s3.cacheInstanceName")
+  private val cacheEnabled = conf.getBoolean("rokku.storage.s3.enabledCache")
   private val mapName = conf.getString("rokku.storage.s3.cacheDStructName")
-  private val cacheSize = conf.getInt("rokku.storage.s3.cacheSize")
-  private val namespace = conf.getString("rokku.storage.s3.namespace")
-  private val serviceName = conf.getString("rokku.storage.s3.serviceName")
-  private val discoveryMode = conf.getString("rokku.storage.s3.discoveryMode")
-
-  private lazy val clientConfig: Config = {
-    val conf = new Config(instanceName)
-    conf.setProperty("hazelcast.logging.type", "slf4j")
-    conf.setClusterName("rokku-prod")
-    conf.getMapConfig(s"$mapName-conf").getEvictionConfig()
-      .setEvictionPolicy(EvictionPolicy.LFU)
-      .setMaxSizePolicy(MaxSizePolicy.PER_NODE)
-      .setSize(cacheSize)
-
-    if (discoveryMode == "K8S") {
-      conf.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false)
-      conf.getNetworkConfig().getJoin().getKubernetesConfig().setEnabled(true)
-        .setProperty("namespace", namespace)
-        .setProperty("service-name", serviceName);
-    }
-    conf
-  }
 }
 
 trait HazelcastCache extends StorageCache {
-  import HazelcastCache.{ clientConfig, mapName }
+  import HazelcastCache.{ mapName, cacheEnabled }
 
   private val logger = new LoggerHandlerWithId
 
-  private val hInstance: HazelcastInstance = Hazelcast.newHazelcastInstance(clientConfig)
+  private val hInstance: Option[HazelcastInstance] =
+    if (cacheEnabled)
+      Some(Hazelcast.newHazelcastInstance())
+    else
+      None
 
-  private def getIMap: IMap[String, ByteString] = hInstance.getMap(mapName)
+  private def getIMap: Option[IMap[String, ByteString]] = hInstance.map(h => h.getMap(mapName))
 
   override def getKey(request: HttpRequest)(implicit id: RequestId): String = request.uri.path.toString
 
   override def getObject(key: String)(implicit id: RequestId): Option[ByteString] =
     Try {
-      getIMap.getOrDefault(key, ByteString.empty)
+      getIMap match {
+        case Some(m) => m.getOrDefault(key, ByteString.empty)
+        case None    => ByteString.empty
+      }
     } match {
       case Success(bs) if !bs.isEmpty =>
         logger.debug("Object already in cache")
@@ -68,7 +52,7 @@ trait HazelcastCache extends StorageCache {
 
   override def putObject(key: String, value: ByteString)(implicit id: RequestId): Unit =
     Try {
-      getIMap.put(key, value)
+      getIMap.map(m => m.put(key, value))
     } match {
       case Success(_)  => logger.debug("Object added to cache, {}", key)
       case Failure(ex) => logger.debug("Failed to add object to cache, e: {}", ex.getMessage)
@@ -76,7 +60,7 @@ trait HazelcastCache extends StorageCache {
 
   override def removeObject(key: String)(implicit id: RequestId): Unit =
     Try {
-      getIMap.delete(key)
+      getIMap.map(m => m.delete(key))
     } match {
       case Success(_)  => logger.debug("Object removed from cache, {}", key)
       case Failure(ex) => logger.debug("Failed to remove object from cache: {}", ex.getMessage)
