@@ -35,7 +35,7 @@ class S3RequestSpec extends AnyFlatSpec with Diagrams {
 
   it should "set access to write for anything but GET" in {
     val result = S3Request(testCred, Uri.Path("/demobucket"), HttpMethods.POST, RemoteAddress.Unknown, HeaderIPs(), MediaTypes.`text/plain`)
-    assert(result == S3Request(testCred, Some("/demobucket"), None, Write("POST")))
+    assert(result == S3Request(testCred, Some("/demobucket"), None, Post("POST")))
   }
 
 }

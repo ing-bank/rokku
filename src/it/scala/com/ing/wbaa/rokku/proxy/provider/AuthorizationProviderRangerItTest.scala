@@ -83,7 +83,7 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
       }
 
       "doesn't authorize for requests that are not supposed to be (Write)" in withAuthorizationProviderRanger() { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(accessType = Write(), s3Object = Some("object"),
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(accessType = Put(), s3Object = Some("object"),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
@@ -117,7 +117,7 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
 
       "does authorize creating bucket for an admin" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
       }) { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Write(),
+        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Put(),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), adminUser))
       }
 
@@ -129,7 +129,7 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
 
       "does not authorize creating bucket for a user" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
       }) { apr =>
-        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Write(),
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Put(),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
@@ -188,14 +188,14 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
       "does allow write homedir in the bucket" in withAuthorizationProviderRanger() { apr =>
         assert(apr.isUserAuthorizedForRequest(
           s3Request.copy(s3BucketPath = Some("/home/testuser"), s3Object = Some("object1"),
-            accessType = Write(), clientIPAddress = clientIPAddress,
+            accessType = Put(), clientIPAddress = clientIPAddress,
             headerIPs = headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))), user))
       }
 
       "doesn't allow write in non homedir in the bucket" in withAuthorizationProviderRanger() { apr =>
         assert(!apr.isUserAuthorizedForRequest(
           s3Request.copy(s3BucketPath = Some("/home/testuser1"), s3Object = Some("object1"),
-            accessType = Write(), clientIPAddress = clientIPAddress,
+            accessType = Put(), clientIPAddress = clientIPAddress,
             headerIPs = headerIPs.copy(`Remote-Address` = Some(RemoteAddress.Unknown))), user))
       }
 
