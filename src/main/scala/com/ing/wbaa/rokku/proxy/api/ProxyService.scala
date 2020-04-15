@@ -149,7 +149,7 @@ trait ProxyService {
         if (isMultideletePost) {
           checkExtractedPostContents(
             httpRequest,
-            s3Request.copy(mediaType = MediaTypes.`application/xml`, accessType = Write("MULTIDELETE POST")), userSTS)
+            s3Request.copy(mediaType = MediaTypes.`application/xml`, accessType = Post("MULTIDELETE POST")), userSTS)
         } else {
           logger.info(s"User (${userSTS.userName}) successfully authorized for request: $s3Request")
           Future(processAuthorizedRequest(httpRequest, s3Request, userSTS))

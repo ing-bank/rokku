@@ -108,7 +108,7 @@ class LineageProviderAtlasSpec extends AnyWordSpec with Diagrams with DefaultJso
 
   "Json process to PUT Entities" should {
     "match current schema" in {
-      val writeProcess = processEntity("aws-cli_500", userName, Write().rangerName,
+      val writeProcess = processEntity("aws-cli_500", userName, Put().rangerName,
         localhost, 100,
         externalPath, HADOOP_FS_PATH, 200,
         s3Object.get, AWS_S3_OBJECT_TYPE, 300, 400, created).toJson

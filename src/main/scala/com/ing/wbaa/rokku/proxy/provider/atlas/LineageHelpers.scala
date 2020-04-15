@@ -166,7 +166,7 @@ trait LineageHelpers extends EventProducer {
               externalPath, HADOOP_FS_PATH, guids.externalPathGuid, guids.processGuid)))
             .toString, ATLAS_HOOK_TOPIC)
 
-      case Write(_) if externalPath.length > 0 =>
+      case Put(_) | Post(_) if externalPath.length > 0 =>
         logger.debug(s"Creating $method lineage for request for file $bucketObject at $lh.bucket at $timestamp")
         sendSingleMessage(
           prepareEntityFullCreateMessage(userSTS, Vector(serverEntityJs, bucketEntityJs, pseudoDirEntityJs, s3ObjectEntityJs, externalPathEntityJs,
