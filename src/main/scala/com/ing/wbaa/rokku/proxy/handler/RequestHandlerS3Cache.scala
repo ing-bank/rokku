@@ -1,10 +1,12 @@
 package com.ing.wbaa.rokku.proxy.handler
 
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import com.ing.wbaa.rokku.proxy.cache.{ CacheRulesV1, HazelcastCache }
 import com.ing.wbaa.rokku.proxy.data.RequestId
+import com.ing.wbaa.rokku.proxy.handler.parsers.CacheHelpers._
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 
 import scala.concurrent.Future
@@ -45,7 +47,24 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
    */
   private def getObjectFromCacheOrStorage(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
     val obj = getObject(getKey(request))
-    if (obj.isDefined) {
+    if (obj.isDefined && isHead(request)) {
+      val responseHeaders = processHeadersFromCache(obj)
+      val contentLength = responseHeaders.find(_.name == "ContentLength")
+
+      contentLength match {
+        case Some(RawHeader(_, v)) =>
+          Future.successful(
+            //todo: get rid of body after setting correct contentLength, see generateFakeEntity for details
+            HttpResponse(entity = generateFakeEntity(v.trim.toInt))
+              .withHeaders(responseHeaders)
+          )
+        case None =>
+          Future.successful(
+            HttpResponse(entity = HttpEntity.apply(ContentType.WithMissingCharset(MediaTypes.`text/plain`), ByteString()))
+              .withHeaders(responseHeaders)
+          )
+      }
+    } else if (obj.isDefined) {
       Future.successful(HttpResponse.apply(entity = obj.get))
     } else {
       readFromStorageAndUpdateCache(request)
@@ -76,10 +95,15 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
     Future {
       val key = getKey(request)
       super.fireRequestToS3(request).flatMap { response =>
-        if (isEligibleSize(response)) {
+        lazy val bytesWithHeadersAndSize =
           response.entity.toStrict(3.seconds).flatMap { r =>
             r.dataBytes.runFold(ByteString.empty) { case (acc, b) => acc ++ b }
-          }
+          }.map(bs => (bs, response.headers, response.entity.contentLengthOption))
+
+        if (isEligibleSize(response) && !isHead(request)) {
+          bytesWithHeadersAndSize
+        } else if (isHead(request)) {
+          bytesWithHeadersAndSize
         } else {
           response.entity.discardBytes()
           Future.failed(new ObjectTooBigException())
@@ -87,7 +111,10 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
       }.onComplete {
         case Failure(exception: ObjectTooBigException) => logger.debug("Object too big to be stored in cache {}", key, exception)
         case Failure(exception)                        => logger.error("Cannot store object () in cache {}", key, exception)
-        case Success(value)                            => if (value.nonEmpty) putObject(key, value)
+        case Success((respBytes, headers, contentLength)) if respBytes.isEmpty && isHead(request) =>
+          // for head cache entry must be different from actual object
+          putObject(key, ByteString(processHeadersForCache(headers, contentLength)))
+        case Success((respBytes, _, _)) if respBytes.nonEmpty => putObject(key, respBytes)
       }
     }
   }

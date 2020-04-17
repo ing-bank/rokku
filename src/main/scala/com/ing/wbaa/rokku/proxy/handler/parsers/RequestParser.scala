@@ -36,7 +36,7 @@ object RequestParser {
 
   case class MultiDeleteRequestType() extends ModifyObjectRequestType
 
-  case class HeadObjectRequestType() extends AWSRequestType
+  case class HeadObjectRequestType() extends ModifyObjectRequestType
 
   case class HeadBucketRequestType() extends AWSRequestType
 }
@@ -74,6 +74,7 @@ trait RequestParser {
       case HttpMethods.PUT => PutObjectRequestType()
       case HttpMethods.POST => PostObjectRequestType()
       case HttpMethods.DELETE => DeleteObjectRequestType()
+      case HttpMethods.HEAD => HeadObjectRequestType()
       case _ => RequestTypeUnknown()
     }
   }
