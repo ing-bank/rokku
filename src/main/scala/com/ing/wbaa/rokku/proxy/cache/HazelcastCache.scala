@@ -7,6 +7,7 @@ import com.hazelcast.map.IMap
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.typesafe.config.ConfigFactory
+import com.ing.wbaa.rokku.proxy.handler.parsers.CacheHelpers.isHead
 
 import scala.util.{ Failure, Success, Try }
 
@@ -31,8 +32,9 @@ trait HazelcastCache extends StorageCache {
   private def getIMap: Option[IMap[String, ByteString]] = hInstance.map(h => h.getMap(mapName))
 
   override def getKey(request: HttpRequest)(implicit id: RequestId): String = {
+    val headMethod = if(isHead(request)) "-head" else ""
     val rangeHeader = request.getHeader("Range").map[String](r => s"-r-${r.value()}").orElse("")
-    request.uri.path.toString + rangeHeader
+    request.uri.path.toString + rangeHeader + headMethod
   }
 
   override def getObject(key: String)(implicit id: RequestId): Option[ByteString] =
