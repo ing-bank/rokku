@@ -99,8 +99,9 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
     Future {
       val key = getKey(request)
       super.fireRequestToS3(request).flatMap { response =>
+        val contentLength = response.entity.contentLengthOption.getOrElse(8388608L)
         lazy val bytesWithHeadersAndSizeAndStatus =
-          response.entity.toStrict(3.seconds).flatMap { r =>
+          response.entity.toStrict(3.seconds, contentLength).flatMap { r =>
             r.dataBytes.runFold(ByteString.empty) { case (acc, b) => acc ++ b }
           }.map(bs => (bs, response.headers, response.entity.contentLengthOption, response.status))
 
