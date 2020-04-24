@@ -32,11 +32,9 @@ trait HazelcastCache extends StorageCache {
   private def getIMap: Option[IMap[String, ByteString]] = hInstance.map(h => h.getMap(mapName))
 
   override def getKey(request: HttpRequest)(implicit id: RequestId): String = {
-    if (isHead(request)) {
-      s"${request.uri.path.toString}_head"
-    } else {
-      request.uri.path.toString
-    }
+    val headMethod = if(isHead(request)) "-head" else ""
+    val rangeHeader = request.getHeader("Range").map[String](r => s"-r-${r.value()}").orElse("")
+    request.uri.path.toString + rangeHeader + headMethod
   }
 
   override def getObject(key: String)(implicit id: RequestId): Option[ByteString] =
@@ -46,7 +44,7 @@ trait HazelcastCache extends StorageCache {
         case None    => ByteString.empty
       }
     } match {
-      case Success(bs) if !bs.isEmpty =>
+      case Success(bs) if bs.nonEmpty =>
         logger.debug("Object already in cache")
         Some(bs)
       case Success(_) =>
