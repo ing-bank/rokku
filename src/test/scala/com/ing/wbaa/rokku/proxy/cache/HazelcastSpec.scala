@@ -16,7 +16,6 @@ class HazelcastSpec extends AnyWordSpec with Diagrams with HazelcastCache {
     "add object to cache if BS non empty" in {
       val someObject = "/bucket/Object"
       putObject(someObject, ByteString("abc"))
-      Thread.sleep(200)
       assert(getObject(someObject).isDefined)
     }
     "fail to get object from cache if BS empty" in {
