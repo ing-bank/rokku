@@ -1,7 +1,7 @@
 package com.ing.wbaa.rokku.proxy.handler.parsers
 
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{ ContentType, HttpEntity, HttpHeader, HttpMethods, HttpRequest, MediaTypes, StatusCode }
+import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
@@ -39,9 +39,8 @@ object CacheHelpers {
   }
 
   // https://github.com/akka/akka-http/issues/377
-  // return a pseudo Default entity that contains the content-length and an unmaterializable data stream
+  // return a pseudo Default entity that contains the content-length and an Empty data stream
   def generateFakeEntity(contentLength: Int): HttpEntity.Default = {
-
     HttpEntity.Default(
       ContentType.WithMissingCharset(MediaTypes.`text/plain`),
       contentLength,

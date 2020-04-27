@@ -39,7 +39,7 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
   }
 
   /**
-   * Get object from cache or from a strorage if is not in cache
+   * Get object from cache or from a storage if is not in cache
    *
    * @param request
    * @param id
@@ -56,7 +56,6 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
       contentLength match {
         case Some(RawHeader(_, v)) =>
           Future.successful(
-            //todo: get rid of body after setting correct contentLength, see generateFakeEntity for details
             HttpResponse(entity = generateFakeEntity(v.trim.toInt))
               .withHeaders(responseHeaders)
               .withStatus(statusCode)
