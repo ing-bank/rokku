@@ -34,7 +34,7 @@ class CacheRulesV1Spec extends AnyWordSpec with Diagrams with CacheRulesV1 with 
 
   private def testIsEligibleToBeCached(method: HttpMethod, path: String, request: HttpRequest): Unit = {
     method match {
-      case HttpMethods.GET if storageS3Settings.eligibleCachePaths.exists(path.startsWith) =>
+      case HttpMethods.GET | HttpMethods.HEAD if storageS3Settings.eligibleCachePaths.exists(path.startsWith) =>
         s"for method=$method and path=$path to true" in {
           assert(isEligibleToBeCached(request))
         }

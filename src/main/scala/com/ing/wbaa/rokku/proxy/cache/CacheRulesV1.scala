@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
-import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequestType, GetObjectRequestType, ModifyObjectRequestType }
+import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.{ AWSRequestType, GetObjectRequestType, HeadObjectRequestType, ModifyObjectRequestType }
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 
 /**
@@ -27,7 +27,7 @@ trait CacheRulesV1 {
    * @return true if the object can be in cache
    */
   def isEligibleToBeCached(request: HttpRequest)(implicit id: RequestId): Boolean = awsRequestFromRequest(request) match {
-    case GetObjectRequestType() if isEligiblePath(request) =>
+    case GetObjectRequestType() | HeadObjectRequestType() if isEligiblePath(request) =>
       logger.debug("isEligibleToBeCached = {}", request)
       true
     case _ =>

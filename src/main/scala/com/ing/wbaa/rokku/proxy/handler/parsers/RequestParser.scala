@@ -74,6 +74,7 @@ trait RequestParser {
       case HttpMethods.PUT => PutObjectRequestType()
       case HttpMethods.POST => PostObjectRequestType()
       case HttpMethods.DELETE => DeleteObjectRequestType()
+      case HttpMethods.HEAD => HeadObjectRequestType()
       case _ => RequestTypeUnknown()
     }
   }
