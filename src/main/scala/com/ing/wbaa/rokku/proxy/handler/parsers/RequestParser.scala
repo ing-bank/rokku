@@ -36,7 +36,7 @@ object RequestParser {
 
   case class MultiDeleteRequestType() extends ModifyObjectRequestType
 
-  case class HeadObjectRequestType() extends ModifyObjectRequestType
+  case class HeadObjectRequestType() extends AWSRequestType
 
   case class HeadBucketRequestType() extends AWSRequestType
 }

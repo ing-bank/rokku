@@ -47,28 +47,12 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
    */
   private def getObjectFromCacheOrStorage(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
     val obj = getObject(getKey(request))
-    if (obj.isDefined && isHead(request)) {
-      val parsedObj = processHeadersFromCache(obj)
-      val responseHeaders = parsedObj._2
-      val statusCode = parsedObj._1
-      val contentLength = responseHeaders.find(_.name == "ContentLength")
-
-      contentLength match {
-        case Some(RawHeader(_, v)) =>
-          Future.successful(
-            HttpResponse(entity = generateFakeEntity(v.trim.toInt))
-              .withHeaders(responseHeaders)
-              .withStatus(statusCode)
-          )
-        case None =>
-          Future.successful(
-            HttpResponse(entity = HttpEntity.apply(ContentType.WithMissingCharset(MediaTypes.`text/plain`), ByteString()))
-              .withHeaders(responseHeaders)
-              .withStatus(statusCode)
-          )
+    if (obj.isDefined) {
+      if (isHead(request)) {
+        readHeadFromCache(obj)
+      } else {
+        Future.successful(HttpResponse.apply(entity = obj.get))
       }
-    } else if (obj.isDefined) {
-      Future.successful(HttpResponse.apply(entity = obj.get))
     } else {
       readFromStorageAndUpdateCache(request)
       super.fireRequestToS3(request)
@@ -85,6 +69,26 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
     if (isEligibleToBeInvalidated(request)) {
       removeObject(getKey(request))
     }
+  }
+
+  private def readHeadFromCache(obj: Option[ByteString]): Future[HttpResponse] = {
+    val parsedObj = processHeadersFromCache(obj)
+    val responseHeaders = parsedObj._2
+    val statusCode = parsedObj._1
+    val contentLength = responseHeaders.find(_.name == "ContentLength")
+
+    Future.successful(
+      contentLength match {
+        case Some(RawHeader(_, v)) =>
+          HttpResponse(entity = generateFakeEntity(v.trim.toInt))
+            .withHeaders(responseHeaders)
+            .withStatus(statusCode)
+        case None =>
+          HttpResponse(entity = HttpEntity.apply(ContentType.WithMissingCharset(MediaTypes.`text/plain`), ByteString()))
+            .withHeaders(responseHeaders)
+            .withStatus(statusCode)
+      }
+    )
   }
 
   /**
@@ -124,4 +128,5 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
   }
 
   class ObjectTooBigException extends Exception
+
 }
