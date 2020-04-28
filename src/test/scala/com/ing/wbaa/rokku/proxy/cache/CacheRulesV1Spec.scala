@@ -50,7 +50,7 @@ class CacheRulesV1Spec extends AnyWordSpec with Diagrams with CacheRulesV1 with 
     methods.foreach { method =>
       val request = HttpRequest.apply(method = method, uri)
       method match {
-        case HttpMethods.POST | HttpMethods.PUT | HttpMethods.DELETE | HttpMethods.HEAD =>
+        case HttpMethods.POST | HttpMethods.PUT | HttpMethods.DELETE =>
           s"for method=$method to true" in {
             assert(isEligibleToBeInvalidated(request))
           }

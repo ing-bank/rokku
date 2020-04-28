@@ -27,10 +27,7 @@ trait CacheRulesV1 {
    * @return true if the object can be in cache
    */
   def isEligibleToBeCached(request: HttpRequest)(implicit id: RequestId): Boolean = awsRequestFromRequest(request) match {
-    case GetObjectRequestType() if isEligiblePath(request) =>
-      logger.debug("isEligibleToBeCached = {}", request)
-      true
-    case HeadObjectRequestType() if isEligiblePath(request) =>
+    case GetObjectRequestType() | HeadObjectRequestType() if isEligiblePath(request) =>
       logger.debug("isEligibleToBeCached = {}", request)
       true
     case _ =>
