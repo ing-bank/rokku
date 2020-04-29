@@ -80,7 +80,7 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
     Future.successful(
       contentLength match {
         case Some(RawHeader(_, v)) =>
-          HttpResponse(entity = generateFakeEntity(v.trim.toInt))
+          HttpResponse(entity = generateFakeEntity(v.trim.toLong))
             .withHeaders(responseHeaders)
             .withStatus(statusCode)
         case None =>
