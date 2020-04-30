@@ -8,7 +8,7 @@ class CacheHelpersSpec extends AnyWordSpec with Diagrams {
 
   "Hazelcast Cache helpers" should {
     "returns non empty Entity if incorrect CL" in {
-      assert(generateFakeEntity(0).contentLength == 1)
+      generateFakeEntity(0).contentLengthOption.map(s => assert(s == 0))
     }
   }
 
