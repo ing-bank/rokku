@@ -38,7 +38,7 @@ object CacheHelpers {
 
   // https://github.com/akka/akka-http/issues/377
   // return a pseudo Default entity that contains the content-length and an Empty data stream
-  def generateFakeEntity(contentLength: Long): HttpEntity.Default = {
+  def generateFakeEntity(contentLength: Long): ResponseEntity = {
     val entityWithSize: Long => HttpEntity.Default = cl =>
       HttpEntity.Default(
         ContentType.WithMissingCharset(MediaTypes.`text/plain`),
@@ -47,7 +47,7 @@ object CacheHelpers {
       )
 
     if (contentLength == 0) {
-      entityWithSize(1)
+      HttpEntity.Empty
     } else {
       entityWithSize(contentLength)
     }
