@@ -4,7 +4,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import com.ing.wbaa.rokku.proxy.cache.{ CacheRulesV1, HazelcastCache }
+import com.ing.wbaa.rokku.proxy.cache.{ CacheRulesV1, HazelcastCacheWithConf }
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.parsers.CacheHelpers._
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
@@ -13,7 +13,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with CacheRulesV1 {
+trait RequestHandlerS3Cache extends HazelcastCacheWithConf with RequestHandlerS3 with CacheRulesV1 {
 
   private val logger = new LoggerHandlerWithId
   implicit val materializer: ActorMaterializer
@@ -50,10 +50,14 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
     if (obj.isDefined) {
       if (isHead(request)) {
         readHeadFromCache(obj)
-      } else {
+      } else if (obj.get.size < getMaxEligibleCacheObjectSizeInBytes) {
+        //todo: question GET is not invalidated, is it possible that object in cache will be outdated?
         Future.successful(HttpResponse.apply(entity = obj.get))
+      } else {
+        super.fireRequestToS3(request)
       }
     } else {
+      // let's add to cache for next request
       readFromStorageAndUpdateCache(request)
       super.fireRequestToS3(request)
     }

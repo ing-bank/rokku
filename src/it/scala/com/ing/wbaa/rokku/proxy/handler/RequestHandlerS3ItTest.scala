@@ -41,7 +41,7 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with Diagrams with RokkuFixtu
    * @return Assertion
    */
   def withS3SdkToMockProxy(testCode: AmazonS3 => Assertion): Future[Assertion] = {
-    val proxy: RokkuS3Proxy = new RokkuS3Proxy with RequestHandlerS3 with SignatureProviderAws
+    val proxy: RokkuS3Proxy = new RokkuS3Proxy with RequestHandlerS3Cache with SignatureProviderAws
       with FilterRecursiveListBucketHandler with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue with RequestParser {
       override implicit lazy val system: ActorSystem = testSystem
       override val httpSettings: HttpSettings = rokkuHttpSettings

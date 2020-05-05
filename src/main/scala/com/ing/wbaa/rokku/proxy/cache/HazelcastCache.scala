@@ -32,7 +32,7 @@ trait HazelcastCache extends StorageCache {
     else
       None
 
-  private def getIMap: Option[IMap[String, ByteString]] = hInstance.map(h => h.getMap(mapName))
+  private def getIMap(map: String): Option[IMap[String, ByteString]] = hInstance.map(h => h.getMap(map))
 
   override def getKey(request: HttpRequest)(implicit id: RequestId): String = {
     val headMethod = if (isHead(request)) "-head" else ""
@@ -40,15 +40,15 @@ trait HazelcastCache extends StorageCache {
     request.uri.path.toString + keyDelimiter + rangeHeader + headMethod
   }
 
-  override def getObject(key: String)(implicit id: RequestId): Option[ByteString] =
+  override def getObject(key: String, map: String = mapName)(implicit id: RequestId): Option[ByteString] =
     Try {
-      getIMap match {
+      getIMap(map) match {
         case Some(m) => m.getOrDefault(key, ByteString.empty)
         case None    => ByteString.empty
       }
     } match {
       case Success(bs) if bs.nonEmpty =>
-        logger.debug(s"Object already in cache - key {}", key)
+        logger.debug("Object already in cache - key {}", key)
         Some(bs)
       case Success(_) =>
         logger.debug("Object not found in cache")
@@ -58,17 +58,17 @@ trait HazelcastCache extends StorageCache {
         None
     }
 
-  override def putObject(key: String, value: ByteString)(implicit id: RequestId): Unit =
+  override def putObject(key: String, value: ByteString, map: String = mapName)(implicit id: RequestId): Unit =
     Try {
-      getIMap.map(m => m.put(key, value))
+      getIMap(map).map(m => m.put(key, value))
     } match {
       case Success(_)  => logger.debug("Object added to cache, {}", key)
       case Failure(ex) => logger.debug("Failed to add object to cache, e: {}", ex.getMessage)
     }
 
-  override def removeObject(key: String)(implicit id: RequestId): Unit =
+  override def removeObject(key: String, map: String = mapName)(implicit id: RequestId): Unit =
     Try {
-      getIMap.map(m => m.removeAll(Predicates.sql(s"__key like $key%")))
+      getIMap(map).map(m => m.removeAll(Predicates.sql(s"__key like $key%")))
     } match {
       case Success(_)  => logger.debug("Object removed from cache, {}", key)
       case Failure(ex) => logger.debug("Failed to remove object from cache: {}", ex.getMessage)

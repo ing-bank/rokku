@@ -16,6 +16,8 @@ trait CacheRulesV1 {
   private val logger = new LoggerHandlerWithId
 
   def awsRequestFromRequest(request: HttpRequest): AWSRequestType
+  def getMaxEligibleCacheObjectSizeInBytes(implicit id: RequestId): Long
+  def getEligibleCachePaths(implicit id: RequestId): Array[String]
 
   protected[this] def storageS3Settings: StorageS3Settings
 
@@ -59,7 +61,7 @@ trait CacheRulesV1 {
   def isEligibleSize(response: HttpResponse)(implicit id: RequestId): Boolean = {
     val contentLength = response.entity.contentLengthOption.getOrElse(0L)
     logger.debug("content length {}", contentLength)
-    contentLength < storageS3Settings.maxEligibleCacheObjectSizeInBytes
+    contentLength < getMaxEligibleCacheObjectSizeInBytes
   }
 
   /**
@@ -68,8 +70,9 @@ trait CacheRulesV1 {
    * @param request
    * @return true if the request path is eligible
    */
-  private def isEligiblePath(request: HttpRequest) = {
-    storageS3Settings.eligibleCachePaths.exists(S3Utils.getPathNameFromUrlOrHost(request).startsWith(_))
+  private def isEligiblePath(request: HttpRequest)(implicit id: RequestId) = {
+    getEligibleCachePaths
+      .exists(S3Utils.getPathNameFromUrlOrHost(request).startsWith(_))
   }
 
 }
