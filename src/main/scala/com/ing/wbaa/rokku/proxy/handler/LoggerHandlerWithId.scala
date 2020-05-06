@@ -18,14 +18,18 @@ class LoggerHandlerWithId {
 
   def debug(message: String, args: Any*)(implicit id: RequestId): Unit = {
     MDC.put(requestIdKey, id.value)
+    MDC.put(statusCodeKey, "-")
     log.debug(message, args)
     MDC.remove(requestIdKey)
+    MDC.remove(statusCodeKey)
   }
 
   def info(message: String, args: Any*)(implicit id: RequestId): Unit = {
     MDC.put(requestIdKey, id.value)
+    MDC.put(statusCodeKey, "-")
     log.info(message, args)
     MDC.remove(requestIdKey)
+    MDC.remove(statusCodeKey)
   }
 
   def warn(message: String, args: Any*)(implicit id: RequestId, statusCode: StatusCode = StatusCodes.Continue): Unit = {
