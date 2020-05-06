@@ -29,6 +29,7 @@ trait HazelcastCacheWithConf extends HazelcastCache {
     value
   }
 
+  //todo: consider invalidating entries on allowed path change
   def getEligibleCachePaths(implicit id: RequestId): Array[String] = {
     val value = getSettingAsString(ELIGIBLE_CACHE_PATHS).map(_.trim().split(","))
       .orElse(Some(storageS3Settings.eligibleCachePaths))

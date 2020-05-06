@@ -52,7 +52,6 @@ trait RequestHandlerS3Cache extends HazelcastCacheWithConf with RequestHandlerS3
       if (isHead(request)) {
         readHeadFromCache(obj)
       } else if (obj.get.size < getMaxEligibleCacheObjectSizeInBytes) {
-        //todo: question GET is not invalidated, is it possible that object in cache will be outdated?
         Future.successful(HttpResponse.apply(entity = obj.get))
       } else {
         super.fireRequestToS3(request)
@@ -71,6 +70,7 @@ trait RequestHandlerS3Cache extends HazelcastCacheWithConf with RequestHandlerS3
    * @param id
    */
   def invalidateEntryIfObjectInCache(request: HttpRequest)(implicit id: RequestId): Unit = {
+    //todo: consider narrowing to allowed paths only
     if (isEligibleToBeInvalidated(request)) {
       removeObject(getKey(request))
     }
@@ -110,6 +110,7 @@ trait RequestHandlerS3Cache extends HazelcastCacheWithConf with RequestHandlerS3
             response.entity.discardBytes()
             Future.successful(HeadCacheValueObject(response.headers, response.entity.contentLengthOption, response.status))
           } else {
+            //todo: add head request to reduce amount of get's
             response.entity.toStrict(3.seconds).flatMap { r =>
               r.dataBytes.runFold(ByteString.empty) { case (acc, b) => acc ++ b }
             }.map(bs => GetCacheValueObject(bs))
