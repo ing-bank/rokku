@@ -5,14 +5,14 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
-import com.ing.wbaa.rokku.proxy.api.{ HealthService, PostRequestActions, ProxyServiceWithListAllBuckets }
+import com.ing.wbaa.rokku.proxy.api.{ AdminService, HealthService, PostRequestActions, ProxyServiceWithListAllBuckets }
 import com.ing.wbaa.rokku.proxy.config.HttpSettings
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-trait RokkuS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets with PostRequestActions with HealthService {
+trait RokkuS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets with PostRequestActions with HealthService with AdminService {
 
   protected[this] implicit def system: ActorSystem
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
@@ -22,7 +22,7 @@ trait RokkuS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets with 
   protected[this] implicit val executionContext: ExecutionContext = system.dispatcher
 
   // The routes we serve.
-  final val allRoutes = healthRoute ~ proxyServiceRoute
+  final val allRoutes = adminRoute ~ healthRoute ~ proxyServiceRoute
 
   // Details about the server binding.
   lazy val startup: Future[Http.ServerBinding] =

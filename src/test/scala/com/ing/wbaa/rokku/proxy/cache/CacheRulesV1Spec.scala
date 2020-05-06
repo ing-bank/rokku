@@ -18,6 +18,10 @@ class CacheRulesV1Spec extends AnyWordSpec with Diagrams with CacheRulesV1 with 
     override val storageS3Authority: Uri.Authority = Uri.Authority(Uri.Host("1.2.3.4"), 1234)
   }
 
+  override def getMaxEligibleCacheObjectSizeInBytes(implicit id: RequestId): Long = 5242880L
+
+  override def getEligibleCachePaths(implicit id: RequestId): Array[String] = "/home/,/test/".trim.split(",")
+
   private val uri = Uri("http", Uri.Authority(Uri.Host("1.2.3.4")), Path(""), None, None)
 
   private val methods = Seq(HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE, HttpMethods.HEAD)

@@ -4,7 +4,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import com.ing.wbaa.rokku.proxy.cache.{ CacheRulesV1, HazelcastCache }
+import com.ing.wbaa.rokku.proxy.cache.{ CacheRulesV1, HazelcastCacheWithConf }
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.parsers.CacheHelpers._
 import com.ing.wbaa.rokku.proxy.handler.parsers.{ GetCacheValueObject, HeadCacheValueObject }
@@ -14,7 +14,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with CacheRulesV1 {
+trait RequestHandlerS3Cache extends HazelcastCacheWithConf with RequestHandlerS3 with CacheRulesV1 {
 
   private val logger = new LoggerHandlerWithId
   implicit val materializer: ActorMaterializer
@@ -51,10 +51,13 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
     if (obj.isDefined) {
       if (isHead(request)) {
         readHeadFromCache(obj)
-      } else {
+      } else if (obj.get.size < getMaxEligibleCacheObjectSizeInBytes) {
         Future.successful(HttpResponse.apply(entity = obj.get))
+      } else {
+        super.fireRequestToS3(request)
       }
     } else {
+      // let's add to cache for next request
       readFromStorageAndUpdateCache(request)
       super.fireRequestToS3(request)
     }
@@ -67,6 +70,7 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
    * @param id
    */
   def invalidateEntryIfObjectInCache(request: HttpRequest)(implicit id: RequestId): Unit = {
+    //todo: consider narrowing to allowed paths only
     if (isEligibleToBeInvalidated(request)) {
       removeObject(getKey(request))
     }
@@ -106,6 +110,7 @@ trait RequestHandlerS3Cache extends HazelcastCache with RequestHandlerS3 with Ca
             response.entity.discardBytes()
             Future.successful(HeadCacheValueObject(response.headers, response.entity.contentLengthOption, response.status))
           } else {
+            //todo: add head request to reduce amount of get's
             response.entity.toStrict(3.seconds).flatMap { r =>
               r.dataBytes.runFold(ByteString.empty) { case (acc, b) => acc ++ b }
             }.map(bs => GetCacheValueObject(bs))
