@@ -52,5 +52,10 @@ object CacheHelpers {
       entityWithSize(contentLength)
     }
   }
-
 }
+
+sealed class CacheValueObject
+
+case class HeadCacheValueObject(headers: Seq[HttpHeader], contentLength: Option[Long], statusCode: StatusCode) extends CacheValueObject
+
+case class GetCacheValueObject(data: ByteString) extends CacheValueObject
