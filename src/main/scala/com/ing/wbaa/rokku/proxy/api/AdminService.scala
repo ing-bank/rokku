@@ -24,9 +24,11 @@ trait AdminService {
 
   case class EligiblePaths(paths: String)
   case class EligibleSize(size: Long)
+  case class HeadEnabled(on: Boolean)
 
   implicit val eligiblePathsF = jsonFormat1(EligiblePaths)
   implicit val eligibleSizeF = jsonFormat1(EligibleSize)
+  implicit val headEnabledF = jsonFormat1(HeadEnabled)
 
   //todo: replace with real authentication
   private val authToken = ConfigFactory.load().getString("rokku.storage.s3.adminToken")
@@ -60,7 +62,14 @@ trait AdminService {
           } ~ path("allowed" / "size") {
             entity(as[EligibleSize]) { conf =>
               onComplete(setCacheParam(MAX_ELIGIBLE_CACHE_OBJECT_SIZE_IN_BYTES, conf.size.toString)) {
-                case Success(_)  => complete(s"Allowed paths - setting updated")
+                case Success(_)  => complete(s"Allowed size - setting updated")
+                case Failure(ex) => complete(s"Failed to update configuration parameter ${ex.getMessage}")
+              }
+            }
+          } ~ path("head" / "on") {
+            entity(as[HeadEnabled]) { conf =>
+              onComplete(setCacheParam(HEAD_CACHE_ENABLED, conf.on.toString)) {
+                case Success(_)  => complete(s"Head on - setting updated")
                 case Failure(ex) => complete(s"Failed to update configuration parameter ${ex.getMessage}")
               }
             }

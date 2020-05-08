@@ -22,6 +22,8 @@ class CacheRulesV1Spec extends AnyWordSpec with Diagrams with CacheRulesV1 with 
 
   override def getEligibleCachePaths(implicit id: RequestId): Array[String] = "/home/,/test/".trim.split(",")
 
+  override def getHeadEnabled(implicit id: RequestId): Boolean = true
+
   private val uri = Uri("http", Uri.Authority(Uri.Host("1.2.3.4")), Path(""), None, None)
 
   private val methods = Seq(HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST, HttpMethods.DELETE, HttpMethods.HEAD)
