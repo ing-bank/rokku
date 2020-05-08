@@ -105,16 +105,14 @@ trait RequestHandlerS3Cache extends HazelcastCacheWithConf with RequestHandlerS3
       val key = getKey(request)
       super.fireRequestToS3(request).flatMap { response =>
 
-        if (isEligibleSize(response)) {
-          if (isHead(request)) {
-            response.entity.discardBytes()
-            Future.successful(HeadCacheValueObject(response.headers, response.entity.contentLengthOption, response.status))
-          } else {
-            //todo: add head request to reduce amount of get's
-            response.entity.toStrict(3.seconds).flatMap { r =>
-              r.dataBytes.runFold(ByteString.empty) { case (acc, b) => acc ++ b }
-            }.map(bs => GetCacheValueObject(bs))
-          }
+        if (isHead(request)) {
+          response.entity.discardBytes()
+          Future.successful(HeadCacheValueObject(response.headers, response.entity.contentLengthOption, response.status))
+        } else if (isEligibleSize(response)) {
+          //todo: add head request to reduce amount of get's
+          response.entity.toStrict(3.seconds).flatMap { r =>
+            r.dataBytes.runFold(ByteString.empty) { case (acc, b) => acc ++ b }
+          }.map(bs => GetCacheValueObject(bs))
         } else {
           response.entity.discardBytes()
           Future.failed(new ObjectTooBigException())
