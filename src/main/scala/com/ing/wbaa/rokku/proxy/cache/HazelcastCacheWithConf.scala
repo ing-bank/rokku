@@ -11,6 +11,7 @@ import scala.concurrent.Future
 object HazelcastCacheWithConf {
   val MAX_ELIGIBLE_CACHE_OBJECT_SIZE_IN_BYTES = "maxEligibleCacheObjectSizeInBytes"
   val ELIGIBLE_CACHE_PATHS = "eligibleCachePaths"
+  val HEAD_CACHE_ENABLED = "headEnabled"
 }
 
 trait HazelcastCacheWithConf extends HazelcastCache {
@@ -35,6 +36,14 @@ trait HazelcastCacheWithConf extends HazelcastCache {
       .orElse(Some(storageS3Settings.eligibleCachePaths))
       .get
     logger.debug("Getting cache setting: {}", ELIGIBLE_CACHE_PATHS, value.toList)
+    value
+  }
+
+  def getHeadEnabled(implicit id: RequestId): Boolean = {
+    val value = getSettingAsString(HEAD_CACHE_ENABLED).map(_.toBoolean)
+      .orElse(Some(true))
+      .get
+    logger.debug("Getting cache setting: {}", HEAD_CACHE_ENABLED, value)
     value
   }
 

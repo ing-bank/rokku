@@ -18,6 +18,7 @@ trait CacheRulesV1 {
   def awsRequestFromRequest(request: HttpRequest): AWSRequestType
   def getMaxEligibleCacheObjectSizeInBytes(implicit id: RequestId): Long
   def getEligibleCachePaths(implicit id: RequestId): Array[String]
+  def getHeadEnabled(implicit id: RequestId): Boolean
 
   protected[this] def storageS3Settings: StorageS3Settings
 
@@ -29,7 +30,10 @@ trait CacheRulesV1 {
    * @return true if the object can be in cache
    */
   def isEligibleToBeCached(request: HttpRequest)(implicit id: RequestId): Boolean = awsRequestFromRequest(request) match {
-    case GetObjectRequestType() | HeadObjectRequestType() if isEligiblePath(request) =>
+    case GetObjectRequestType() if isEligiblePath(request) =>
+      logger.debug("isEligibleToBeCached = {}", request)
+      true
+    case HeadObjectRequestType() if isEligiblePath(request) && getHeadEnabled =>
       logger.debug("isEligibleToBeCached = {}", request)
       true
     case _ =>
