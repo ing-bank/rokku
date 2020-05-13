@@ -110,7 +110,7 @@ trait RequestHandlerS3Cache extends HazelcastCacheWithConf with RequestHandlerS3
           Future.successful(HeadCacheValueObject(response.headers, response.entity.contentLengthOption, response.status))
         } else if (isEligibleSize(response)) {
           //todo: add head request to reduce amount of get's
-          response.entity.toStrict(3.seconds).flatMap { r =>
+          response.entity.toStrict(getStrictCacheDownloadTimeoutInSeconds.seconds, getMaxEligibleCacheObjectSizeInBytes).flatMap { r =>
             r.dataBytes.runFold(ByteString.empty) { case (acc, b) => acc ++ b }
           }.map(bs => GetCacheValueObject(bs))
         } else {

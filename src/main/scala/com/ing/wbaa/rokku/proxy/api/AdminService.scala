@@ -24,10 +24,12 @@ trait AdminService {
 
   case class EligiblePaths(paths: String)
   case class EligibleSize(size: Long)
+  case class DownloadTimeout(downloadTimeout: Int)
   case class HeadEnabled(on: Boolean)
 
   implicit val eligiblePathsF = jsonFormat1(EligiblePaths)
   implicit val eligibleSizeF = jsonFormat1(EligibleSize)
+  implicit val downloadTimeoutF = jsonFormat1(DownloadTimeout)
   implicit val headEnabledF = jsonFormat1(HeadEnabled)
 
   //todo: replace with real authentication
@@ -63,6 +65,13 @@ trait AdminService {
             entity(as[EligibleSize]) { conf =>
               onComplete(setCacheParam(MAX_ELIGIBLE_CACHE_OBJECT_SIZE_IN_BYTES, conf.size.toString)) {
                 case Success(_)  => complete(s"Allowed size - setting updated")
+                case Failure(ex) => complete(s"Failed to update configuration parameter ${ex.getMessage}")
+              }
+            }
+          } ~ path("downloadTimeout") {
+            entity(as[DownloadTimeout]) { conf =>
+              onComplete(setCacheParam(STRICT_CACHE_DOWNLOAD_TIMEOUT_IN_SECONDS, conf.downloadTimeout.toString)) {
+                case Success(_)  => complete(s"downloadTimeout - setting updated")
                 case Failure(ex) => complete(s"Failed to update configuration parameter ${ex.getMessage}")
               }
             }
