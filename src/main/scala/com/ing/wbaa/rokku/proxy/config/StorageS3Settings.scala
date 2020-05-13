@@ -25,6 +25,8 @@ class StorageS3Settings(config: Config) extends Extension {
   val isCacheEnabled: Boolean = config.getBoolean("rokku.storage.s3.enabledCache")
   val eligibleCachePaths: Array[String] = config.getString("rokku.storage.s3.eligibleCachePaths").trim().split(",")
   val maxEligibleCacheObjectSizeInBytes: Long = config.getLong("rokku.storage.s3.maxEligibleCacheObjectSizeInBytes")
+  val strictCacheDownloadTimeoutInSeconds: Int = config.getInt("rokku.storage.s3.strictCacheDownloadTimeoutInSeconds")
+
 }
 
 object StorageS3Settings extends ExtensionId[StorageS3Settings] with ExtensionIdProvider {

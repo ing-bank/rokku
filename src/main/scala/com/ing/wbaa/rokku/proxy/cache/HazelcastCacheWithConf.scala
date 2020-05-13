@@ -12,6 +12,7 @@ object HazelcastCacheWithConf {
   val MAX_ELIGIBLE_CACHE_OBJECT_SIZE_IN_BYTES = "maxEligibleCacheObjectSizeInBytes"
   val ELIGIBLE_CACHE_PATHS = "eligibleCachePaths"
   val HEAD_CACHE_ENABLED = "headEnabled"
+  val STRICT_CACHE_DOWNLOAD_TIMEOUT_IN_SECONDS = "strictCacheDownloadTimeoutInSeconds"
 }
 
 trait HazelcastCacheWithConf extends HazelcastCache {
@@ -27,6 +28,14 @@ trait HazelcastCacheWithConf extends HazelcastCache {
       .orElse(Some(storageS3Settings.maxEligibleCacheObjectSizeInBytes))
       .get
     logger.debug("Getting cache setting: {}", MAX_ELIGIBLE_CACHE_OBJECT_SIZE_IN_BYTES, value)
+    value
+  }
+
+  def getStrictCacheDownloadTimeoutInSeconds(implicit id: RequestId): Int = {
+    val value = getSettingAsString(STRICT_CACHE_DOWNLOAD_TIMEOUT_IN_SECONDS).map(_.toInt)
+      .orElse(Some(storageS3Settings.strictCacheDownloadTimeoutInSeconds))
+      .get
+    logger.debug("Getting cache setting: {}", STRICT_CACHE_DOWNLOAD_TIMEOUT_IN_SECONDS, value)
     value
   }
 
