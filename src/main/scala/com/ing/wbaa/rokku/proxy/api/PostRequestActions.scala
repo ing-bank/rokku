@@ -9,12 +9,12 @@ import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Failure
 
 trait PostRequestActions {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  protected[this] implicit def executionContext: ExecutionContext
 
   private val logger = new LoggerHandlerWithId
 
