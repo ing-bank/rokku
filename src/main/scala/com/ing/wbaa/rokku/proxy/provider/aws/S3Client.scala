@@ -9,11 +9,11 @@ import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 trait S3Client {
-  import scala.concurrent.ExecutionContext.Implicits.global
+  protected[this] implicit def executionContext: ExecutionContext
 
   private val logger = new LoggerHandlerWithId
   protected[this] def storageS3Settings: StorageS3Settings

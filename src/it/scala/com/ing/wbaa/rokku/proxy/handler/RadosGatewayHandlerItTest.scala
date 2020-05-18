@@ -9,11 +9,14 @@ import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AnyWordSpec
 import org.twonote.rgwadmin4j.{RgwAdmin, RgwAdminBuilder}
 
+import scala.concurrent.ExecutionContext
 import scala.util.Random
 
 class RadosGatewayHandlerItTest extends AnyWordSpec with Diagrams with RadosGatewayHandler with S3Client {
 
   override protected[this] implicit def system: ActorSystem = ActorSystem("test-system")
+
+  override protected[this] implicit def executionContext: ExecutionContext = system.dispatcher
 
   override protected[this] def storageS3Settings: StorageS3Settings = StorageS3Settings(system)
 

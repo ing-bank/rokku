@@ -8,11 +8,10 @@ import com.ing.wbaa.rokku.proxy.handler.radosgw.RadosGatewayHandler
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 import com.typesafe.scalalogging.LazyLogging
 import java.util.concurrent.ConcurrentHashMap
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 object HealthService {
@@ -26,11 +25,13 @@ object HealthService {
 
   private def getCurrentStatusMap: Future[mutable.Map[Long, StandardRoute]] = Future.successful(statusMap.asScala)
 
-  private def getRouteStatus: Future[Option[StandardRoute]] = getCurrentStatusMap.map(_.headOption.map { case (_, r) => r })
+  private def getRouteStatus(implicit ec: ExecutionContext): Future[Option[StandardRoute]] = getCurrentStatusMap.map(_.headOption.map { case (_, r) => r })
 
 }
 
 trait HealthService extends RadosGatewayHandler with S3Client with LazyLogging {
+
+  protected[this] implicit def executionContext: ExecutionContext
 
   import HealthService.{ addStatus, getCurrentStatusMap, clearStatus, getRouteStatus, timestamp }
 

@@ -19,6 +19,9 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
 
   private trait HealthServiceMock extends HealthService with S3Client {
     override implicit def system: ActorSystem = ActorSystem.create("test-system")
+
+    override protected[this] implicit def executionContext: ExecutionContext = system.dispatcher
+
     override def storageS3Settings: StorageS3Settings = StorageS3Settings(system)
   }
 
