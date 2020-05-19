@@ -1,0 +1,63 @@
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration xmlns:xi="http://www.w3.org/2001/XInclude">
+  <property>
+    <name>xasecure.audit.is.enabled</name>
+    <value>true</value>
+  </property>
+  <!-- Kafka audit provider configuration -->
+  <property>
+    <name>xasecure.audit.kafka.is.enabled</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>xasecure.audit.kafka.async.max.queue.size</name>
+    <value>1</value>
+  </property>
+
+  <property>
+    <name>xasecure.audit.kafka.async.max.flush.interval.ms</name>
+    <value>1000</value>
+  </property>
+
+  <property>
+    <name>xasecure.audit.kafka.broker_list</name>
+    <value>localhost:9092</value>
+  </property>
+
+  <property>
+    <name>xasecure.audit.kafka.topic_name</name>
+    <value>rokku_ranger_audits</value>
+  </property>
+
+  <property>
+    <name>xasecure.audit.kafka.security.protocol</name>
+    <value>SSL</value>
+  </property>
+
+  <property>
+    <name>xasecure.audit.kafka.ssl.keystore.location</name>
+    <value>server.keystore.jks</value>
+  </property>
+
+  <property>
+    <name>xasecure.audit.kafka.ssl.keystore.password</name>
+    <value>123456</value>
+  </property>
+
+  <property>
+    <name>xasecure.audit.kafka.ssl.key.password</name>
+    <value>123456</value>
+  </property>
+
+  <property>
+    <name>xasecure.audit.kafka.ssl.truststore.location</name>
+    <value>server.truststore.jks</value>
+  </property>
+
+  <property>
+    <name>xasecure.audit.kafka.ssl.truststore.password</name>
+    <value>123456</value>
+  </property>
+
+</configuration>
