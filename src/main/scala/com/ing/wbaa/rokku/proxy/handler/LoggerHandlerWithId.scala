@@ -7,6 +7,8 @@ import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory._
 import com.typesafe.scalalogging.Logger
 import org.slf4j.{ LoggerFactory, MDC }
 
+import scala.collection.mutable
+
 class LoggerHandlerWithId {
 
   @transient
@@ -19,15 +21,17 @@ class LoggerHandlerWithId {
   def debug(message: String, args: Any*)(implicit id: RequestId): Unit = {
     MDC.put(requestIdKey, id.value)
     MDC.put(statusCodeKey, "-")
-    log.debug(message, args)
+    log.debug(message, args.asInstanceOf[mutable.WrappedArray[AnyRef]]: _*)
     MDC.remove(requestIdKey)
     MDC.remove(statusCodeKey)
   }
 
+  def a(x: Any*) = println(x.length)
+
   def info(message: String, args: Any*)(implicit id: RequestId): Unit = {
     MDC.put(requestIdKey, id.value)
     MDC.put(statusCodeKey, "-")
-    log.info(message, args)
+    log.info(message, args.asInstanceOf[mutable.WrappedArray[AnyRef]]: _*)
     MDC.remove(requestIdKey)
     MDC.remove(statusCodeKey)
   }
@@ -35,7 +39,7 @@ class LoggerHandlerWithId {
   def warn(message: String, args: Any*)(implicit id: RequestId, statusCode: StatusCode = StatusCodes.Continue): Unit = {
     MDC.put(requestIdKey, id.value)
     MDC.put(statusCodeKey, statusCode.value)
-    log.warn(message, args)
+    log.warn(message, args.asInstanceOf[mutable.WrappedArray[AnyRef]]: _*)
     MDC.remove(requestIdKey)
     MDC.remove(statusCodeKey)
   }
@@ -44,7 +48,7 @@ class LoggerHandlerWithId {
     MDC.put(requestIdKey, id.value)
     MDC.put(statusCodeKey, statusCode.value)
     countLogErrors(MetricsFactory.ERROR_REPORTED_TOTAL)
-    log.error(message, args)
+    log.error(message, args.asInstanceOf[mutable.WrappedArray[AnyRef]]: _*)
     MDC.remove(requestIdKey)
     MDC.remove(statusCodeKey)
   }
