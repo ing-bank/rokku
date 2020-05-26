@@ -210,6 +210,8 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
 
         val radosS3client = new S3Client {
           override protected[this] def storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
+
+          override protected[this] implicit def executionContext: ExecutionContext = testSystem.dispatcher
         }
 
         import scala.concurrent.duration._
