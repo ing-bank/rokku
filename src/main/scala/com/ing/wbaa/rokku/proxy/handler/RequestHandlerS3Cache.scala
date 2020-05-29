@@ -122,7 +122,7 @@ trait RequestHandlerS3Cache extends HazelcastCacheWithConf with RequestHandlerS3
         case Failure(exception)                        => logger.error("Cannot store object () in cache {}", key, exception)
         case Success(headValue: HeadCacheValueObject) =>
           val value = processHeadersForCache(headValue.headers, headValue.contentLength, headValue.statusCode)
-          logger.info("head object cache value {} for key {}", value, key)
+          logger.debug("head object cache value {} for key {}", value, key)
           putObject(key, ByteString(value))
         case Success(getValue: GetCacheValueObject) => putObject(key, getValue.data)
       }

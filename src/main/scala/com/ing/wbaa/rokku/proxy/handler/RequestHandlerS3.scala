@@ -55,7 +55,7 @@ trait RequestHandlerS3 extends RadosGatewayHandler with S3Client with UserReques
    * @return response from S3
    */
   protected[this] def fireRequestToS3(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
-    logger.info(s"Request sent to Ceph: {}", request)
+    logger.info(s"Request sent to Ceph: method: {} uri: {}", request.method.value, request.uri.toString())
     Http()
       .singleRequest(request)
       .andThen { case Success(r) => logger.info(s"Received response from Ceph: {}", r.status) }
