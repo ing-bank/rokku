@@ -19,6 +19,8 @@ trait LineageProviderAtlas extends LineageHelpers {
 
   private val logger = new LoggerHandlerWithId
 
+  private val whitelistUserAgents = system.settings.config.getString("rokku.atlas.whitelistUserAgentSplitByComma").trim.split(",")
+
   def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, userIPs: UserIps)(implicit id: RequestId): Future[Done] = {
     val lineageHeaders = getLineageHeaders(httpRequest)
     val pseudoDir = lineageHeaders.pseduoDir
@@ -29,7 +31,9 @@ trait LineageProviderAtlas extends LineageHelpers {
 
     val extractObjectFromPath = bucketObject.getOrElse("").split("/").takeRight(1).mkString
 
-    if (lineageHeaders.bucket.length > 1) {
+    val isClientTypeWhitelisted = whitelistUserAgents.contains(lineageHeaders.clientType.getOrElse("").toLowerCase())
+
+    if (lineageHeaders.bucket.length > 1 && isClientTypeWhitelisted) {
       lineageHeaders.method match {
         // mb bucket
         case HttpMethods.PUT if !lineageHeaders.bucket.isEmpty && pseudoDir.isEmpty && bucketObject.isEmpty =>
