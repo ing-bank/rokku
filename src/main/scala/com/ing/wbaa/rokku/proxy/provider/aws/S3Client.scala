@@ -48,7 +48,7 @@ trait S3Client {
       s3Client.setBucketAcl(bucketName, acl)
       s3Client.setBucketPolicy(bucketName, """{"Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": "*","Resource": ["arn:aws:s3:::*"]}],"Version": "2012-10-17"}""")
     } match {
-      case Failure(exception) => logger.error("setting bucket acls and policies ex={}", exception)
+      case Failure(exception) => logger.error("setting bucket acls and policies ex={}", exception.getMessage)
       case Success(_)         => logger.info("acls and policies for bucket {} done", bucketName)
     }
   }
