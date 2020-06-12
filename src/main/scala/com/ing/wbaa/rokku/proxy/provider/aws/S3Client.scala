@@ -43,6 +43,7 @@ trait S3Client {
     Try {
       logger.info("setting bucket acls and policies for bucket {}", bucketName)
       val acl = s3Client.getBucketAcl(bucketName)
+      acl.revokeAllPermissions(GroupGrantee.AuthenticatedUsers)
       acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Read)
       acl.grantPermission(GroupGrantee.AuthenticatedUsers, Permission.Write)
       s3Client.setBucketAcl(bucketName, acl)
