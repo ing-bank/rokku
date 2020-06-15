@@ -68,9 +68,10 @@ trait ProxyService {
       withoutSizeLimit {
         extractRequest { httpRequest =>
           extracts3Request { s3Request =>
+            val requestStartTime = System.nanoTime()
             onComplete(areCredentialsActive(s3Request.credential)) {
               case Success(Some(userSTS: User)) =>
-                logger.info("STS credentials active for request, user retrieved: {}", userSTS)
+                logger.info("STS credentials active for request, user retrieved: {} (response time {})", userSTS, System.nanoTime() - requestStartTime)
                 onComplete(processRequestForValidUser(httpRequest, s3Request, userSTS)) {
                   case Success(r) => r
                   case Failure(exception) =>
@@ -80,11 +81,11 @@ trait ProxyService {
                 }
               case Success(None) =>
                 implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
-                logger.warn("STS credentials not active: {}", s3Request)
+                logger.warn("STS credentials not active: {} (response time {})", s3Request, System.nanoTime() - requestStartTime)
                 complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
               case Failure(exception) =>
                 implicit val returnStatusCode: StatusCodes.ServerError = StatusCodes.InternalServerError
-                logger.error("An error occurred when checking credentials with STS service ex={}", exception)
+                logger.error("An error occurred when checking credentials with STS service ex={} (response time {})", exception, System.nanoTime() - requestStartTime)
                 complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
             }
           }
