@@ -2,24 +2,21 @@ package com.ing.wbaa.rokku.proxy.handler
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import com.ing.wbaa.rokku.proxy.config.{ KafkaSettings, StorageS3Settings }
+import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data._
-import com.ing.wbaa.rokku.proxy.provider.LineageProviderAtlas
 import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-class RequestHandlerS3Spec extends AsyncWordSpec with Diagrams with RequestHandlerS3 with LineageProviderAtlas with MemoryUserRequestQueue {
+class RequestHandlerS3Spec extends AsyncWordSpec with Diagrams with RequestHandlerS3 with MemoryUserRequestQueue {
 
   override implicit val system: ActorSystem = ActorSystem.create("test-system")
   override implicit val executionContext: ExecutionContext = system.dispatcher
   override val storageS3Settings: StorageS3Settings = new StorageS3Settings(system.settings.config) {
     override val storageS3Authority: Uri.Authority = Uri.Authority(Uri.Host("1.2.3.4"), 1234)
   }
-
-  override val kafkaSettings: KafkaSettings = new KafkaSettings(system.settings.config)
 
   implicit val requestId: RequestId = RequestId("test")
 

@@ -12,7 +12,7 @@ import org.scalatest.Assertion
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, TimeoutException}
 
 class LineageProviderAtlasItTest extends AnyWordSpecLike with Diagrams with EmbeddedKafka {
 
@@ -58,7 +58,7 @@ class LineageProviderAtlasItTest extends AnyWordSpecLike with Diagrams with Embe
         Thread.sleep(2000)
         createCustomTopic(createEventsTopic)
         apr.createLineageFromRequest(
-          fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
+          fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeObject").withHeaders(RawHeader("User-Agent", "aws-cli/1.16.68 Python/2.7")), userSTS, remoteClientIP)
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("external_object_in/fakeObject"))
       }
@@ -69,7 +69,7 @@ class LineageProviderAtlasItTest extends AnyWordSpecLike with Diagrams with Embe
       withRunningKafka {
         Thread.sleep(2000)
         apr.createLineageFromRequest(
-          fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeTags").withHeaders(RawHeader("rokku-metadata", "k1=v1")), userSTS, remoteClientIP)
+          fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeTags").withHeaders(RawHeader("rokku-metadata", "k1=v1"), RawHeader("User-Agent", "aws-cli/1.16.68 Python/2.7")), userSTS, remoteClientIP)
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("{\"awsTags\":[{\"attributes\":{\"key\":\"k1\",\"value\":\"v1\"},\"typeName\":\"aws_tag\"}]"))
       }
@@ -80,7 +80,7 @@ class LineageProviderAtlasItTest extends AnyWordSpecLike with Diagrams with Embe
       withRunningKafka {
         Thread.sleep(2000)
         apr.createLineageFromRequest(
-          fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeTags").withHeaders(RawHeader("rokku-classifications", "customerPII,secret")), userSTS, remoteClientIP)
+          fakeIncomingHttpRequest(HttpMethods.PUT, "/fakeBucket/fakeTags").withHeaders(RawHeader("rokku-classifications", "customerPII,secret"), RawHeader("User-Agent", "aws-cli/1.16.68 Python/2.7")), userSTS, remoteClientIP)
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("\"classifications\":[{\"typeName\":\"customerPII\"},{\"typeName\":\"secret\"}]"))
       }
@@ -91,7 +91,7 @@ class LineageProviderAtlasItTest extends AnyWordSpecLike with Diagrams with Embe
       withRunningKafka {
         Thread.sleep(2000)
         apr.createLineageFromRequest(
-          fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
+          fakeIncomingHttpRequest(HttpMethods.GET, "/fakeBucket/fakeObject").withHeaders(RawHeader("User-Agent", "aws-cli/1.16.68 Python/2.7")), userSTS, remoteClientIP)
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("external_object_out/fakeObject"))
       }
@@ -102,9 +102,19 @@ class LineageProviderAtlasItTest extends AnyWordSpecLike with Diagrams with Embe
       withRunningKafka {
         Thread.sleep(2000)
         apr.createLineageFromRequest(
-          fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject"), userSTS, remoteClientIP)
+          fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject")withHeaders(RawHeader("User-Agent", "aws-cli/1.16.68 Python/2.7")), userSTS, remoteClientIP)
         val message = consumeFirstStringMessageFrom(createEventsTopic)
         assert(message.contains("fakeObject"))
+      }
+    }
+
+    "time out exception because the user agent is not whitelisted" in withLineageProviderAtlas() { apr =>
+      implicit val config = EmbeddedKafkaConfig(kafkaPort = testKafkaPort)
+      withRunningKafka {
+        Thread.sleep(2000)
+        apr.createLineageFromRequest(
+          fakeIncomingHttpRequest(HttpMethods.DELETE, "/fakeBucket/fakeObject")withHeaders(RawHeader("User-Agent", "no-aws-cli/1.16.68 Python/2.7")), userSTS, remoteClientIP)
+        assertThrows[TimeoutException](consumeFirstStringMessageFrom(createEventsTopic))
       }
     }
   }
