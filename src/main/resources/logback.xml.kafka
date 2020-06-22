@@ -1,0 +1,84 @@
+<!-- turn debug=true on for logback-test.xml to help debug logging configurations. -->
+<configuration debug="false">
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are  by default assigned the type
+             ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="com.ing.wbaa.rokku.proxy.util.MaskingPatternJsonLayout">
+                <!-- Insert here the regexes to sanitize the log messages.
+                     Replacement supports pattern groups with variables named $1, $2, etc -->
+                <replace>
+                    <pattern>AwsSessionToken\(([\w\d]{5})[^)]+\)</pattern>
+                    <replacement>AwsSessionToken([$1...])</replacement>
+                </replace>
+                <replace>
+                    <pattern>AwsSecretKey\(([\w\d]{5})[^)]+\)</pattern>
+                    <replacement>AwsSecretKey([$1...])</replacement>
+                </replace>
+                <replace>
+                    <pattern>(?i)(X-Amz-Security-Token(: |=))([\w\d]{5})[\w\d]+</pattern>
+                    <replacement>$1[$3...]</replacement>
+                </replace>
+                <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter" />
+                <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSSX</timestampFormat>
+                <timestampFormatTimezoneId>Etc/UTC</timestampFormatTimezoneId>
+                <appendLineSeparator>true</appendLineSeparator>
+            </layout>
+        </encoder>
+    </appender>
+
+    <!-- This is the kafkaAppender -->
+    <appender name="kafkaAppender" class="com.github.danielwegener.logback.kafka.KafkaAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="com.ing.wbaa.rokku.proxy.util.MaskingPatternJsonLayout">
+                <!-- Insert here the regexes to sanitize the log messages.
+                     Replacement supports pattern groups with variables named $1, $2, etc -->
+                <replace>
+                    <pattern>AwsSessionToken\(([\w\d]{5})[^)]+\)</pattern>
+                    <replacement>AwsSessionToken([$1...])</replacement>
+                </replace>
+                <replace>
+                    <pattern>AwsSecretKey\(([\w\d]{5})[^)]+\)</pattern>
+                    <replacement>AwsSecretKey([$1...])</replacement>
+                </replace>
+                <replace>
+                    <pattern>(?i)(X-Amz-Security-Token(: |=))([\w\d]{5})[\w\d]+</pattern>
+                    <replacement>$1[$3...]</replacement>
+                </replace>
+                <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter" />
+                <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSSX</timestampFormat>
+                <timestampFormatTimezoneId>Etc/UTC</timestampFormatTimezoneId>
+                <appendLineSeparator>true</appendLineSeparator>
+            </layout>
+        </encoder>
+        <topic>dap-rokku-proxy</topic>
+        <keyingStrategy class="com.github.danielwegener.logback.kafka.keying.NoKeyKeyingStrategy" />
+        <deliveryStrategy class="com.github.danielwegener.logback.kafka.delivery.AsynchronousDeliveryStrategy" />
+        <producerConfig>bootstrap.servers=localhost:9092</producerConfig>
+        <producerConfig>acks=1</producerConfig>
+        <producerConfig>linger.ms=1000</producerConfig>
+        <producerConfig>security.protocol=SSL</producerConfig>
+        <producerConfig>ssl.truststore.location=client.truststore.jks</producerConfig>
+        <producerConfig>ssl.truststore.password=123456</producerConfig>
+
+        <!-- this is the fallback appender if kafka is not available. -->
+        <appender-ref ref="STDOUT" />
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="kafkaAppender" />
+    </appender>
+
+    <root level="info">
+        <appender-ref ref="ASYNC" />
+    </root>
+
+    <logger name="com.ing" level="DEBUG" />
+    <logger name="org.apache.ranger" level="ERROR" />
+    <logger name="org.apache.hadoop" level="ERROR" />
+    <logger name="akka.actor.ActorSystemImpl" level="ERROR" />
+    <!-- To enable V2 debug on signature uncomment below section -->
+    <!--<logger name="com.amazonaws.services.s3.internal" level="DEBUG" />-->
+
+</configuration>
