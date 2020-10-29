@@ -1,5 +1,6 @@
 package com.ing.wbaa.rokku.proxy.util
 
+import java.net.InetAddress
 import java.util
 
 import ch.qos.logback.classic.spi.ILoggingEvent
@@ -30,6 +31,7 @@ class MaskingPatternJsonLayout extends JsonLayout {
 
   override def addCustomDataToJsonMap(map: util.Map[String, AnyRef], event: ILoggingEvent): Unit = {
     map.put("application_name", "rokku-proxy")
+    map.put("hostname", InetAddress.getLocalHost.getHostName)
     super.addCustomDataToJsonMap(map, event)
   }
 }
