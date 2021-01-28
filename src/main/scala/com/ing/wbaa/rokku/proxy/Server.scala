@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy
 import akka.actor.{ ActorSystem, Props }
 import com.ing.wbaa.rokku.proxy.config._
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser
-import com.ing.wbaa.rokku.proxy.handler.{ FilterRecursiveListBucketHandler, RequestHandlerS3Cache }
+import com.ing.wbaa.rokku.proxy.handler.{ FilterRecursiveListBucketHandler, RequestHandlerS3 }
 import com.ing.wbaa.rokku.proxy.persistence.HttpRequestRecorder
 import com.ing.wbaa.rokku.proxy.provider._
 import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
 
 object Server extends App {
 
-  new RokkuS3Proxy with AuthorizationProviderRanger with RequestHandlerS3Cache with AuthenticationProviderSTS with LineageProviderAtlas with SignatureProviderAws with KerberosLoginProvider with FilterRecursiveListBucketHandler with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue with RequestParser {
+  new RokkuS3Proxy with AuthorizationProviderRanger with RequestHandlerS3 with AuthenticationProviderSTS with LineageProviderAtlas with SignatureProviderAws with KerberosLoginProvider with FilterRecursiveListBucketHandler with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue with RequestParser {
 
     override implicit lazy val system: ActorSystem = ActorSystem.create("rokku")
 
