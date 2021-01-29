@@ -1,0 +1,42 @@
+name: CI
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.8"
+      - name: Running test
+        run: sbt clean test;
+  it-test:
+    if: ${{ github.base_ref == 'refs/heads/feature/master' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: "Add s3.localhost to /etc/hosts to be able to run it test on ceph"
+        run: echo "127.0.0.1 s3.localhost" | sudo tee -a /etc/hosts
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.8"
+      - name: "Starting dependent containers for testing"
+        run: docker-compose up -d keycloak ceph postgres-server mariadb ranger-admin rokku-sts cassandra
+      - name: "Install aws cli"
+        run: pip install --user awscli
+      - name: "Compile the project while containers are starting up"
+        run: sbt clean compile
+      - name: "Wait for containers to be up and running"
+        run: bash waitForContainerSetup.sh
+      - name: "setup s3"
+        run: bash setupS3Env.sh
+      - name: "Running it tests"
+        run: sbt clean coverage test it:test coverageReport
