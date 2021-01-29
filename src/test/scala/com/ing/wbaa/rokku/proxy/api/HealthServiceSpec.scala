@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.get
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
-import com.ing.wbaa.rokku.proxy.data.HealthCheck
+import com.ing.wbaa.rokku.proxy.data.{ HealthCheck, RequestId }
 import com.ing.wbaa.rokku.proxy.data.HealthCheck.{ RGWListBuckets, S3ListBucket }
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 import org.scalatest.diagrams.Diagrams
@@ -81,6 +81,7 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
 
     private val threadPool = ExecutionContext.fromExecutor(new ForkJoinPool(32))
 
+    implicit val requestId: RequestId = RequestId("123")
     private def runProbe() =
       new Runnable {
         override def run(): Unit = {

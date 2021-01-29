@@ -46,12 +46,8 @@ libraryDependencies ++= Seq(
     "com.auth0"                    % "java-jwt"                % "3.9.0",
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
-    "org.scalatest"                %% "scalatest"              % "3.1.2"           % "it,test",
+    "org.scalatest"                %% "scalatest"              % "3.2.3"           % "it,test",
     "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.11.723"        % IntegrationTest,
-    "com.hazelcast"                % "hazelcast"               % "4.0.1",
-    "com.hazelcast"                % "hazelcast-kubernetes"    % "2.0.1",
-    "com.github.danielwegener"     % "logback-kafka-appender"  % "0.2.0-RC2"
-
 
 ) ++ persistenceDependencies
 
