@@ -1,4 +1,4 @@
-[![CI Actions Status](https://github.com/ing-bank/rokku/workflows/CI/badge.svg)](https://github.com/ing-bank/rokku/actions)
+[![CI Actions Status](https://github.com/ing-bank/rokku/workflows/CI-PR/badge.svg)](https://github.com/ing-bank/rokku/actions)
 [![codecov.io](http://codecov.io/github/ing-bank/rokku/coverage.svg?branch=master)](https://codecov.io/gh/ing-bank/rokku?branch=master)
 [![](https://images.microbadger.com/badges/image/wbaa/rokku:latest.svg)](https://hub.docker.com/r/wbaa/rokku/tags/)
 
