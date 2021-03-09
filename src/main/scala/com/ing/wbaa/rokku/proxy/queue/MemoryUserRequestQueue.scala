@@ -82,6 +82,6 @@ trait MemoryUserRequestQueue extends UserRequestQueue {
   }
 
   private def metricName(user: User): String = {
-    MetricsFactory.REQUEST_QUEUE_OCCUPIED_BY_USER.replace(MetricsFactory.REQUEST_USER, s"${user.userName.value}..")
+    MetricsFactory.REQUEST_QUEUE_OCCUPIED_BY_USER.replace(MetricsFactory.REQUEST_USER, user.userName.value)
   }
 }
