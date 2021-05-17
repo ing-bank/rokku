@@ -8,6 +8,8 @@ class StsSettings(config: Config) extends Extension {
   private val stsUri: String = config.getString("rokku.sts.uri")
   val stsBaseUri: Uri = Uri(stsUri)
   val encodeSecret: String = config.getString("rokku.sts.encodeSecret")
+  val cacheTTLInSeconds: Int = config.getInt("rokku.sts.cache.ttlInSeconds")
+
 }
 
 object StsSettings extends ExtensionId[StsSettings] with ExtensionIdProvider {

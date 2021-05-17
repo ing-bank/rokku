@@ -27,6 +27,7 @@ trait AuthenticationProviderSTS extends JsonProtocols with JwtToken {
   protected[this] def stsSettings: StsSettings
 
   protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] = {
+    logger.debug("no cache - areCredentialsActive invoked")
     val QueryParameters =
       Map("accessKey" -> awsRequestCredential.accessKey.value) ++
         awsRequestCredential.sessionToken.map(s => "sessionToken" -> s.value)
