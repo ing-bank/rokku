@@ -44,6 +44,8 @@ libraryDependencies ++= Seq(
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
 //    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion, // bring back after persistence update
     "com.auth0"                    % "java-jwt"                % "3.9.0",
+    "com.github.cb372"             %% "scalacache-core"        % "0.28.0",
+    "com.github.cb372"             %% "scalacache-caffeine"    % "0.28.0",
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.2.3"           % "it,test",
