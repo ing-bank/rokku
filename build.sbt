@@ -6,7 +6,7 @@ val rokkuVersion = scala.sys.env.getOrElse("ROKKU_VERSION", "SNAPSHOT")
 
 name := "rokku"
 version := rokkuVersion
-scalaVersion := "2.12.10"
+scalaVersion := "2.12.16"
 
 scalacOptions += "-unchecked"
 scalacOptions += "-deprecation"
@@ -19,8 +19,8 @@ scalacOptions += "-Xfatal-warnings"
 // Experimental: improved update resolution.
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
-val akkaHttpVersion = "10.1.9"
-val akkaVersion = "2.5.30"
+val akkaHttpVersion = "10.2.9"
+val akkaVersion = "2.6.8"
 val logbackJson = "0.1.5"
 val metricVersion = "3.2.2" // align with C* driver core, can be updated with new C* persistence from akka
 

@@ -2,7 +2,7 @@ package com.ing.wbaa.rokku.proxy
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.{Authority, Host}
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import com.amazonaws.auth.BasicSessionCredentials
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion
@@ -37,7 +37,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
 
   override implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
-  override implicit def materializer: ActorMaterializer = ActorMaterializer()(testSystem)
+  override implicit def materializer: Materializer = Materializer(testSystem)
 
   override implicit def executionContext: ExecutionContext = testSystem.dispatcher
 

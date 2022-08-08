@@ -4,7 +4,6 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
-import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.api.{ HealthService, PostRequestActions, ProxyServiceWithListAllBuckets }
 import com.ing.wbaa.rokku.proxy.config.HttpSettings
 import com.typesafe.scalalogging.LazyLogging
@@ -15,7 +14,6 @@ import scala.util.{ Failure, Success }
 trait RokkuS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets with PostRequestActions with HealthService {
 
   protected[this] implicit def system: ActorSystem
-  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
 
   protected[this] def httpSettings: HttpSettings
 

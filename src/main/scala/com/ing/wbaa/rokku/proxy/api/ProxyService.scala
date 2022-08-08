@@ -1,13 +1,11 @@
 package com.ing.wbaa.rokku.proxy.api
 
 import java.util.UUID
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
-import akka.stream.ActorMaterializer
 import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
@@ -95,7 +93,6 @@ trait ProxyService {
 
   private def checkExtractedPostContents(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Future[Route] = {
     import scala.concurrent.duration._
-    implicit val mat = ActorMaterializer()
 
     // we need to materialize here to avoid error - failed to materialize stream more than once, when http client in handler will
     // try to send the same entity to s3

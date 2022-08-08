@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ HttpMethods, MediaTypes, RemoteAddress, Uri }
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.stream.Materializer
 import akka.util.ByteString
 import com.ing.wbaa.rokku.proxy.data._
 import org.scalatest.diagrams.Diagrams
@@ -18,7 +18,7 @@ class FilterRecursiveListBucketHandlerSpec extends AsyncWordSpec with Diagrams w
   override implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val requestId: RequestId = RequestId("test")
 
-  implicit def materializer: Materializer = ActorMaterializer()(system)
+  implicit def materializer: Materializer = Materializer(system)
 
   def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
     user match {
