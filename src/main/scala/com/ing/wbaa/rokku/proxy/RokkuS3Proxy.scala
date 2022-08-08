@@ -23,12 +23,13 @@ trait RokkuS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets with 
   final val allRoutes = healthRoute ~ proxyServiceRoute
 
   // Details about the server binding.
-  lazy val startup: Future[Http.ServerBinding] =
-    Http(system).bindAndHandle(allRoutes, httpSettings.httpBind, httpSettings.httpPort)
+  lazy val startup: Future[Http.ServerBinding] = {
+    Http(system).newServerAt(httpSettings.httpBind, httpSettings.httpPort).bindFlow(allRoutes)
       .andThen {
         case Success(binding) => logger.info(s"Proxy service started listening: ${binding.localAddress}")
         case Failure(reason)  => logger.error("Proxy service failed to start.", reason)
       }
+  }
 
   def shutdown(): Future[Done] = {
     startup.flatMap(_.unbind)

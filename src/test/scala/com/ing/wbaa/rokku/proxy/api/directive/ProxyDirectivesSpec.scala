@@ -122,14 +122,14 @@ class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagr
       }
 
       "return 1.2.3.4 client ip and None header ips" in {
-        HttpRequest().withHeaders(authHeader, `Remote-Address`(RemoteAddress(InetAddress.getByName("1.2.3.4")))) ~> testClientIp ~> check {
+        HttpRequest().withHeaders(authHeader, `X-Forwarded-For`(RemoteAddress(InetAddress.getByName("1.2.3.4")))) ~> testClientIp ~> check {
           val response = responseAs[String]
           assert(response == "Client ip = 1.2.3.4, Header ips = HeaderIPs(None,None,None)")
         }
       }
 
       "return 1.2.3.4 client ip and HeaderIPs(None,None,Some(2.3.4.5) header ips" in {
-        HttpRequest().withHeaders(authHeader, `Remote-Address`(RemoteAddress(InetAddress.getByName("1.2.3.4"))),
+        HttpRequest().withHeaders(authHeader, `X-Forwarded-For`(RemoteAddress(InetAddress.getByName("1.2.3.4"))),
           RawHeader("Remote-Address", "2.3.4.5")) ~> testClientIp ~> check {
             val response = responseAs[String]
             assert(response == "Client ip = 1.2.3.4, Header ips = HeaderIPs(None,None,Some(2.3.4.5))")
@@ -137,7 +137,7 @@ class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagr
       }
 
       "return 1.2.3.4 client ip and HeaderIPs(None,Some(ArraySeq(3.4.5.6)),Some(2.3.4.5) header ips" in {
-        HttpRequest().withHeaders(authHeader, `Remote-Address`(RemoteAddress(InetAddress.getByName("1.2.3.4"))),
+        HttpRequest().withHeaders(authHeader, `X-Forwarded-For`(RemoteAddress(InetAddress.getByName("1.2.3.4"))),
           RawHeader("Remote-Address", "2.3.4.5"),
           RawHeader("X-Forwarded-For", "3.4.5.6")) ~> testClientIp ~> check {
             val response = responseAs[String]
@@ -146,7 +146,7 @@ class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagr
       }
 
       "return 1.2.3.4 client ip and HeaderIPs(Some(4.5.6.7),Some(ArraySeq(3.4.5.6)),Some(2.3.4.5) header ips" in {
-        HttpRequest().withHeaders(authHeader, `Remote-Address`(RemoteAddress(InetAddress.getByName("1.2.3.4"))),
+        HttpRequest().withHeaders(authHeader, `X-Forwarded-For`(RemoteAddress(InetAddress.getByName("1.2.3.4"))),
           RawHeader("Remote-Address", "2.3.4.5"),
           RawHeader("X-Forwarded-For", "3.4.5.6"),
           RawHeader("X-Real-IP", "4.5.6.7")) ~> testClientIp ~> check {

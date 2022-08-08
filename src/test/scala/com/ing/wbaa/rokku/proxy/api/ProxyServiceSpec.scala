@@ -47,7 +47,7 @@ class ProxyServiceSpec extends AnyFlatSpec with Diagrams with ScalatestRouteTest
     headers = List(
       RawHeader("authorization", s"AWS $accessKey:bla"),
       RawHeader("x-amz-security-token", "okSessionToken"),
-      `Remote-Address`(RemoteAddress(InetAddress.getByName("6.7.8.9"), Some(1234)))
+      `X-Forwarded-For`(RemoteAddress(InetAddress.getByName("6.7.8.9"), Some(1234)))
     ),
     uri = Uri(
       scheme = "http",
