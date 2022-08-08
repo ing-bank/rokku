@@ -82,6 +82,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
       with AuthorizationProviderRanger with LineageProviderAtlas with SignatureProviderAws
       with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue with RequestParser {
       override implicit lazy val system: ActorSystem = testSystem
+      override def materializer: Materializer = Materializer(system)
       override val httpSettings: HttpSettings = rokkuHttpSettings
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
       override val stsSettings: StsSettings = StsSettings(testSystem)
