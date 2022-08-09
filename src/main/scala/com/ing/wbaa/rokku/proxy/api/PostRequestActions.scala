@@ -21,8 +21,6 @@ trait PostRequestActions {
 
   protected[this] def emitEvent(s3Request: S3Request, method: HttpMethod, principalId: String, awsRequest: AWSRequestType)(implicit id: RequestId): Future[Done]
 
-  protected[this] def setDefaultBucketAclAndPolicy(bucketName: String)(implicit id: RequestId): Future[Unit]
-
   protected[this] def awsRequestFromRequest(request: HttpRequest): AWSRequestType
 
   private[this] def createBucketNotification(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request,
