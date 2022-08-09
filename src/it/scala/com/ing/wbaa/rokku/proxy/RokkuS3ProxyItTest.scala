@@ -79,7 +79,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
   def withSdkToMockProxy(testCode: (AWSSecurityTokenService, Authority) => Future[Assertion]): Future[Assertion] = {
     val proxy: RokkuS3Proxy = new RokkuS3Proxy with RequestHandlerS3
       with FilterRecursiveListBucketHandler with AuthenticationProviderSTS
-      with AuthorizationProviderRanger with LineageProviderAtlas with SignatureProviderAws
+      with AuthorizationProviderRanger with SignatureProviderAws
       with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue with RequestParser {
       override implicit lazy val system: ActorSystem = testSystem
       override def materializer: Materializer = Materializer(system)

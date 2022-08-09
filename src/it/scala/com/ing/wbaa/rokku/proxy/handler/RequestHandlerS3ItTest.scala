@@ -1,10 +1,6 @@
 package com.ing.wbaa.rokku.proxy.handler
 
-import java.io.File
-
-import akka.Done
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.{Authority, Host}
 import com.amazonaws.auth.SignerFactory
 import com.amazonaws.services.s3.AmazonS3
@@ -20,6 +16,7 @@ import org.scalatest.Assertion
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AsyncWordSpec
 
+import java.io.File
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
@@ -54,7 +51,6 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with Diagrams with RokkuFixtu
       override def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]] =
         Future(Some(User(UserRawJson("userId", Some(Set("group")), "accesskey", "secretkey", None))))
 
-      def createLineageFromRequest(httpRequest: HttpRequest, userSTS: User, userIPs: UserIps)(implicit id: RequestId): Future[Done] = Future.successful(Done)
     }
     proxy.startup.map { binding =>
       try testCode(getAmazonS3(

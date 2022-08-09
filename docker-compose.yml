@@ -56,14 +56,6 @@ services:
     ports:
       - "8080:8080"
 
-  atlas:
-    image: wbaa/rokku-dev-apache-atlas:0.0.8
-    ports:
-      - "21000:21000"
-    depends_on:
-      - "zookeeper"
-      - "kafka"
-
   mariadb:
     image: wbaa/rokku-dev-mariadb:0.0.8
     environment:
