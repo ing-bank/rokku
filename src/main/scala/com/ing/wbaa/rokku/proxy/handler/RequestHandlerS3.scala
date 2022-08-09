@@ -7,14 +7,13 @@ import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.{ RequestId, S3Request, User }
 import com.ing.wbaa.rokku.proxy.handler.exception.RokkuThrottlingException
-import com.ing.wbaa.rokku.proxy.handler.radosgw.RadosGatewayHandler
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 import com.ing.wbaa.rokku.proxy.queue.UserRequestQueue
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Success
 
-trait RequestHandlerS3 extends RadosGatewayHandler with S3Client with UserRequestQueue {
+trait RequestHandlerS3 extends S3Client with UserRequestQueue {
 
   private val logger = new LoggerHandlerWithId
 
@@ -40,11 +39,7 @@ trait RequestHandlerS3 extends RadosGatewayHandler with S3Client with UserReques
       .addHeader(RawHeader("User-Agent", userAgent))
 
     fireRequestToS3(newRequest, userSTS).flatMap { response =>
-      if (response.status == StatusCodes.Forbidden && handleUserCreationRadosGw(userSTS))
-        fireRequestToS3(newRequest, userSTS).flatMap(retryResponse => Future(filterResponse(request, userSTS, s3request, retryResponse)))
-      else {
-        Future(filterResponse(request, userSTS, s3request, response))
-      }
+      Future(filterResponse(request, userSTS, s3request, response))
     }
   }
 

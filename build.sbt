@@ -39,7 +39,6 @@ libraryDependencies ++= Seq(
     "org.apache.kafka"             %  "kafka-clients"           % "2.0.0",
     "net.manub"                    %% "scalatest-embedded-kafka" % "2.0.0" % IntegrationTest,
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11") exclude("org.apache.htrace","htrace-core"), //TODO update
-    "io.github.twonote"            %  "radosgw-admin4j"        % "2.0.2",
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "3.0.4" exclude("com.typesafe.akka", "akka-stream_2.12"),
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
 //    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion, // bring back after persistence update

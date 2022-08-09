@@ -4,14 +4,14 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
-import com.ing.wbaa.rokku.proxy.api.{ HealthService, PostRequestActions, ProxyServiceWithListAllBuckets }
+import com.ing.wbaa.rokku.proxy.api.{ HealthService, PostRequestActions, ProxyService }
 import com.ing.wbaa.rokku.proxy.config.HttpSettings
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-trait RokkuS3Proxy extends LazyLogging with ProxyServiceWithListAllBuckets with PostRequestActions with HealthService {
+trait RokkuS3Proxy extends LazyLogging with ProxyService with PostRequestActions with HealthService {
 
   protected[this] implicit def system: ActorSystem
 

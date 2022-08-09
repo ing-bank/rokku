@@ -1,17 +1,15 @@
 package com.ing.wbaa.rokku.proxy.api
 
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ Route, StandardRoute }
-import com.ing.wbaa.rokku.proxy.data.HealthCheck.{ RGWListBuckets, S3ListBucket }
+import com.ing.wbaa.rokku.proxy.data.HealthCheck.S3ListBucket
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
-import com.ing.wbaa.rokku.proxy.handler.radosgw.RadosGatewayHandler
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{ ExecutionContext, Future }
@@ -32,7 +30,7 @@ object HealthService {
 
 }
 
-trait HealthService extends RadosGatewayHandler with S3Client {
+trait HealthService extends S3Client {
 
   private val logger = new LoggerHandlerWithId
   protected[this] implicit def executionContext: ExecutionContext
@@ -44,8 +42,7 @@ trait HealthService extends RadosGatewayHandler with S3Client {
   private def updateStatus(implicit id: RequestId): Future[StandardRoute] = Future {
     clearStatus()
     storageS3Settings.hcMethod match {
-      case RGWListBuckets => addStatus(execProbe(listAllBuckets _))
-      case S3ListBucket   => addStatus(execProbe(listBucket _))
+      case S3ListBucket => addStatus(execProbe(listBucket _))
     }
   }
   private def updateStatusAndGet(implicit id: RequestId): Future[Option[StandardRoute]] =
