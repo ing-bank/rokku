@@ -97,10 +97,3 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
 
-
-  cassandra:
-    image: cassandra:3
-    container_name: cassandra
-    ports:
-      - "9042:9042"
-      - "9160:9160"

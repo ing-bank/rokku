@@ -96,9 +96,6 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
           case _ => super.isUserAuthorizedForRequest(request, user)
         }
       }
-
-      override val requestPersistenceEnabled: Boolean = false
-      override val configuredPersistenceId: String = "localhost-1"
     }
     proxy.startup.flatMap { binding =>
       val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)

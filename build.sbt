@@ -50,15 +50,6 @@ libraryDependencies ++= Seq(
     "org.scalatest"                %% "scalatest"              % "3.2.13"           % "it,test",
     "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.12.276"        % IntegrationTest,
 
-) ++ persistenceDependencies
-
-val persistenceDependencies = Seq (
-  "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
-  "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
-  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.102" exclude("com.typesafe.akka", "akka-cluster-tools_2.12")
-    exclude("com.typesafe.akka", "akka-persistence_2.12") exclude("com.typesafe.akka", "akka-persistence-query_2.12")
-    exclude("com.typesafe.akka", "akka-stream_2.12"),
-  "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % "0.102" % Test
 )
 
 // Fix logging dependencies:
