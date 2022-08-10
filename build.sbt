@@ -25,8 +25,8 @@ val logbackJson = "0.1.5"
 val metricVersion = "4.2.11"
 
 libraryDependencies ++= Seq(
-    "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.2",
-    "ch.qos.logback"               %  "logback-classic"        % "1.2.3",
+    "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.5",
+    "ch.qos.logback"               %  "logback-classic"        % "1.2.11",
     "ch.qos.logback.contrib"       %  "logback-json-classic"   % logbackJson,
     "ch.qos.logback.contrib"       %  "logback-jackson"        % logbackJson,
     "com.fasterxml.jackson.core"   %  "jackson-databind"       % "2.13.3",
@@ -38,7 +38,7 @@ libraryDependencies ++= Seq(
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.12.276",
     "org.apache.kafka"             %  "kafka-clients"           % "3.2.1",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11") exclude("org.apache.htrace","htrace-core"), //TODO update
-    "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "3.0.4" exclude("com.typesafe.akka", "akka-stream_2.12"),
+    "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "3.0.4",
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
     "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion,
     "com.auth0"                    % "java-jwt"                % "4.0.0",
@@ -53,8 +53,8 @@ libraryDependencies ++= Seq(
 
 // Fix logging dependencies:
 //  - Our logging implementation is Logback, via the Slf4j API.
-//  - Therefore we suppress the Log4j implentation and re-route its API calls over Slf4j.
-libraryDependencies += "org.slf4j" % "log4j-over-slf4j" % "1.7.30" % Runtime
+//  - Therefore we suppress the Log4j implementation and re-route its API calls over Slf4j.
+libraryDependencies += "org.slf4j" % "log4j-over-slf4j" % "1.7.36" % Runtime
 excludeDependencies += "org.slf4j" % "slf4j-log4j12"
 excludeDependencies += "log4j" % "log4j"
 

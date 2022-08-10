@@ -40,7 +40,7 @@ class LoggerHandlerWithId {
     if (args.isInstanceOf[ArraySeq[_]])
       log.warn(message, args) //TODO logging args !
     else
-      log.warn(message, args.asInstanceOf[scala.collection.immutable.$colon$colon[AnyRef]]: _*)
+      log.warn(message, args) //TODO logging args !
     MDC.remove(requestIdKey)
     MDC.remove(statusCodeKey)
   }
@@ -52,7 +52,7 @@ class LoggerHandlerWithId {
     if (args.isInstanceOf[ArraySeq[_]])
       log.error(message, args) //TODO logging args !
     else
-      log.error(message, args.asInstanceOf[scala.collection.immutable.$colon$colon[AnyRef]]: _*)
+      log.error(message, args) //TODO logging args !
     MDC.remove(requestIdKey)
     MDC.remove(statusCodeKey)
   }
