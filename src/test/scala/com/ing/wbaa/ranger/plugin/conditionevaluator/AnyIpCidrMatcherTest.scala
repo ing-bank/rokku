@@ -3,7 +3,7 @@ package com.ing.wbaa.ranger.plugin.conditionevaluator
 import org.apache.ranger.plugin.model.RangerPolicy.RangerPolicyItemCondition
 
 class AnyIpCidrMatcherTest extends AbstractAbstractIpCidrMatcherTest {
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   def newIpCidrMatcher(cidrs: List[String]): AbstractIpCidrMatcher = {
     val testIpCidrClass = new AnyIpCidrMatcher()

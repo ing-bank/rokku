@@ -15,7 +15,7 @@ class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagr
 
   "Proxy Directives" should {
 
-    val extractAuthorizationS3 = PrivateMethod[Option[AwsAccessKey]]('extractAuthorizationS3)
+    val extractAuthorizationS3 = PrivateMethod[Option[AwsAccessKey]](Symbol("extractAuthorizationS3"))
 
     "extract the accesskey from an authorization header" that {
       "uses AWS4-HMAC-SHA256 signer type" in {

@@ -10,5 +10,5 @@ class KerberosSettings(config: Config) extends Extension {
 
 object KerberosSettings extends ExtensionId[KerberosSettings] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): KerberosSettings = new KerberosSettings(system.settings.config)
-  override def lookup(): ExtensionId[KerberosSettings] = KerberosSettings
+  override def lookup: ExtensionId[KerberosSettings] = KerberosSettings
 }

@@ -9,7 +9,7 @@ import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.extractHeade
 import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class SignatureHelpersV2 extends SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId

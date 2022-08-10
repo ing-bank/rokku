@@ -121,7 +121,7 @@ object ProxyDirectives extends LazyLogging {
       optionalRawHeaderValueByName(REMOTE_ADDRESS_HEADER) tflatMap { case (xRealIP, xForwardedFor, remoteAddress) =>
         provide(HeaderIPs(
           `X-Real-IP` = xRealIP.map(extractIP),
-          `X-Forwarded-For` = xForwardedFor.map(_.split(',').map(extractIP)),
+          `X-Forwarded-For` = xForwardedFor.map(_.split(',').toIndexedSeq.map(extractIP)),
           `Remote-Address` = remoteAddress.map(extractIP)
         ))
       }

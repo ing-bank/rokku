@@ -24,5 +24,5 @@ class KafkaSettings(config: Config) extends Extension {
 
 object KafkaSettings extends ExtensionId[KafkaSettings] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): KafkaSettings = new KafkaSettings(system.settings.config)
-  override def lookup(): ExtensionId[KafkaSettings] = KafkaSettings
+  override def lookup: ExtensionId[KafkaSettings] = KafkaSettings
 }

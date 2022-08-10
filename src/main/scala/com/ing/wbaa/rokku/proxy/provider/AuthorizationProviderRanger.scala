@@ -49,7 +49,7 @@ trait AuthorizationProviderRanger {
    *  enabled in configuration. They are disabled by default
    */
   def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     def prepareAccessRequest(rangerResource: RangerAccessResourceImpl, user: String, groups: Set[String]) = new RangerAccessRequestImpl(
       rangerResource,

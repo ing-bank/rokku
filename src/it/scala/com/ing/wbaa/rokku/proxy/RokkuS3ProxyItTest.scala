@@ -33,7 +33,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
   with RokkuFixtures
   with OAuth2TokenRequest {
 
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   override implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
@@ -133,7 +133,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
       retrieveKeycloackToken(validKeycloakCredentialsUserone) flatMap { keycloackToken =>
         val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
 
-        import scala.collection.JavaConverters._
+        import scala.jdk.CollectionConverters._
         val deleteRequest = new DeleteObjectsRequest("home")
         deleteRequest.setKeys(List(
           new KeyVersion("userone/issue"),
@@ -148,7 +148,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
       retrieveKeycloackToken(validKeycloakCredentialsUserone) flatMap { keycloackToken =>
         val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
 
-        import scala.collection.JavaConverters._
+        import scala.jdk.CollectionConverters._
         val deleteRequest = new DeleteObjectsRequest("home")
         deleteRequest.setKeys(List(
           new KeyVersion("userone/issue"),

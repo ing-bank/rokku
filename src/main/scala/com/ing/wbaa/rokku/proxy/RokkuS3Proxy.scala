@@ -32,7 +32,7 @@ trait RokkuS3Proxy extends LazyLogging with ProxyService with PostRequestActions
   }
 
   def shutdown(): Future[Done] = {
-    startup.flatMap(_.unbind)
+    startup.flatMap(s => s.unbind())
       .andThen {
         case Success(_)      => logger.info("Proxy service stopped.")
         case Failure(reason) => logger.error("Proxy service failed to stop.", reason)

@@ -3,14 +3,14 @@ package com.ing.wbaa.rokku.proxy.api
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ Route, StandardRoute }
-import com.ing.wbaa.rokku.proxy.data.HealthCheck.S3ListBucket
+import com.ing.wbaa.rokku.proxy.data.HealthCheck.{ S3ListBucket, Default }
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
@@ -42,7 +42,8 @@ trait HealthService extends S3Client {
   private def updateStatus(implicit id: RequestId): Future[StandardRoute] = Future {
     clearStatus()
     storageS3Settings.hcMethod match {
-      case S3ListBucket => addStatus(execProbe(listBucket _))
+      case S3ListBucket => addStatus(execProbe(() => listBucket))
+      case Default      => addStatus(execProbe(() => listBucket))
     }
   }
   private def updateStatusAndGet(implicit id: RequestId): Future[Option[StandardRoute]] =
@@ -86,7 +87,7 @@ trait HealthService extends S3Client {
           case Success(opt) =>
             opt.getOrElse(complete(StatusCodes.InternalServerError -> "Failed to read status cache"))
           case Failure(e) =>
-            complete(StatusCodes.InternalServerError -> "Failed to read status cache " + e.getMessage)
+            complete(StatusCodes.InternalServerError -> s"Failed to read status cache $e.getMessage")
         }
       }
     }

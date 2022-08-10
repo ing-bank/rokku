@@ -16,7 +16,7 @@ trait EventProducer {
 
   private val logger = new LoggerHandlerWithId
 
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   protected[this] implicit val kafkaSettings: KafkaSettings
 
@@ -45,11 +45,11 @@ trait EventProducer {
       .send(new ProducerRecord[String, String](topic, event), (metadata: RecordMetadata, exception: Exception) => {
         exception match {
           case e: Exception =>
-            MetricsFactory.incrementKafkaSendErrors
+            MetricsFactory.incrementKafkaSendErrors()
             logger.error("error in sending event {} to topic {}, error={}", event, topic, e)
             throw new Exception(e)
           case _ =>
-            httpMethod.map { m => MetricsFactory.incrementKafkaNotificationsSent(m) }
+            httpMethod.foreach { m => MetricsFactory.incrementKafkaNotificationsSent(m) }
             logger.debug("Message sent {} to kafka, offset {}", event, metadata.offset())
         }
       }) match {

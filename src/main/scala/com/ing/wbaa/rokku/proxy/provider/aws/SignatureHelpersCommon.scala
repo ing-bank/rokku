@@ -12,15 +12,19 @@ import com.amazonaws.http.HttpMethodName
 import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 trait SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId
 
   def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]]
+
   def getAWSHeaders(httpRequest: HttpRequest): AWSHeaderValues
+
   def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit
+
   def addHeadersToRequest(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit
+
   def getSignedHeaders(authorization: String): String
 
   final def cleanURLEncoding(param: String) = URLDecoder.decode(param, StandardCharsets.UTF_8.toString)
@@ -44,6 +48,7 @@ trait SignatureHelpersCommon {
         .map {
           case Array(k, v) => (k, List(cleanURLEncoding(v)).asJava)
           case Array(k)    => (k, List("").asJava)
+          case _           => ("", List("").asJava)
         }
     }.toList.flatten.toMap.asJava
 
@@ -124,7 +129,9 @@ object SignatureHelpersCommon {
       case a if a.contains("AWS4") => new SignatureHelpersV4
       case a if a.contains("AWS")  => new SignatureHelpersV2
       case a                       => new NoSignerSupport(a)
-    }.getOrElse { throw new Exception("Unable to determine AWS signature version") }
+    }.getOrElse {
+      throw new Exception("Unable to determine AWS signature version")
+    }
   }
 
 }

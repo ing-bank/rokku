@@ -14,5 +14,5 @@ class StsSettings(config: Config) extends Extension {
 
 object StsSettings extends ExtensionId[StsSettings] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): StsSettings = new StsSettings(system.settings.config)
-  override def lookup(): ExtensionId[StsSettings] = StsSettings
+  override def lookup: ExtensionId[StsSettings] = StsSettings
 }

@@ -11,7 +11,7 @@ import com.amazonaws.services.s3.transfer.model.UploadResult
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.typesafe.config.ConfigFactory
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 
 trait S3SdkHelpers {

@@ -66,7 +66,7 @@ trait RokkuFixtures extends S3SdkHelpers {
   }
 
   private def cleanBucket(s3Client: AmazonS3, bucketName: String) = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     s3Client.listObjectsV2(bucketName).getObjectSummaries.asScala.toList.map(_.getKey).foreach { key =>
       s3Client.deleteObject(bucketName, key)
     }

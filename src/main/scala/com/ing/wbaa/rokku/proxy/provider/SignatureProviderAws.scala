@@ -31,5 +31,4 @@ trait SignatureProviderAws {
       awsHeaders.signature.getOrElse("") == proxySignature
     } else false
   }
-
 }

@@ -1,7 +1,6 @@
 package com.ing.wbaa.rokku.proxy.handler
 
 import java.net.URLDecoder
-
 import akka.NotUsed
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.alpakka.xml.scaladsl.{ XmlParsing, XmlWriting }
@@ -10,7 +9,7 @@ import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import com.ing.wbaa.rokku.proxy.data.{ Read, RequestId, S3Request, User }
 
-import scala.collection.immutable
+import scala.collection.{ immutable, mutable }
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -79,7 +78,7 @@ trait FilterRecursiveListBucketHandler {
     Flow[ByteString].via(XmlParsing.parser)
       .statefulMapConcat(() => {
         // state
-        val keyTagValue = StringBuilder.newBuilder
+        val keyTagValue = new mutable.StringBuilder()
         val allContentsElements = new ListBuffer[ParseEvent]
         var isContentsTag = false
         var isKeyTag = false
@@ -97,7 +96,7 @@ trait FilterRecursiveListBucketHandler {
             case element: EndElement if element.localName == "Contents" =>
               isContentsTag = false
               allContentsElements += element
-              if (isPathOkInRangerPolicy(keyTagValue.stripMargin)) {
+              if (isPathOkInRangerPolicy(keyTagValue.result().stripMargin)) {
                 allContentsElements.toList
               } else {
                 immutable.Seq.empty

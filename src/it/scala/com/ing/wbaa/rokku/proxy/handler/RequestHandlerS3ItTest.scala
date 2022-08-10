@@ -17,7 +17,7 @@ import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AsyncWordSpec
 
 import java.io.File
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 
 class RequestHandlerS3ItTest extends AsyncWordSpec with Diagrams with RokkuFixtures {

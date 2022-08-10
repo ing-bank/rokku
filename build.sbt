@@ -6,23 +6,23 @@ val rokkuVersion = scala.sys.env.getOrElse("ROKKU_VERSION", "SNAPSHOT")
 
 name := "rokku"
 version := rokkuVersion
-scalaVersion := "2.12.16"
+scalaVersion := "2.13.8"
 
 scalacOptions += "-unchecked"
 scalacOptions += "-deprecation"
 scalacOptions ++= Seq("-encoding", "utf-8")
 scalacOptions += "-target:jvm-1.8"
 scalacOptions += "-feature"
-scalacOptions += "-Xlint"
+scalacOptions += "-Xlint:-strict-unsealed-patmat"
 scalacOptions += "-Xfatal-warnings"
 
 // Experimental: improved update resolution.
 updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
 val akkaHttpVersion = "10.2.9"
-val akkaVersion = "2.6.8"
+val akkaVersion = "2.6.19"
 val logbackJson = "0.1.5"
-val metricVersion = "3.2.2" // align with C* driver core, can be updated with new C* persistence from akka
+val metricVersion = "4.2.11"
 
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.2",
@@ -36,11 +36,11 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaHttpVersion,
     "com.typesafe.akka"            %% "akka-http-xml"          % akkaHttpVersion,
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.12.276",
-    "org.apache.kafka"             %  "kafka-clients"           % "2.0.0",
+    "org.apache.kafka"             %  "kafka-clients"           % "3.2.1",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "1.1.0" exclude("org.apache.kafka", "kafka_2.11") exclude("org.apache.htrace","htrace-core"), //TODO update
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "3.0.4" exclude("com.typesafe.akka", "akka-stream_2.12"),
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
-//    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion, // bring back after persistence update
+    "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion,
     "com.auth0"                    % "java-jwt"                % "4.0.0",
     "com.github.cb372"             %% "scalacache-core"        % "0.28.0",
     "com.github.cb372"             %% "scalacache-caffeine"    % "0.28.0",
