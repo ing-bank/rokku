@@ -11,13 +11,9 @@ scalaVersion := "2.13.8"
 scalacOptions += "-unchecked"
 scalacOptions += "-deprecation"
 scalacOptions ++= Seq("-encoding", "utf-8")
-scalacOptions += "-target:jvm-1.8"
 scalacOptions += "-feature"
 scalacOptions += "-Xlint:-strict-unsealed-patmat"
 scalacOptions += "-Xfatal-warnings"
-
-// Experimental: improved update resolution.
-updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
 val akkaHttpVersion = "10.2.9"
 val akkaVersion = "2.6.19"
@@ -48,7 +44,6 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.2.13"           % "it,test",
     "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.12.276"        % IntegrationTest,
-
 )
 
 // Fix logging dependencies:
@@ -61,8 +56,8 @@ excludeDependencies += "log4j" % "log4j"
 configs(IntegrationTest)
 Defaults.itSettings
 
-parallelExecution in Test:= true
-parallelExecution in IntegrationTest := true
+Test / parallelExecution:= true
+IntegrationTest / parallelExecution := true
 
 enablePlugins(JavaAppPackaging)
 
@@ -87,10 +82,10 @@ scalariformPreferences := scalariformPreferences.value
     .setPreference(SingleCasePatternOnNewline, false)
 
 // hack for ranger conf dir - should contain files like ranger-s3-security.xml etc.
-scriptClasspath in bashScriptDefines ~= (cp => cp :+ ":/etc/rokku")
+bashScriptDefines / scriptClasspath ~= (cp => cp :+ ":/etc/rokku")
 
 //Coverage settings
-Compile / coverageMinimum := 70
-Compile / coverageFailOnMinimum := false
-Compile / coverageHighlighting := true
-Compile / coverageEnabled := true
+//Compile / coverageMinimum := 70
+//Compile / coverageFailOnMinimum := false
+//Compile / coverageHighlighting := true
+//Compile / coverageEnabled := true
