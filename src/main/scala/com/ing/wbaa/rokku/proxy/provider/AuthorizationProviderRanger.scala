@@ -1,7 +1,6 @@
 package com.ing.wbaa.rokku.proxy.provider
 
 import java.net.URLDecoder
-
 import akka.http.scaladsl.model.MediaTypes
 import com.ing.wbaa.rokku.proxy.config.RangerSettings
 import com.ing.wbaa.rokku.proxy.data.{ Delete, Head, Post, Read, RequestId, S3Request, User, UserAssumeRole, UserGroup, Write }
@@ -55,7 +54,8 @@ trait AuthorizationProviderRanger {
       rangerResource,
       request.accessType.rangerName,
       user,
-      groups.asJava
+      groups.asJava,
+      Set.empty.asJava
     )
 
     def isAuthorisedByRanger(s3path: String): Boolean = {
