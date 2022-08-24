@@ -21,7 +21,7 @@ val logbackJson = "0.1.5"
 val metricVersion = "4.2.11"
 
 libraryDependencies ++= Seq(
-    "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.5",
+    "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.2",
     "ch.qos.logback"               %  "logback-classic"        % "1.2.11",
     "ch.qos.logback.contrib"       %  "logback-json-classic"   % logbackJson,
     "ch.qos.logback.contrib"       %  "logback-jackson"        % logbackJson,

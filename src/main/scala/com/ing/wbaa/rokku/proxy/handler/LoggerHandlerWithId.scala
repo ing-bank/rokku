@@ -7,7 +7,7 @@ import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory._
 import com.typesafe.scalalogging.Logger
 import org.slf4j.{ LoggerFactory, MDC }
 
-import scala.collection.immutable.ArraySeq
+import scala.collection.mutable
 
 class LoggerHandlerWithId {
 
@@ -21,7 +21,7 @@ class LoggerHandlerWithId {
   def debug(message: String, args: Any*)(implicit id: RequestId): Unit = {
     MDC.put(requestIdKey, id.value)
     MDC.put(statusCodeKey, "-")
-    log.debug(message, args) //TODO logging args !
+    log.debug(message, args.asInstanceOf[Seq[AnyRef]]: _*)
     MDC.remove(requestIdKey)
     MDC.remove(statusCodeKey)
   }
@@ -29,7 +29,7 @@ class LoggerHandlerWithId {
   def info(message: String, args: Any*)(implicit id: RequestId): Unit = {
     MDC.put(requestIdKey, id.value)
     MDC.put(statusCodeKey, "-")
-    log.info(message, args) //TODO logging args !
+    log.info(message, args.asInstanceOf[Seq[AnyRef]]: _*)
     MDC.remove(requestIdKey)
     MDC.remove(statusCodeKey)
   }
@@ -37,10 +37,7 @@ class LoggerHandlerWithId {
   def warn(message: String, args: Any*)(implicit id: RequestId, statusCode: StatusCode = StatusCodes.Continue): Unit = {
     MDC.put(requestIdKey, id.value)
     MDC.put(statusCodeKey, statusCode.value)
-    if (args.isInstanceOf[ArraySeq[_]])
-      log.warn(message, args) //TODO logging args !
-    else
-      log.warn(message, args) //TODO logging args !
+    log.warn(message, args.asInstanceOf[Seq[AnyRef]]: _*)
     MDC.remove(requestIdKey)
     MDC.remove(statusCodeKey)
   }
@@ -49,10 +46,7 @@ class LoggerHandlerWithId {
     MDC.put(requestIdKey, id.value)
     MDC.put(statusCodeKey, statusCode.value)
     countLogErrors(MetricsFactory.ERROR_REPORTED_TOTAL)
-    if (args.isInstanceOf[ArraySeq[_]])
-      log.error(message, args) //TODO logging args !
-    else
-      log.error(message, args) //TODO logging args !
+    log.error(message, args.asInstanceOf[Seq[AnyRef]]: _*)
     MDC.remove(requestIdKey)
     MDC.remove(statusCodeKey)
   }
