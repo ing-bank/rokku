@@ -7,8 +7,6 @@ import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory._
 import com.typesafe.scalalogging.Logger
 import org.slf4j.{ LoggerFactory, MDC }
 
-import scala.collection.mutable
-
 class LoggerHandlerWithId {
 
   @transient

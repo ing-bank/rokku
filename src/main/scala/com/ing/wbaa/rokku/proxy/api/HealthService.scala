@@ -53,7 +53,7 @@ trait HealthService extends S3Client {
     } yield s
 
   def getStatus(currentTime: Long)(implicit id: RequestId): Future[Option[StandardRoute]] =
-    getCurrentStatusMap.flatMap(_ match {
+    getCurrentStatusMap.flatMap {
       case m if m.isEmpty =>
         logger.debug("Status cache empty, running probe")
         updateStatusAndGet
@@ -65,7 +65,7 @@ trait HealthService extends S3Client {
           logger.debug("Serving status from cache")
           Future.successful(m.map { case (_, r) => r }.headOption)
       }.head
-    })
+    }
 
   private def execProbe[A](p: () => A)(implicit id: RequestId): StandardRoute = {
     Try {

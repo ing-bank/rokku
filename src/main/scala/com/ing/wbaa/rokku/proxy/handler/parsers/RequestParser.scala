@@ -1,6 +1,6 @@
 package com.ing.wbaa.rokku.proxy.handler.parsers
 
-import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, MediaTypes }
+import akka.http.scaladsl.model.{ HttpMethod, HttpMethods, HttpRequest, MediaTypes, Uri }
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser._
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 
@@ -48,7 +48,11 @@ trait RequestParser {
     .filter(_.contains("uploadId")).flatMap(_.split("=")).toList(1)
 
   def awsRequestFromRequest(request: HttpRequest): AWSRequestType = {
-    val HttpRequest(method, uri, _, _, _) = request
+
+    val (method: HttpMethod, uri: Uri) = request match {
+      case HttpRequest(m, u, _, _, _) => (m, u)
+      case _                          => return RequestTypeUnknown()
+    }
     val queryString = uri.queryString().getOrElse("")
     val containsUploadId = queryString.contains("uploadId")
     val isXML = request.entity.contentType.mediaType == MediaTypes.`application/xml`

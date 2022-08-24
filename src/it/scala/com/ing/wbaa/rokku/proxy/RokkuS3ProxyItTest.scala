@@ -6,7 +6,7 @@ import akka.stream.Materializer
 import com.amazonaws.auth.BasicSessionCredentials
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion
-import com.amazonaws.services.s3.model.{AmazonS3Exception, DeleteObjectsRequest, GroupGrantee, Permission}
+import com.amazonaws.services.s3.model.{AmazonS3Exception, DeleteObjectsRequest}
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
 import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest
 import com.ing.wbaa.rokku.proxy.config._
@@ -14,7 +14,6 @@ import com.ing.wbaa.rokku.proxy.data.{RequestId, S3Request, User}
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser
 import com.ing.wbaa.rokku.proxy.handler.{FilterRecursiveListBucketHandler, RequestHandlerS3}
 import com.ing.wbaa.rokku.proxy.provider._
-import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 import com.ing.wbaa.testkit.RokkuFixtures
 import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
@@ -24,7 +23,7 @@ import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams

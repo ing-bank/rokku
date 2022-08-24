@@ -56,7 +56,7 @@ abstract class AbstractIpCidrMatcher extends RangerAbstractConditionEvaluator wi
    */
   override def isMatched(request: RangerAccessRequest): Boolean = {
     val addresses = request.getRemoteIPAddress +: request.getForwardedAddresses.asScala.toList
-    logger.debug(s"Checking whether IpAddresses (${addresses}) match any CIDR range")
+    logger.debug(s"Checking whether IpAddresses ($addresses) match any CIDR range")
 
     if (_allowAny) {
       logger.debug("Always matches! (allowAny flag is true)")

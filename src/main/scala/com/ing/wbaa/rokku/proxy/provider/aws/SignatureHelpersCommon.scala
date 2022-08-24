@@ -27,7 +27,7 @@ trait SignatureHelpersCommon {
 
   def getSignedHeaders(authorization: String): String
 
-  final def cleanURLEncoding(param: String) = URLDecoder.decode(param, StandardCharsets.UTF_8.toString)
+  final def cleanURLEncoding(param: String): String = URLDecoder.decode(param, StandardCharsets.UTF_8.toString)
 
   // we have different extract pattern for V2 and V4
   def getSignatureFromAuthorization(authorization: String): String =

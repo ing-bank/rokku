@@ -64,7 +64,7 @@ trait AuthorizationProviderRanger {
       )
 
       val rangerRequest = user.userRole match {
-        case UserAssumeRole(roleValue) if !roleValue.isEmpty =>
+        case UserAssumeRole(roleValue) if roleValue.nonEmpty =>
           prepareAccessRequest(rangerResource, null, Set(UserGroup(s"${rangerSettings.rolePrefix}${roleValue}")).map(_.value.toLowerCase))
         case _ =>
           prepareAccessRequest(

@@ -11,8 +11,9 @@ scalaVersion := "2.13.8"
 scalacOptions += "-unchecked"
 scalacOptions += "-deprecation"
 scalacOptions ++= Seq("-encoding", "utf-8")
+scalacOptions += "-target:11"
 scalacOptions += "-feature"
-scalacOptions += "-Xlint:-strict-unsealed-patmat"
+scalacOptions += "-Xlint"
 scalacOptions += "-Xfatal-warnings"
 
 val akkaHttpVersion = "10.2.9"
@@ -85,7 +86,7 @@ scalariformPreferences := scalariformPreferences.value
 bashScriptDefines / scriptClasspath ~= (cp => cp :+ ":/etc/rokku")
 
 //Coverage settings
-//Compile / coverageMinimum := 70
-//Compile / coverageFailOnMinimum := false
-//Compile / coverageHighlighting := true
-//Compile / coverageEnabled := true
+Compile / coverageMinimum := 70
+Compile / coverageFailOnMinimum := false
+Compile / coverageHighlighting := true
+Compile / coverageEnabled := true
