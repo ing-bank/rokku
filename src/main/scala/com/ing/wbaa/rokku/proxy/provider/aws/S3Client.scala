@@ -14,18 +14,22 @@ trait S3Client {
 
   protected[this] def storageS3Settings: StorageS3Settings
 
-  protected[this] lazy val s3Client: AmazonS3 = {
-    val credentials = new BasicAWSCredentials(
+  protected[this] lazy val storageNPACredentials: BasicAWSCredentials = {
+    new BasicAWSCredentials(
       storageS3Settings.storageS3AdminAccesskey,
       storageS3Settings.storageS3AdminSecretkey)
+  }
 
-    val endpointConfiguration = new AwsClientBuilder.EndpointConfiguration(
-      s"http://${storageS3Settings.storageS3Authority.host.address()}:${storageS3Settings.storageS3Authority.port}",
+  protected[this] lazy val endpointConfiguration: AwsClientBuilder.EndpointConfiguration = {
+    new AwsClientBuilder.EndpointConfiguration(
+      s"${storageS3Settings.storageS3Schema}://${storageS3Settings.storageS3Authority.host.address()}:${storageS3Settings.storageS3Authority.port}",
       Regions.US_EAST_1.getName)
+  }
 
+  protected[this] lazy val s3Client: AmazonS3 = {
     AmazonS3ClientBuilder.standard()
       .withPathStyleAccessEnabled(true)
-      .withCredentials(new AWSStaticCredentialsProvider(credentials))
+      .withCredentials(new AWSStaticCredentialsProvider(storageNPACredentials))
       .withEndpointConfiguration(endpointConfiguration)
       .build()
   }

@@ -4,10 +4,12 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
+import com.amazonaws.Request
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.{ RequestId, S3Request, User }
 import com.ing.wbaa.rokku.proxy.handler.exception.RokkuThrottlingException
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
+import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.awsVersion
 import com.ing.wbaa.rokku.proxy.queue.UserRequestQueue
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -32,15 +34,37 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
    * If so, we can retry the request.
    */
   protected[this] def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse] = {
+
+    val npaRequest = getNpaRequest(request)
     val userAgent = request.getHeader("User-Agent").orElse(RawHeader("User-Agent", "unknown")).value()
+
     val newRequest = request
-      .withUri(request.uri.withAuthority(storageS3Settings.storageS3Authority))
+      .withUri(request.uri.withScheme(storageS3Settings.storageS3Schema).withAuthority(storageS3Settings.storageS3Authority))
       .withEntity(request.entity)
       .addHeader(RawHeader("User-Agent", userAgent))
+      .removeHeader("Authorization")
+      .addHeader(RawHeader("Authorization", npaRequest.getHeaders.get("Authorization")))
 
     fireRequestToS3(newRequest, userSTS).flatMap { response =>
       Future(filterResponse(request, userSTS, s3request, response))
     }
+  }
+
+  /**
+   * Replace original credentials with npa one (recalculate s3 signature too)
+   * @param request original http request
+   * @param id request id for logs
+   * @return Request with npa credentials
+   */
+  private def getNpaRequest(request: HttpRequest)(implicit id: RequestId): Request[_] = {
+    val awsSignature = awsVersion(request)
+    val awsHeaders = awsSignature.getAWSHeaders(request)
+    val npaRequest = awsSignature.getSignableRequest(request)
+
+    awsSignature.addHeadersToRequest(npaRequest, awsHeaders, request.entity.contentType.mediaType.value)
+    awsSignature.signS3Request(npaRequest, storageNPACredentials, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""), storageS3Settings.awsRegion)
+    logger.debug("Request sign by NPA: {}", npaRequest)
+    npaRequest
   }
 
   /**

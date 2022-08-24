@@ -8,8 +8,8 @@ import com.typesafe.config.Config
 class StorageS3Settings(config: Config) extends Extension {
   private val storageS3Host: String = config.getString("rokku.storage.s3.host")
   private val storageS3Port: Int = config.getInt("rokku.storage.s3.port")
-  val storageS3Authority = Uri.Authority(Uri.Host(storageS3Host), storageS3Port)
-
+  val storageS3Schema: String = config.getString("rokku.storage.s3.schema")
+  val storageS3Authority: Uri.Authority = Uri.Authority(Uri.Host(storageS3Host), storageS3Port)
   val storageS3AdminAccesskey: String = config.getString("rokku.storage.s3.admin.accesskey")
   val storageS3AdminSecretkey: String = config.getString("rokku.storage.s3.admin.secretkey")
   val awsRegion: String = config.getString("rokku.storage.s3.region")
