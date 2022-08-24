@@ -16,6 +16,7 @@ class RokkuS3ProxyVirtualHostedItTest extends RokkuS3ProxyItTest {
 
     AmazonS3ClientBuilder
       .standard()
+      .disableChunkedEncoding()
       .withClientConfiguration(cliConf)
       .withCredentials(new AWSStaticCredentialsProvider(credentials))
       .withPathStyleAccessEnabled(false)

@@ -196,37 +196,6 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
       }
     }
 
-    "set the default bucket ACL on bucket creation" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
-      retrieveKeycloackToken(validKeycloakCredentialsTestuser) flatMap { keycloackToken =>
-        val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
-
-
-        s3Client.createBucket("acltest")
-
-        // This pause is necessary because the policy is set asynchronously
-        Thread.sleep(5000)
-
-        val radosS3client = new S3Client {
-          override protected[this] def storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
-
-          override protected[this] implicit def executionContext: ExecutionContext = testSystem.dispatcher
-        }
-
-        import scala.concurrent.duration._
-        val testBucketACL = Await.result(radosS3client.getBucketAcl("acltest"), 5.seconds)
-
-        val grants = testBucketACL.getGrantsAsList.asScala
-
-        assert(!grants.exists(g => GroupGrantee.AllUsers.equals(g.getGrantee) && Permission.Read == g.getPermission))
-        assert(!grants.exists(g => GroupGrantee.AllUsers.equals(g.getGrantee) && Permission.Write == g.getPermission))
-        assert(grants.exists(g => GroupGrantee.AuthenticatedUsers.equals(g.getGrantee) && Permission.Read == g.getPermission))
-        assert(grants.exists(g => GroupGrantee.AuthenticatedUsers.equals(g.getGrantee) && Permission.Write == g.getPermission))
-
-        val testBucketPolicy = Await.result(radosS3client.getBucketPolicy(bucketName = "acltest"), 5.seconds)
-        val policy = testBucketPolicy.getPolicyText
-        assert(policy == """{"Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": "*","Resource": ["arn:aws:s3:::*"]}],"Version": "2012-10-17"}""")
-      }
-    }
 
     "usertwo can read data created by userone from a shared bucket" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
       val sharedBucket = "shared"

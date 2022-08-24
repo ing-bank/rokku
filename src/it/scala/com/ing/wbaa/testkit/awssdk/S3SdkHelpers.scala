@@ -25,6 +25,7 @@ trait S3SdkHelpers {
 
     AmazonS3ClientBuilder
       .standard()
+      .disableChunkedEncoding()
       .withClientConfiguration(cliConf)
       .withCredentials(new AWSStaticCredentialsProvider(credentials))
       .withPathStyleAccessEnabled(true)
