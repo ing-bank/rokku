@@ -6,6 +6,16 @@
 
 *A security layer between s3 user (eg. application using aws sdk) and s3 backend (eg. ceph RadosGW).*
 
+*Rokku uses NPA to access data so it needs to rewrite client signature*
+
+# Rokku NPA
+
+For setting NPA storage credentials you need to set in the env:
+
+ROKKU_STORAGE_S3_ADMIN_ACCESSKEY
+
+ROKKU_STORAGE_S3_ADMIN_SECRETKEY
+
 # What do you need
 
 To get started with Rokku you only need a few applications set up:
@@ -42,11 +52,11 @@ We've added a small description on how to setup the AWS CLI [here](#setting-up-a
 > * change ROKKU_KEYCLOAK_URL in the docker-compose.yml
 > * change the ranger.plugin.s3.policy.rest.url in ranger-s3-security.xml
 
-if you want to use atlas or notifications before running `sbt run` set `kafka` and `zookeeper` as a host name in `/etc/hosts`:
+if you want to use notifications before running `sbt run` set `kafka` and `zookeeper` as a host name in `/etc/hosts`:
 ```
 127.0.0.1   localhost kafka zookeeper
 ```
-thanks to that you will be able to write lineage to kafka.
+thanks to that you will be able to write events to kafka.
 
 
 ## Proxy as docker image
@@ -95,11 +105,8 @@ before diving in here. That will introduce you to the various components used.
     > NOTE: This session expires at the expiration date specified by the STS service. You'll need to repeat these steps
     > everytime your session expires.
 
-4. Technically you're now able to use the aws cli to perform any commands through Rokku to S3. Rokku automatically
-   creates the user on Ceph for you. Since the authorisation is completely handled by ranger, authorization in Ceph
-   should be removed to avoid conflicts. For this reason, Rokku sets the proper bucket ACL immediately after the
-   bucket creation, so that every authenticated user can perform read and write operations on each bucket.
-   In order to create new users and set the bucket ACL, the Rokku NPA must be manually configured as `system` user:
+4. Technically you're now able to use the aws cli to perform any commands through Rokku to S3. Since the authorisation is completely handled by ranger, authorization in Ceph
+   should be removed to avoid conflicts. For this reason, Rokku uses NPA which must be manually configured as `system` user:
 
             docker-compose exec ceph radosgw-admin user modify --uid ceph-admin --system
 
@@ -110,7 +117,7 @@ before diving in here. That will introduce you to the various components used.
 
    **!BOOM!** What happened?!
 
-   Well, your policy in Ranger only allows you to read objects from the `demobucket`. So we'll need to allow a write as
+   Well, your policy in Ranger only allows you to read objects from the `demobucket`. So we'll need to allow to write as
    well.
 
    1. Go to Ranger on [http://localhost:6080](http://localhost:6080) and login with `admin:admin`.
@@ -125,16 +132,6 @@ before diving in here. That will introduce you to the various components used.
         aws s3api list-objects --bucket demobucket
         aws s3api get-object --bucket demobucket --key SOME_FILE SOME_TARGET_FILE
 
-# Difference between the proxy and Ceph
-
-1. Ceph allows only list all your own buckets. We need to see all buckets by all users so the functionality is modified.
-
-But the functionality is separated in the class
-[ProxyServiceWithListAllBuckets](https://github.com/ing-bank/rokku/blob/master/src/main/scala/com/ing/wbaa/rokku/proxy/api/ProxyServiceWithListAllBuckets.scala)
-so if you want to have standard behaviour use
-the [ProxyService](https://github.com/ing-bank/Rokku/blob/master/src/main/scala/com/ing/wbaa/rokku/proxy/api/ProxyService.scala)
-in [RokkuS3Proxy](https://github.com/ing-bank/rokku/blob/master/src/main/scala/com/ing/wbaa/rokku/proxy/rokkuS3Proxy.scala)
-
 # Verified AWS clients
 
 We've currently verified that the following set of AWS clients work with Rokku:
@@ -143,6 +140,14 @@ We've currently verified that the following set of AWS clients work with Rokku:
 - Java SDK (using signerType: `S3SignerType`)
 
 Other options may work but haven't been checked yet by us. There are known limitiations for other signer types within the Java SDK.
+
+# Known unsupported s3 functions
+
+Chunk upload is not supported because Rokku needs to rewrite s3 signature and payload modification is expensive.
+
+https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html
+
+In most tools you can disable the functionality - e.g java sdk has *.disableChunkedEncoding()*
 
 # Architecture
 ![alt text](./docs/img/architecture.png)
@@ -186,7 +191,7 @@ rokku {
 
 As alternative environment value `ROKKU_ATLAS_ENABLED` should be set to true.
 
-Lineage is done according following model
+Lineage is done according to model
 
 ![alt text](./docs/img/atlas_model.jpg)
 
@@ -220,30 +225,6 @@ and configure kafka and topic names:
         kafka.producer.createTopic = ${?ROKKU_KAFKA_CREATE_TOPIC}
         kafka.producer.deleteTopic = ${?ROKKU_KAFKA_DELETE_TOPIC}
 ```
-
-# Enable and configure cache
-
-Currently test cache support based on Hazelcast has been added. Following steps needs to be
-done to enable and configure cache:
-
-- enable cache using application.conf or ENV value (`ROKKU_STORAGE_S3_CACHE_ENABLED`)
-- provide hazelcast configuration file (either xml or yaml). If not provided default
-configuration will be used from Hazelcast jar
-
-In order to provide configuration file while using sbt, set SBT_OPTS:
-
-```
-$ export SBT_OPTS="-Dhazelcast.config=./hazelcast.xml"
-```
-
-or if using with docker image provide environment value to docker run:
-
-```
--e JAVA_OPTS="-Dhazelcast.config=/opt/hazelcast/config_ext/hazelcast.xml" -v PATH_TO_LOCAL_CONFIG_FOLDER:/opt/hazelcast/config_ext
-```
-
-Sample yaml configuration file can be found here: [hazelcast.yaml](./hazelcast.yaml)
-
 
 # Setting Up AWS CLI
 
