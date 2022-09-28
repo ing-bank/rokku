@@ -85,7 +85,7 @@ class SignatureProviderAwsSpec extends AnyWordSpec with Diagrams with SignatureP
     }
   }
 
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   "SignatureHelpersAws" should {
 

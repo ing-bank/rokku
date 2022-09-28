@@ -14,6 +14,6 @@ class RangerSettings(config: Config) extends Extension {
 
 object RangerSettings extends ExtensionId[RangerSettings] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): RangerSettings = new RangerSettings(system.settings.config)
-  override def lookup(): ExtensionId[RangerSettings] = RangerSettings
+  override def lookup: ExtensionId[RangerSettings] = RangerSettings
 }
 

@@ -10,5 +10,5 @@ class HttpSettings(config: Config) extends Extension {
 
 object HttpSettings extends ExtensionId[HttpSettings] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): HttpSettings = new HttpSettings(system.settings.config)
-  override def lookup(): ExtensionId[HttpSettings] = HttpSettings
+  override def lookup: ExtensionId[HttpSettings] = HttpSettings
 }

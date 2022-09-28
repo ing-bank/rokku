@@ -1,7 +1,6 @@
 package com.ing.wbaa.rokku.proxy.provider
 
 import java.net.URLDecoder
-
 import akka.http.scaladsl.model.MediaTypes
 import com.ing.wbaa.rokku.proxy.config.RangerSettings
 import com.ing.wbaa.rokku.proxy.data.{ Delete, Head, Post, Read, RequestId, S3Request, User, UserAssumeRole, UserGroup, Write }
@@ -49,13 +48,14 @@ trait AuthorizationProviderRanger {
    *  enabled in configuration. They are disabled by default
    */
   def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     def prepareAccessRequest(rangerResource: RangerAccessResourceImpl, user: String, groups: Set[String]) = new RangerAccessRequestImpl(
       rangerResource,
       request.accessType.rangerName,
       user,
-      groups.asJava
+      groups.asJava,
+      Set.empty.asJava
     )
 
     def isAuthorisedByRanger(s3path: String): Boolean = {
@@ -64,7 +64,7 @@ trait AuthorizationProviderRanger {
       )
 
       val rangerRequest = user.userRole match {
-        case UserAssumeRole(roleValue) if !roleValue.isEmpty =>
+        case UserAssumeRole(roleValue) if roleValue.nonEmpty =>
           prepareAccessRequest(rangerResource, null, Set(UserGroup(s"${rangerSettings.rolePrefix}${roleValue}")).map(_.value.toLowerCase))
         case _ =>
           prepareAccessRequest(

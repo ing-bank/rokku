@@ -56,14 +56,6 @@ services:
     ports:
       - "8080:8080"
 
-  atlas:
-    image: wbaa/rokku-dev-apache-atlas:0.0.8
-    ports:
-      - "21000:21000"
-    depends_on:
-      - "zookeeper"
-      - "kafka"
-
   mariadb:
     image: wbaa/rokku-dev-mariadb:0.0.8
     environment:
@@ -97,10 +89,3 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
 
-
-  cassandra:
-    image: cassandra:3
-    container_name: cassandra
-    ports:
-      - "9042:9042"
-      - "9160:9160"

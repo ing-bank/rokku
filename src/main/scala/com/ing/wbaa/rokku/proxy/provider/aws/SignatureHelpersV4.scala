@@ -11,14 +11,14 @@ import com.ing.wbaa.rokku.proxy.data
 import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class SignatureHelpersV4 extends SignatureHelpersCommon {
   private val logger = new LoggerHandlerWithId
 
   private def fixHeaderCapitals(header: String): String = {
     header.split("-").map { h =>
-      h(0).toUpper + h.substring(1).toLowerCase
+      s"${h(0).toUpper}${h.substring(1).toLowerCase}"
     }.mkString("-")
   }
 

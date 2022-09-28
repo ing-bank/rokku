@@ -1,7 +1,7 @@
 package com.ing.wbaa.rokku.proxy.metrics
 
 import akka.http.scaladsl.model.{ HttpMethod, HttpMethods }
-import com.codahale.metrics.{ JmxReporter, MetricRegistry }
+import com.codahale.metrics.MetricRegistry
 
 object MetricsFactory {
 
@@ -25,7 +25,8 @@ object MetricsFactory {
 
   private[this] val metrics = new MetricRegistry()
 
-  JmxReporter.forRegistry(metrics).inDomain("rokku").build.start()
+  //TODO check jmx metrix
+  //  JmxReporter.forRegistry(metrics).inDomain("rokku").build.start()
 
   def registryMetrics(): MetricRegistry = metrics
 

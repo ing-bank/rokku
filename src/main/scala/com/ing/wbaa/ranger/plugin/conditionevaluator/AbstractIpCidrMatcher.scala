@@ -12,7 +12,7 @@ import scala.util.{ Failure, Success, Try }
  */
 abstract class AbstractIpCidrMatcher extends RangerAbstractConditionEvaluator with LazyLogging {
 
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   private var cidrs: List[SubnetUtils#SubnetInfo] = List[SubnetUtils#SubnetInfo]()
   private var _allowAny: Boolean = false
@@ -56,7 +56,7 @@ abstract class AbstractIpCidrMatcher extends RangerAbstractConditionEvaluator wi
    */
   override def isMatched(request: RangerAccessRequest): Boolean = {
     val addresses = request.getRemoteIPAddress +: request.getForwardedAddresses.asScala.toList
-    logger.debug(s"Checking whether IpAddresses (${addresses}) match any CIDR range")
+    logger.debug(s"Checking whether IpAddresses ($addresses) match any CIDR range")
 
     if (_allowAny) {
       logger.debug("Always matches! (allowAny flag is true)")

@@ -75,7 +75,7 @@ class MemoryUserRequestQueueTest extends AnyWordSpec with Diagrams {
     }
   }
 
-  private def increment(user: User, canBeAdded: Boolean, queueSize: Int, userQueueSize: Int) {
+  private def increment(user: User, canBeAdded: Boolean, queueSize: Int, userQueueSize: Int): Unit = {
     assert(queueRequest.addIfAllowedUserToRequestQueue(user) == canBeAdded)
     assert(queueRequest.getQueue.get() == queueSize)
     assert(queueRequest.getUserQueue(user.userName.value).get == userQueueSize)

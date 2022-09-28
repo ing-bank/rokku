@@ -6,7 +6,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 abstract class AbstractAbstractIpCidrMatcherTest extends AnyWordSpec with Diagrams {
 
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   def newIpCidrMatcher(cidrs: List[String]): AbstractIpCidrMatcher
 

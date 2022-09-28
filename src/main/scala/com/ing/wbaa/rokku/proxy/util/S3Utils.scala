@@ -24,7 +24,7 @@ object S3Utils {
   }
 
   def getBucketName(fullPath: String): String =
-    if (fullPath.length > 0)
+    if (fullPath.nonEmpty)
       fullPath.split("/").filter(_.nonEmpty).head
     else ""
 

@@ -2,11 +2,11 @@ package com.ing.wbaa.rokku.proxy
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.{Authority, Host}
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import com.amazonaws.auth.BasicSessionCredentials
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion
-import com.amazonaws.services.s3.model.{AmazonS3Exception, DeleteObjectsRequest, GroupGrantee, Permission}
+import com.amazonaws.services.s3.model.{AmazonS3Exception, DeleteObjectsRequest}
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService
 import com.amazonaws.services.securitytoken.model.GetSessionTokenRequest
 import com.ing.wbaa.rokku.proxy.config._
@@ -14,7 +14,6 @@ import com.ing.wbaa.rokku.proxy.data.{RequestId, S3Request, User}
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser
 import com.ing.wbaa.rokku.proxy.handler.{FilterRecursiveListBucketHandler, RequestHandlerS3}
 import com.ing.wbaa.rokku.proxy.provider._
-import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 import com.ing.wbaa.testkit.RokkuFixtures
 import com.ing.wbaa.testkit.awssdk.{S3SdkHelpers, StsSdkHelpers}
@@ -24,7 +23,7 @@ import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
@@ -33,11 +32,11 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
   with RokkuFixtures
   with OAuth2TokenRequest {
 
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
 
   override implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
-  override implicit def materializer: ActorMaterializer = ActorMaterializer()(testSystem)
+  override implicit def materializer: Materializer = Materializer(testSystem)
 
   override implicit def executionContext: ExecutionContext = testSystem.dispatcher
 
@@ -79,9 +78,10 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
   def withSdkToMockProxy(testCode: (AWSSecurityTokenService, Authority) => Future[Assertion]): Future[Assertion] = {
     val proxy: RokkuS3Proxy = new RokkuS3Proxy with RequestHandlerS3
       with FilterRecursiveListBucketHandler with AuthenticationProviderSTS
-      with AuthorizationProviderRanger with LineageProviderAtlas with SignatureProviderAws
+      with AuthorizationProviderRanger with SignatureProviderAws
       with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue with RequestParser {
       override implicit lazy val system: ActorSystem = testSystem
+      override def materializer: Materializer = Materializer(system)
       override val httpSettings: HttpSettings = rokkuHttpSettings
       override val storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
       override val stsSettings: StsSettings = StsSettings(testSystem)
@@ -95,9 +95,6 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
           case _ => super.isUserAuthorizedForRequest(request, user)
         }
       }
-
-      override val requestPersistenceEnabled: Boolean = false
-      override val configuredPersistenceId: String = "localhost-1"
     }
     proxy.startup.flatMap { binding =>
       val authority = Authority(Host(binding.localAddress.getAddress), binding.localAddress.getPort)
@@ -135,7 +132,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
       retrieveKeycloackToken(validKeycloakCredentialsUserone) flatMap { keycloackToken =>
         val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
 
-        import scala.collection.JavaConverters._
+        import scala.jdk.CollectionConverters._
         val deleteRequest = new DeleteObjectsRequest("home")
         deleteRequest.setKeys(List(
           new KeyVersion("userone/issue"),
@@ -150,7 +147,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
       retrieveKeycloackToken(validKeycloakCredentialsUserone) flatMap { keycloackToken =>
         val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
 
-        import scala.collection.JavaConverters._
+        import scala.jdk.CollectionConverters._
         val deleteRequest = new DeleteObjectsRequest("home")
         deleteRequest.setKeys(List(
           new KeyVersion("userone/issue"),
@@ -198,37 +195,6 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
       }
     }
 
-    "set the default bucket ACL on bucket creation" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
-      retrieveKeycloackToken(validKeycloakCredentialsTestuser) flatMap { keycloackToken =>
-        val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
-
-
-        s3Client.createBucket("acltest")
-
-        // This pause is necessary because the policy is set asynchronously
-        Thread.sleep(5000)
-
-        val radosS3client = new S3Client {
-          override protected[this] def storageS3Settings: StorageS3Settings = StorageS3Settings(testSystem)
-
-          override protected[this] implicit def executionContext: ExecutionContext = testSystem.dispatcher
-        }
-
-        import scala.concurrent.duration._
-        val testBucketACL = Await.result(radosS3client.getBucketAcl("acltest"), 5.seconds)
-
-        val grants = testBucketACL.getGrantsAsList.asScala
-
-        assert(!grants.exists(g => GroupGrantee.AllUsers.equals(g.getGrantee) && Permission.Read == g.getPermission))
-        assert(!grants.exists(g => GroupGrantee.AllUsers.equals(g.getGrantee) && Permission.Write == g.getPermission))
-        assert(grants.exists(g => GroupGrantee.AuthenticatedUsers.equals(g.getGrantee) && Permission.Read == g.getPermission))
-        assert(grants.exists(g => GroupGrantee.AuthenticatedUsers.equals(g.getGrantee) && Permission.Write == g.getPermission))
-
-        val testBucketPolicy = Await.result(radosS3client.getBucketPolicy(bucketName = "acltest"), 5.seconds)
-        val policy = testBucketPolicy.getPolicyText
-        assert(policy == """{"Statement": [{"Action": ["s3:GetObject"],"Effect": "Allow","Principal": "*","Resource": ["arn:aws:s3:::*"]}],"Version": "2012-10-17"}""")
-      }
-    }
 
     "usertwo can read data created by userone from a shared bucket" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
       val sharedBucket = "shared"
