@@ -1,0 +1,52 @@
+name: Rokku master branch build
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  DOCKER_REPO: wbaa/rokku-sts
+
+jobs:
+  m-tests:
+    uses: ./.github/workflows/tests.yml
+
+  m-it-tests:
+    uses: ./.github/workflows/it-tests.yml
+
+  tag:
+    runs-on: ubuntu-latest
+    needs: [tests, it-tests]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: '0'
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.36.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+          WITH_V: true
+          VERBOSE: true
+          DEFAULT_BUMP: patch
+
+  publish-image-latest:
+    runs-on: ubuntu-latest
+    needs: tag
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: '0'
+      - name: Build and publish docker image
+        run: |
+          # Login to docker
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+          # Build docker image
+          ROKKU_VERSION=$(git describe --tags --abbrev=0) sbt clean docker:publish;
+          echo "Built image $DOCKER_REPO:$(git describe --tags --abbrev=0)";
+          # Add latest tag
+          docker tag $DOCKER_REPO:$(git describe --tags --abbrev=0) $DOCKER_REPO:latest;
+          docker push $DOCKER_REPO:$(git describe --tags --abbrev=0)
+          docker push $DOCKER_REPO:latest
+
