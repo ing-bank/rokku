@@ -17,7 +17,7 @@ jobs:
 
   tag:
     runs-on: ubuntu-latest
-    needs: [tests, it-tests]
+    needs: [m-tests, m-it-tests]
     steps:
       - uses: actions/checkout@v2
         with:
