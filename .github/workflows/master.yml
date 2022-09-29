@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  DOCKER_REPO: wbaa/rokku-sts
+  DOCKER_REPO: wbaa/rokku
 
 jobs:
   m-tests:
