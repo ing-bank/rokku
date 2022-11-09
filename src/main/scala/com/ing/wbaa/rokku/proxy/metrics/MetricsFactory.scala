@@ -23,6 +23,9 @@ object MetricsFactory {
   val OBJECTS_UPLOAD_OPERATIONS_TOTAL = s"requests.method.$HTTP_METHOD.operations.total"
   val KAFKA_SENT_NOTIFICATION_TOTAL = "requests.kafka.notification.sent.total"
   val KAFKA_SENT_NOTIFICATION_ERROR_TOTAL = "requests.kafka.notification.sent.errors.total"
+  val REQUEST_STORAGE_TIME = "request.storage.nanoseconds.total"
+  val REQUEST_STORAGE_TIME_HIST = "request.storage.time.histogram"
+  val REQUEST_STORAGE_TOTAL = "request.storage.total"
 
   private[this] val metrics = new MetricRegistry()
 
@@ -71,5 +74,11 @@ object MetricsFactory {
 
   def incrementKafkaSendErrors(): Unit = {
     metrics.counter(KAFKA_SENT_NOTIFICATION_ERROR_TOTAL).inc()
+  }
+
+  def markRequestStorageTime(time: Long): Unit = {
+    metrics.counter(REQUEST_STORAGE_TIME).inc(time)
+    metrics.histogram(REQUEST_STORAGE_TIME_HIST).update(time)
+    metrics.counter(REQUEST_STORAGE_TOTAL).inc()
   }
 }
