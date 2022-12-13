@@ -11,13 +11,11 @@ scalaVersion := "2.12.10"
 scalacOptions += "-unchecked"
 scalacOptions += "-deprecation"
 scalacOptions ++= Seq("-encoding", "utf-8")
-scalacOptions += "-target:jvm-1.8"
+//scalacOptions += "-target:11"
 scalacOptions += "-feature"
 scalacOptions += "-Xlint"
 scalacOptions += "-Xfatal-warnings"
 
-// Experimental: improved update resolution.
-updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true)
 
 val akkaHttpVersion = "10.1.9"
 val akkaVersion = "2.5.30"
@@ -86,7 +84,7 @@ javaOptions += "-Dlogback.configurationFile=/etc/rokku/logback.xml"
 
 dockerExposedPorts := Seq(8987) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
-dockerBaseImage    := "openjdk:8u171-jre-slim-stretch"
+dockerBaseImage    := "openjdk:11-slim-bullseye"
 dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("wbaa"), "rokku", Some(rokkuVersion))
 
 scalariformPreferences := scalariformPreferences.value
