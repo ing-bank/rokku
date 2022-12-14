@@ -93,7 +93,7 @@ trait ProxyService {
     // we need to materialize here to avoid error - failed to materialize stream more than once, when http client in handler will
     // try to send the same entity to s3
     // also this prevents line spits to chunks for large requests
-    httpRequest.entity.toStrict(3.seconds).flatMap { strictE =>
+    httpRequest.entity.toStrict(5.seconds).flatMap { strictE =>
       exctractMultideleteObjectsFlow(strictE.dataBytes).map { s3Objects =>
         s3Objects.map { s3Object =>
           val bucket = s3Request.s3BucketPath.getOrElse("")
