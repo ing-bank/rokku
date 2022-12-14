@@ -25,7 +25,11 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
 
   protected[this] def storageS3Settings: StorageS3Settings
 
-  protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse)(implicit id: RequestId): HttpResponse
+  protected[this] def filterResponse(request: HttpRequest, userSTS: User, s3request: S3Request, response: HttpResponse): HttpResponse = {
+    //TODO the correct implementation is in FilterRecursiveListBucketHandler but some s3 implementation (like ECS) return response as 'Transfer-Encoding': 'chunked'
+    // so the implementation have to be fixed
+    response
+  }
 
   /**
    * Updates the URI for S3 and sends the request to S3.
