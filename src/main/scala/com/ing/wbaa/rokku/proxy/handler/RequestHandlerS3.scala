@@ -5,6 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import com.amazonaws.Request
+import com.amazonaws.auth.BasicAWSCredentials
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.{ RequestId, S3Request, User }
 import com.ing.wbaa.rokku.proxy.handler.exception.RokkuThrottlingException
@@ -39,7 +40,7 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
    */
   protected[this] def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse] = {
 
-    val npaRequest = getNpaRequest(request)
+    val npaRequest = getNpaRequest(request, storageNPACredentials)
     val userAgent = request.getHeader("User-Agent").orElse(RawHeader("User-Agent", "unknown")).value()
 
     val newRequest = request
@@ -60,13 +61,13 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
    * @param id request id for logs
    * @return Request with npa credentials
    */
-  private def getNpaRequest(request: HttpRequest)(implicit id: RequestId): Request[_] = {
+  protected[this] def getNpaRequest(request: HttpRequest, credentials: BasicAWSCredentials)(implicit id: RequestId): Request[_] = {
     val awsSignature = awsVersion(request)
     val awsHeaders = awsSignature.getAWSHeaders(request)
     val npaRequest = awsSignature.getSignableRequest(request)
 
     awsSignature.addHeadersToRequest(npaRequest, awsHeaders, request.entity.contentType.mediaType.value)
-    awsSignature.signS3Request(npaRequest, storageNPACredentials, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""), storageS3Settings.awsRegion)
+    awsSignature.signS3Request(npaRequest, credentials, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""), storageS3Settings.awsRegion)
     logger.debug("Request sign by NPA: {}", npaRequest)
     npaRequest
   }

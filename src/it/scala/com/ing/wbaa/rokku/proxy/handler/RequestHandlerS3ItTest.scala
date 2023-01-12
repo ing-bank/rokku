@@ -132,6 +132,11 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with Diagrams with RokkuFixtu
             sdk.deleteObject(testBucket, testKeyContent)
             val keys2 = getKeysInBucket(sdk, testBucket)
             assert(!keys2.contains(testKeyContent))
+            assert(keys2.contains(testKeyFile))
+
+            sdk.deleteObject(testBucket, testKeyFile)
+            val keys3 = getKeysInBucket(sdk, testBucket)
+            assert(!keys3.contains(testKeyFile))
           }
         }
       }
@@ -176,22 +181,21 @@ class RequestHandlerS3ItTest extends AsyncWordSpec with Diagrams with RokkuFixtu
         }
       }
 
-      // TODO: Fix proxy for copyObject function
-      //        "check if object can be copied" in withS3SdkToMockProxy(awsSignerType) { sdk =>
-      //          withBucket(sdk) { testBucket =>
-      //            withBucket(sdk) { tragetBucket =>
-      //              withFile(1024 * 1024) { filename =>
-      //                sdk.putObject(testBucket, "keyCopyOrg", new File(filename))
-      //                sdk.copyObject(testBucket, "keyCopyOrg", tragetBucket, "keyCopyDest")
-      //
-      //                val keys1 = getKeysInBucket(sdk, testBucket)
-      //                assert(!keys1.contains("keyCopyOrg"))
-      //                val keys2 = getKeysInBucket(sdk, "newbucket")
-      //                assert(keys2.contains("keyCopyDest"))
-      //              }
-      //            }
-      //          }
-      //      }
+      "check if object can be copied" in withS3SdkToMockProxy { sdk =>
+        withBucket(sdk) { testBucket =>
+          withBucket(sdk) { tragetBucket =>
+            withFile(1024 * 1024) { filename =>
+              sdk.putObject(testBucket, "keyCopyOrg", new File(filename))
+              sdk.copyObject(testBucket, "keyCopyOrg", tragetBucket, "keyCopyDest")
+
+              val keys1 = getKeysInBucket(sdk, testBucket)
+              assert(keys1.contains("keyCopyOrg"))
+              val keys2 = getKeysInBucket(sdk, tragetBucket)
+              assert(keys2.contains("keyCopyDest"))
+            }
+          }
+        }
+      }
 
       "put a 1MB file in a bucket (multi part upload)" in withS3SdkToMockProxy { sdk =>
         withBucket(sdk) { testBucket =>
