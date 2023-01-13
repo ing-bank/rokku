@@ -2,15 +2,16 @@ package com.ing.wbaa.rokku.proxy.handler.namespace
 
 import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.services.s3.model.{ AmazonS3Exception, ListObjectsV2Result }
+import com.amazonaws.services.s3.model.{AmazonS3Exception, ListObjectsV2Result}
 import com.ing.wbaa.rokku.proxy.config.NamespaceSettings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory.{incrementBucketNamespacesInCache, incrementBucketNamespacesNotFound, incrementBucketNamespacesSearch}
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 case class NamespaceName(name: String)
 
@@ -39,15 +40,18 @@ trait NamespacesHandler {
     bucketCredentials.get(bucketName) match {
       case Some(credentials) =>
         logger.debug("credentials exist for bucket {}", bucketName.name)
+        incrementBucketNamespacesInCache()
         Some(credentials)
       case None =>
         logger.info("credentials for bucket {} do not exist - looking for the bucket in namespaces", bucketName.name)
+        incrementBucketNamespacesSearch()
         val namespaceCredentials = findNamespace(bucketName)
         if (namespaceCredentials.isDefined) {
           updateBucketCredentials(bucketName, namespaceCredentials.get._2)
           logger.info("added credentials from namespace {} for bucket {}", namespaceCredentials.get._1, bucketName.name)
         } else {
           logger.warn("no namespace for bucket {} in namespaces {}", bucketName.name, namespaceCredentials)
+          incrementBucketNamespacesNotFound()
         }
         namespaceCredentials.map(_._2)
     }
