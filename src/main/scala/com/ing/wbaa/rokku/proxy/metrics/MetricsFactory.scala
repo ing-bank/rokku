@@ -27,7 +27,7 @@ object MetricsFactory {
   val REQUEST_STORAGE_TIME_HIST = "request.storage.time.histogram"
   val REQUEST_STORAGE_TOTAL = "request.storage.total"
   val REQUEST_BUCKET_NAMESPACES_SEARCH_TOTAL = "request.bucket_namespaces.search.total"
-  val REQUEST_BUCKET_NAMESPACES_IN_CACHE_TOTAL = "request.bucket_namespaces.in.cache.total"
+  val REQUEST_BUCKET_NAMESPACES_CACHE_HIT_TOTAL = "request.bucket_namespaces.in.cache.total"
   val REQUEST_BUCKET_NAMESPACES_NOT_FOUND_TOTAL = "request.bucket_namespaces.not.found.total"
 
   private[this] val metrics = new MetricRegistry()
@@ -88,8 +88,8 @@ object MetricsFactory {
     metrics.counter(REQUEST_BUCKET_NAMESPACES_SEARCH_TOTAL).inc()
   }
 
-  def incrementBucketNamespacesInCache(): Unit = {
-    metrics.counter(REQUEST_BUCKET_NAMESPACES_IN_CACHE_TOTAL).inc()
+  def incrementBucketNamespaceCacheHit(): Unit = {
+    metrics.counter(REQUEST_BUCKET_NAMESPACES_CACHE_HIT_TOTAL).inc()
   }
 
   def incrementBucketNamespacesNotFound(): Unit = {

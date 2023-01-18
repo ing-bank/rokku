@@ -41,24 +41,29 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
   protected[this] def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse] = {
 
     val npaRequest = getNpaRequest(request, storageNPACredentials)
-    val userAgent = request.getHeader("User-Agent").orElse(RawHeader("User-Agent", "unknown")).value()
+    executeRequest(request, npaRequest, userSTS, s3request)
+  }
 
-    val newRequest = request
-      .withUri(request.uri.withScheme(storageS3Settings.storageS3Schema).withAuthority(storageS3Settings.storageS3Authority))
-      .withEntity(request.entity)
+  protected[this] def executeRequest(originalRequest: HttpRequest, npaRequest: Request[_], userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse] = {
+
+    val userAgent = originalRequest.getHeader("User-Agent").orElse(RawHeader("User-Agent", "unknown")).value()
+    val newRequest = originalRequest
+      .withUri(originalRequest.uri.withScheme(storageS3Settings.storageS3Schema).withAuthority(storageS3Settings.storageS3Authority))
+      .withEntity(originalRequest.entity)
       .addHeader(RawHeader("User-Agent", userAgent))
       .removeHeader("Authorization")
       .addHeader(RawHeader("Authorization", npaRequest.getHeaders.get("Authorization")))
 
     fireRequestToS3(newRequest, userSTS).flatMap { response =>
-      Future(filterResponse(request, userSTS, s3request, response))
+      Future(filterResponse(originalRequest, userSTS, s3request, response))
     }
   }
 
   /**
    * Replace original credentials with npa one (recalculate s3 signature too)
+   *
    * @param request original http request
-   * @param id request id for logs
+   * @param id      request id for logs
    * @return Request with npa credentials
    */
   protected[this] def getNpaRequest(request: HttpRequest, credentials: BasicAWSCredentials)(implicit id: RequestId): Request[_] = {

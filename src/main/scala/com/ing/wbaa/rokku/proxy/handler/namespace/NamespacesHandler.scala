@@ -2,16 +2,15 @@ package com.ing.wbaa.rokku.proxy.handler.namespace
 
 import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.services.s3.model.{AmazonS3Exception, ListObjectsV2Result}
+import com.amazonaws.services.s3.model.{ AmazonS3Exception, ListObjectsV2Result }
 import com.ing.wbaa.rokku.proxy.config.NamespaceSettings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
-import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory.{incrementBucketNamespacesInCache, incrementBucketNamespacesNotFound, incrementBucketNamespacesSearch}
+import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory.{ incrementBucketNamespaceCacheHit, incrementBucketNamespacesNotFound, incrementBucketNamespacesSearch }
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 
 import scala.collection.immutable.ListMap
-import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 case class NamespaceName(name: String)
 
@@ -19,7 +18,7 @@ case class BucketName(name: String)
 
 trait NamespacesHandler {
   private val logger = new LoggerHandlerWithId
-  private val bucketCredentials: mutable.Map[BucketName, BasicAWSCredentials] = scala.collection.mutable.Map[BucketName, BasicAWSCredentials]()
+  private val bucketCredentials: scala.collection.concurrent.Map[BucketName, BasicAWSCredentials] = scala.collection.concurrent.TrieMap[BucketName, BasicAWSCredentials]()
 
   protected[this] val namespaceSettings: NamespaceSettings
 
@@ -40,7 +39,7 @@ trait NamespacesHandler {
     bucketCredentials.get(bucketName) match {
       case Some(credentials) =>
         logger.debug("credentials exist for bucket {}", bucketName.name)
-        incrementBucketNamespacesInCache()
+        incrementBucketNamespaceCacheHit()
         Some(credentials)
       case None =>
         logger.info("credentials for bucket {} do not exist - looking for the bucket in namespaces", bucketName.name)
