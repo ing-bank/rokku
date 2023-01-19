@@ -9,7 +9,7 @@ import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
-import com.ing.wbaa.rokku.proxy.handler.exception.RokkuThrottlingException
+import com.ing.wbaa.rokku.proxy.handler.exception.{ RokkuNamespaceBucketNotFoundException, RokkuThrottlingException }
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
@@ -49,38 +49,41 @@ trait ProxyService {
 
   protected[this] def awsRequestFromRequest(request: HttpRequest): AWSRequestType
 
-  implicit def rokkuExceptionHandler: ExceptionHandler =
+  def rokkuExceptionHandler: ExceptionHandler =
     ExceptionHandler {
+      case _: RokkuNamespaceBucketNotFoundException =>
+        complete(StatusCodes.NotFound -> AwsErrorCodes.response(StatusCodes.NotFound))
       case _: RokkuThrottlingException =>
         complete(StatusCodes.ServiceUnavailable -> AwsErrorCodes.response(StatusCodes.ServiceUnavailable))
     }
 
   val proxyServiceRoute: Route =
-
-    metricDuration {
-      implicit val requestId: RequestId = RequestId(UUID.randomUUID().toString)
-      withoutSizeLimit {
-        extractRequest { httpRequest =>
-          extracts3Request { s3Request =>
-            val requestStartTime = System.nanoTime()
-            onComplete(areCredentialsActive(s3Request.credential)) {
-              case Success(Some(userSTS: User)) =>
-                logger.info("STS credentials active for request, user retrieved: {} (response time {})", userSTS, System.nanoTime() - requestStartTime)
-                onComplete(processRequestForValidUser(httpRequest, s3Request, userSTS)) {
-                  case Success(r) => r
-                  case Failure(exception) =>
-                    implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
-                    logger.error("An error occurred while processing request for valid user ex={}", exception)
-                    complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
-                }
-              case Success(None) =>
-                implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
-                logger.warn("STS credentials not active: {} (response time {})", s3Request, System.nanoTime() - requestStartTime)
-                complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
-              case Failure(exception) =>
-                implicit val returnStatusCode: StatusCodes.ServerError = StatusCodes.InternalServerError
-                logger.error("An error occurred when checking credentials with STS service ex={} (response time {})", exception, System.nanoTime() - requestStartTime)
-                complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
+    handleExceptions(rokkuExceptionHandler) {
+      metricDuration {
+        implicit val requestId: RequestId = RequestId(UUID.randomUUID().toString)
+        withoutSizeLimit {
+          extractRequest { httpRequest =>
+            extracts3Request { s3Request =>
+              val requestStartTime = System.nanoTime()
+              onComplete(areCredentialsActive(s3Request.credential)) {
+                case Success(Some(userSTS: User)) =>
+                  logger.info("STS credentials active for request, user retrieved: {} (response time {})", userSTS, System.nanoTime() - requestStartTime)
+                  onComplete(processRequestForValidUser(httpRequest, s3Request, userSTS)) {
+                    case Success(r) => r
+                    case Failure(exception) =>
+                      implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
+                      logger.error("An error occurred while processing request for valid user ex={}", exception)
+                      complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
+                  }
+                case Success(None) =>
+                  implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
+                  logger.warn("STS credentials not active: {} (response time {})", s3Request, System.nanoTime() - requestStartTime)
+                  complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
+                case Failure(exception) =>
+                  implicit val returnStatusCode: StatusCodes.ServerError = StatusCodes.InternalServerError
+                  logger.error("An error occurred when checking credentials with STS service ex={} (response time {})", exception, System.nanoTime() - requestStartTime)
+                  complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
+              }
             }
           }
         }

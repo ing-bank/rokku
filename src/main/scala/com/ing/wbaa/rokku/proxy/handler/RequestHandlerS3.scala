@@ -5,6 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import com.amazonaws.Request
+import com.amazonaws.auth.BasicAWSCredentials
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.{ RequestId, S3Request, User }
 import com.ing.wbaa.rokku.proxy.handler.exception.RokkuThrottlingException
@@ -39,34 +40,39 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
    */
   protected[this] def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse] = {
 
-    val npaRequest = getNpaRequest(request)
-    val userAgent = request.getHeader("User-Agent").orElse(RawHeader("User-Agent", "unknown")).value()
+    val npaRequest = getNpaRequest(request, storageNPACredentials)
+    executeRequest(request, npaRequest, userSTS, s3request)
+  }
 
-    val newRequest = request
-      .withUri(request.uri.withScheme(storageS3Settings.storageS3Schema).withAuthority(storageS3Settings.storageS3Authority))
-      .withEntity(request.entity)
+  protected[this] def executeRequest(originalRequest: HttpRequest, npaRequest: Request[_], userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse] = {
+
+    val userAgent = originalRequest.getHeader("User-Agent").orElse(RawHeader("User-Agent", "unknown")).value()
+    val newRequest = originalRequest
+      .withUri(originalRequest.uri.withScheme(storageS3Settings.storageS3Schema).withAuthority(storageS3Settings.storageS3Authority))
+      .withEntity(originalRequest.entity)
       .addHeader(RawHeader("User-Agent", userAgent))
       .removeHeader("Authorization")
       .addHeader(RawHeader("Authorization", npaRequest.getHeaders.get("Authorization")))
 
     fireRequestToS3(newRequest, userSTS).flatMap { response =>
-      Future(filterResponse(request, userSTS, s3request, response))
+      Future(filterResponse(originalRequest, userSTS, s3request, response))
     }
   }
 
   /**
    * Replace original credentials with npa one (recalculate s3 signature too)
+   *
    * @param request original http request
-   * @param id request id for logs
+   * @param id      request id for logs
    * @return Request with npa credentials
    */
-  private def getNpaRequest(request: HttpRequest)(implicit id: RequestId): Request[_] = {
+  protected[this] def getNpaRequest(request: HttpRequest, credentials: BasicAWSCredentials)(implicit id: RequestId): Request[_] = {
     val awsSignature = awsVersion(request)
     val awsHeaders = awsSignature.getAWSHeaders(request)
     val npaRequest = awsSignature.getSignableRequest(request)
 
     awsSignature.addHeadersToRequest(npaRequest, awsHeaders, request.entity.contentType.mediaType.value)
-    awsSignature.signS3Request(npaRequest, storageNPACredentials, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""), storageS3Settings.awsRegion)
+    awsSignature.signS3Request(npaRequest, credentials, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""), storageS3Settings.awsRegion)
     logger.debug("Request sign by NPA: {}", npaRequest)
     npaRequest
   }

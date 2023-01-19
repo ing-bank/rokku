@@ -3,6 +3,7 @@ package com.ing.wbaa.rokku.proxy.provider.aws
 import com.amazonaws.auth.{ AWSStaticCredentialsProvider, BasicAWSCredentials }
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.regions.Regions
+import com.amazonaws.services.s3.model.{ ListObjectsV2Request, ListObjectsV2Result }
 import com.amazonaws.services.s3.{ AmazonS3, AmazonS3ClientBuilder }
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
@@ -34,11 +35,32 @@ trait S3Client {
       .build()
   }
 
+  protected[this] def s3Client(credentials: BasicAWSCredentials): AmazonS3 = {
+    AmazonS3ClientBuilder.standard()
+      .withPathStyleAccessEnabled(true)
+      .withCredentials(new AWSStaticCredentialsProvider(credentials))
+      .withEndpointConfiguration(endpointConfiguration)
+      .build()
+  }
+
+  protected def listBucketRequest(bucketName: String, maxKeys: Int): ListObjectsV2Request = {
+    new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(maxKeys)
+  }
+
+  protected[this] def listBucket(bucketName: String, credentials: BasicAWSCredentials, maxKeys: Int): ListObjectsV2Result = {
+    s3Client(credentials).listObjectsV2(listBucketRequest(bucketName, maxKeys))
+  }
+
+  protected[this] def listBucket(bucketName: String, maxKeys: Int = 5): String = {
+    s3Client.listObjectsV2(listBucketRequest(bucketName, maxKeys)).getBucketName
+  }
+
   def listBucket: String = {
     val start = System.nanoTime()
-    val result = s3Client.listObjects(storageS3Settings.bucketName).getBucketName
+    val result = listBucket(storageS3Settings.bucketName)
     val took = System.nanoTime() - start
     MetricsFactory.markRequestStorageTime(took)
     result
   }
+
 }

@@ -347,3 +347,29 @@ ROKKU_RANGER_ENABLED_AUDIT="true"
 ```
 
 and provide on the classpath the ranger-s3-audit.xml configuration.
+
+# ECS multi namespace support
+
+To support many ECS namespaces you need to have dedicated credentials for each namespace with full access right.
+
+To enable the functionality you have to set env var:
+```bash
+ROKKU_NAMESPACES_ENABLED=true
+```
+The namespace credentials also have to be provided in env variables.
+The variable name prefix is configurable by:
+```bash
+ROKKU_NAMESPACES_ENV_VAR_S3_CREDENTIALS_PREFIX  #by default is set to NAMESPACE_S3_CREDENTIALS_
+```
+so for example to set two namespaces you need to set:
+```bash
+NAMESPACE_S3_CREDENTIALS_1=accesskey1,secretkey1
+NAMESPACE_S3_CREDENTIALS_2=accesskey2,secretkey2
+```
+The s3 credentials (accessKey and secretKey) have to be split by comma.
+The env namespace credentials will be uploaded to server sorted by the env name and thanks to that you can determine which namespace is checked firt to find a bucket.
+
+
+The example to start the server is in the [server_dev.sh](./scripts/server_dev.sh) script.
+
+
