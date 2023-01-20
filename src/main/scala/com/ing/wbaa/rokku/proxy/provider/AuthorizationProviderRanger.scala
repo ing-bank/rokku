@@ -83,7 +83,7 @@ trait AuthorizationProviderRanger {
       Try { rangerPlugin.isAccessAllowed(rangerRequest).getIsAllowed } match {
         case Success(authorization) => authorization
         case Failure(err) =>
-          logger.warn(s"Exception during authorization of the request: $err")
+          logger.warn("Exception during authorization of the request:{}", err)
           false
       }
     }
@@ -110,11 +110,16 @@ trait AuthorizationProviderRanger {
 
       // create / delete bucket operation
       case S3Request(_, Some(bucket), None, accessType, _, _, _) if (accessType.isInstanceOf[Write] || accessType.isInstanceOf[Delete]) =>
-        isAuthorisedByRanger("/")
+        if (rangerSettings.createDeleteBucketsEnabled) {
+          isAuthorisedByRanger("/")
+        } else {
+          logger.info("Creating/Deleting bucket is disable request={}", request)
+          false
+        }
 
       // list buckets
       case S3Request(_, None, None, accessType, _, _, _) if accessType.isInstanceOf[Read] && rangerSettings.listBucketsEnabled =>
-        logger.debug(s"Skipping ranger for listing of buckets with request: $request")
+        logger.debug("Skipping ranger for listing of buckets with request:{}", request)
         true
 
       case _ =>

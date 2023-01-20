@@ -115,6 +115,15 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
           accessType = Read(), clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
+      "does not authorize allow-create-delete-buckets set to false" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
+        override val createDeleteBucketsEnabled: Boolean = false
+      }) { apr =>
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Put(),
+          clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
+        assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Delete(),
+          clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
+      }
+
       "does authorize creating bucket for an admin" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
       }) { apr =>
         assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Put(),
