@@ -23,7 +23,7 @@ val metricVersion = "4.2.12"
 
 libraryDependencies ++= Seq(
     "com.typesafe.scala-logging"   %% "scala-logging"          % "3.9.2",
-    "ch.qos.logback"               %  "logback-classic"        % "1.4.4",
+    "ch.qos.logback"               %  "logback-classic"        % "1.4.5",
     "ch.qos.logback.contrib"       %  "logback-json-classic"   % logbackJson,
     "ch.qos.logback.contrib"       %  "logback-jackson"        % logbackJson exclude("com.fasterxml.jackson.core", "jackson-databind"),
     "com.fasterxml.jackson.core"   %  "jackson-databind"       % "2.14.0-rc2",
@@ -32,20 +32,21 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka"            %% "akka-stream"            % akkaVersion,
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaHttpVersion,
     "com.typesafe.akka"            %% "akka-http-xml"          % akkaHttpVersion,
-    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.12.332",
-    "org.apache.kafka"             %  "kafka-clients"          % "3.3.1",
+    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.12.387",
+    "org.apache.kafka"             %  "kafka-clients"          % "3.3.2",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "2.3.0" exclude("org.eclipse.jetty", "jetty-io") exclude("com.amazonaws", "aws-java-sdk-bundle") exclude("org.elasticsearch", "elasticsearch-x-content") exclude("org.elasticsearch", "elasticsearch") exclude("org.apache.hadoop", "hadoop-common"),
     "org.apache.hadoop"            %  "hadoop-common"          % "3.3.4" exclude("org.apache.hadoop.thirdparty", "hadoop-shaded-protobuf_3_7") exclude("org.eclipse.jetty", "jetty-io") exclude("org.apache.zookeeper", "zookeeper") exclude("com.google.protobuf", "protobuf-java"), //needed for ranger 2.3.0 - if vulnerabilities are fixed remove this
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "3.0.4",
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
     "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion,
-    "com.auth0"                    % "java-jwt"                % "4.0.0",
+    "com.auth0"                    % "java-jwt"                % "4.2.1",
     "com.github.cb372"             %% "scalacache-core"        % "0.28.0",
     "com.github.cb372"             %% "scalacache-caffeine"    % "0.28.0",
+    "ch.megard"                    %% "akka-http-cors"         % "1.1.3",
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
-    "org.scalatest"                %% "scalatest"              % "3.2.14"           % "it,test",
-    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.12.332"        % IntegrationTest,
+    "org.scalatest"                %% "scalatest"              % "3.2.15"           % "it,test",
+    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.12.387"        % IntegrationTest,
 )
 
 // Fix logging dependencies:
