@@ -17,7 +17,8 @@ object AwsErrorCodes {
       StatusCodes.Unauthorized -> (("Unauthorized", "Unauthorized")),
       StatusCodes.TooManyRequests -> (("TooManyRequests", "Too Many Requests")),
       StatusCodes.ServiceUnavailable -> (("Throttling", "SLOW DOWN")),
-      StatusCodes.NotFound -> (("BucketNotFound", "Bucket not found in any namespace")))
+      StatusCodes.NotFound -> (("BucketNotFound", "Bucket not found in any namespace")),
+      StatusCodes.MethodNotAllowed -> (("ListingAllBucketsNotAllowed", "Listing all buckets is disabled - please list only objects from bucket you have access to")))
 
   def response(code: StatusCode, resource: String = "")(implicit requestId: RequestId = RequestId("")): NodeSeq = {
     val responseError = errors.getOrElse(code, ("Unexpected Error", "Unexpected Error"))

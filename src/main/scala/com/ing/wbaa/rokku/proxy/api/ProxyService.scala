@@ -5,14 +5,14 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
-import com.ing.wbaa.rokku.proxy.handler.exception.{ RokkuNamespaceBucketNotFoundException, RokkuThrottlingException }
+import com.ing.wbaa.rokku.proxy.handler.exception.{ RokkuListingBucketsException, RokkuNamespaceBucketNotFoundException, RokkuThrottlingException }
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
-import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 
 import java.util.UUID
 import scala.concurrent.{ ExecutionContext, Future }
@@ -56,6 +56,8 @@ trait ProxyService {
         complete(StatusCodes.NotFound -> AwsErrorCodes.response(StatusCodes.NotFound))
       case _: RokkuThrottlingException =>
         complete(StatusCodes.ServiceUnavailable -> AwsErrorCodes.response(StatusCodes.ServiceUnavailable))
+      case _: RokkuListingBucketsException =>
+        complete(StatusCodes.MethodNotAllowed -> AwsErrorCodes.response(StatusCodes.MethodNotAllowed))
     }
 
   val proxyServiceRoute: Route =

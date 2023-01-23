@@ -1,11 +1,11 @@
 package com.ing.wbaa.rokku.proxy.provider
 
 import java.net.InetAddress
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.RemoteAddress
 import com.ing.wbaa.rokku.proxy.config.RangerSettings
 import com.ing.wbaa.rokku.proxy.data._
+import com.ing.wbaa.rokku.proxy.handler.exception.RokkuListingBucketsException
 import org.scalatest.Assertion
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AsyncWordSpec
@@ -108,10 +108,10 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
           accessType = Read(), clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
-      "does authorize allow-list-buckets set to true" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
-        override val listBucketsEnabled: Boolean = true
+      "throw exception allow-list-buckets set to false" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
+        override val listBucketsEnabled: Boolean = false
       }) { apr =>
-        assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None, s3Object = None,
+        assertThrows[RokkuListingBucketsException](apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None, s3Object = None,
           accessType = Read(), clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
