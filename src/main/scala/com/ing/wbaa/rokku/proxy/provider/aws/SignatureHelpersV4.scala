@@ -1,8 +1,8 @@
 package com.ing.wbaa.rokku.proxy.provider.aws
 
 import java.util
-
 import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.headers.RawHeader
 import com.amazonaws.DefaultRequest
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.util.DateUtils
@@ -93,4 +93,17 @@ class SignatureHelpersV4 extends SignatureHelpersCommon {
   def addHeadersToRequest(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit =
     awsHeaders.signedHeadersMap.foreach(p => request.addHeader(p._1, p._2))
 
+  override def setMinimalSignedHeaders(request: HttpRequest)(implicit id: RequestId): HttpRequest = {
+    import scala.jdk.OptionConverters._
+    val authHeaderName = "Authorization"
+    val minSignedHeaders = "host;x-amz-content-sha256;x-amz-date"
+    val authHeader = request.getHeader(authHeaderName).map(_.value()).toScala
+    authHeader.map {
+      auth =>
+        val orgSignedHeaders = getSignedHeaders(auth)
+        val newSignedHeaders = auth.replace(orgSignedHeaders, minSignedHeaders)
+        val requestWithoutAuth = request.removeHeader(authHeaderName)
+        requestWithoutAuth.addHeader(RawHeader(authHeaderName, newSignedHeaders))
+    }.getOrElse(request)
+  }
 }
