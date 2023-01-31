@@ -15,6 +15,7 @@ import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import scala.jdk.CollectionConverters._
 
 trait SignatureHelpersCommon {
+
   private val logger = new LoggerHandlerWithId
 
   def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]]
@@ -26,6 +27,8 @@ trait SignatureHelpersCommon {
   def addHeadersToRequest(request: DefaultRequest[_], awsHeaders: AWSHeaderValues, mediaType: String): Unit
 
   def getSignedHeaders(authorization: String): String
+
+  def setMinimalSignedHeaders(request: HttpRequest)(implicit id: RequestId): HttpRequest
 
   final def cleanURLEncoding(param: String): String = URLDecoder.decode(param, StandardCharsets.UTF_8.toString)
 

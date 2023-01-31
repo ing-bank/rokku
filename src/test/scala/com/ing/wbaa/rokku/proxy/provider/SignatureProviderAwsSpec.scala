@@ -161,6 +161,12 @@ class SignatureProviderAwsSpec extends AnyWordSpec with Diagrams with SignatureP
       assert(awsVersion(v4Request).getSignedHeaders(authorization) == "content-md5;host;x-amz-content-sha256;x-amz-date;x-amz-security-token")
     }
 
+    "setMinimalSignedHeaders from request (v4)" in {
+      val request = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket", v4Authheader, "acl")
+      val minSignedHeaders = awsVersion(request).setMinimalSignedHeaders(request).getHeader("Authorization").get().value()
+      assert(minSignedHeaders == "authorization: AWS4-HMAC-SHA256 Credential=4N4hgHnBjBCn4TLOd22UtNZUyB7bZ9LE/20181009/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=f3088c6d3b97ef813db84a4fadc34311e377162426a3821f86cef7fee473add0")
+    }
+
     "getAWSHeaders from request for v2" in {
       val headers = List(
         RawHeader("authorization", """AWS 4N4hgHnBjBCn4TLOd22UtNZUyB7bZ9LE:FdqS+d5LG0g/Pkkw9jRtgl/Ovy0="""),

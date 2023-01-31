@@ -24,6 +24,7 @@ class NoSignerSupport(authorization: String) extends SignatureHelpersCommon {
 
   def getSignedHeaders(authorization: String): String = throw new Exception("V2 signature protocol doesn't support SignedHeaders")
 
+  override def setMinimalSignedHeaders(request: HttpRequest)(implicit id: RequestId): HttpRequest = throw new Exception("V2 signature protocol doesn't support SignedHeaders")
 }
 
 object NoSignerSupport {

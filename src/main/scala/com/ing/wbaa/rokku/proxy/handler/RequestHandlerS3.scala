@@ -68,10 +68,11 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
    */
   protected[this] def getNpaRequest(request: HttpRequest, credentials: BasicAWSCredentials)(implicit id: RequestId): Request[_] = {
     val awsSignature = awsVersion(request)
-    val awsHeaders = awsSignature.getAWSHeaders(request)
-    val npaRequest = awsSignature.getSignableRequest(request)
+    val requestWithModifiedSignedHeaders = awsSignature.setMinimalSignedHeaders(request)
+    val awsHeaders = awsSignature.getAWSHeaders(requestWithModifiedSignedHeaders)
+    val npaRequest = awsSignature.getSignableRequest(requestWithModifiedSignedHeaders)
 
-    awsSignature.addHeadersToRequest(npaRequest, awsHeaders, request.entity.contentType.mediaType.value)
+    awsSignature.addHeadersToRequest(npaRequest, awsHeaders, requestWithModifiedSignedHeaders.entity.contentType.mediaType.value)
     awsSignature.signS3Request(npaRequest, credentials, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""), storageS3Settings.awsRegion)
     logger.debug("Request sign by NPA: {}", npaRequest)
     npaRequest

@@ -16,6 +16,8 @@ class SignatureHelpersV2 extends SignatureHelpersCommon {
 
   def getSignedHeaders(authorization: String): String = throw new Exception("V2 signature protocol doesn't support SignedHeaders")
 
+  def setMinimalSignedHeaders(request: HttpRequest)(implicit id: RequestId): HttpRequest = throw new Exception("V2 signature protocol doesn't support SignedHeaders")
+
   def extractRequestParameters(httpRequest: HttpRequest): util.Map[String, util.List[String]] = {
     val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
 
