@@ -42,7 +42,6 @@ libraryDependencies ++= Seq(
     "com.auth0"                    % "java-jwt"                % "4.2.1",
     "com.github.cb372"             %% "scalacache-core"        % "0.28.0",
     "com.github.cb372"             %% "scalacache-caffeine"    % "0.28.0",
-    "ch.megard"                    %% "akka-http-cors"         % "1.1.3",
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
     "org.scalatest"                %% "scalatest"              % "3.2.15"           % "it,test",

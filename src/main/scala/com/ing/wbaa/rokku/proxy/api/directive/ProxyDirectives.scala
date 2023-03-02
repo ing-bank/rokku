@@ -1,15 +1,14 @@
 package com.ing.wbaa.rokku.proxy.api.directive
 
-import java.net.InetAddress
-
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin` }
 import akka.http.scaladsl.server.{ Directive0, Directive1 }
-import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsRequestCredential, AwsSessionToken, HeaderIPs, S3Request }
+import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 import com.typesafe.scalalogging.LazyLogging
 
+import java.net.InetAddress
 import scala.language.postfixOps
 import scala.util.Try
 
@@ -22,6 +21,7 @@ object ProxyDirectives extends LazyLogging {
   private[this] val X_FORWARDED_PROTO_HEADER = "X-Forwarded-Proto"
   private[this] val X_REAL_IP_HEADER = "X-Real-IP"
   private[this] val REMOTE_ADDRESS_HEADER = "Remote-Address"
+  private[this] val ORIGIN = "Origin"
 
   private[this] val ipv4Regex = "\\s*([0-9\\.]+)(:([0-9]+))?\\s*" r
 
@@ -178,6 +178,21 @@ object ProxyDirectives extends LazyLogging {
         .countRequest(MetricsFactory.REQUEST_CONTEXT_LENGTH_SUM
           .replace(MetricsFactory.HTTP_METHOD, requestMethodName)
           .replace(MetricsFactory.HTTP_DIRECTION, inOrOutName), contentLength, countAll = false)
+    }
+  }
+
+  def cors(): Directive0 = {
+    extractRequest.flatMap { request =>
+      if (request.headers.exists(_.name().equals(ORIGIN))) {
+        mapResponseHeaders { oldHeaders =>
+          Seq(
+            `Access-Control-Allow-Origin`.*,
+            RawHeader("Access-Control-Allow-Methods", "*"),
+            RawHeader("Access-Control-Allow-Headers", "*")) ++ oldHeaders
+        }
+      } else {
+        pass
+      }
     }
   }
 }
