@@ -107,7 +107,7 @@ trait ProxyService {
         }
       }.map { permittedObjects =>
         if (permittedObjects.nonEmpty && permittedObjects.contains(false)) {
-          implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
+          implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Unauthorized
           logger.warn("Multidelete - one of objects not allowed to be accessed")
           complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
         } else {
@@ -138,7 +138,7 @@ trait ProxyService {
         val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
         val isMultideletePost =
           (httpRequest.entity.contentType.mediaType == MediaTypes.`application/xml` || httpRequest.entity.contentType.mediaType == MediaTypes.`application/octet-stream`) &&
-            httpRequest.method == HttpMethods.POST && rawQueryString == "delete"
+            httpRequest.method == HttpMethods.POST && (rawQueryString == "delete" || rawQueryString.contains("delete="))
 
         if (isMultideletePost) {
           checkExtractedPostContents(
