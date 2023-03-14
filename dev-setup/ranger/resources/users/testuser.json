@@ -1,0 +1,13 @@
+{
+  "loginId": "testuser",
+  "name": "testuser",
+  "password": "password123",
+  "firstName": "firstname",
+  "lastName": "lastname",
+  "publicScreenName": "testuser",
+  "userRoleList": [
+    "ROLE_USER"
+  ],
+  "userPermList": [],
+  "groupPermissions": []
+}

@@ -1,0 +1,98 @@
+{
+  "name": "s3",
+  "label": "S3 buckets and objects",
+  "description": "S3 buckets and objects",
+  "implClass": "com.ing.ranger.s3.RangerServiceS3",
+  "version": 1,
+  "isEnabled": 1,
+  "resources": [
+    {
+      "itemId": 1,
+      "name": "path",
+      "type": "path",
+      "level": 10,
+      "parent": "",
+      "mandatory": true,
+      "lookupSupported": true,
+      "recursiveSupported": true,
+      "excludesSupported": true,
+      "matcher": "org.apache.ranger.plugin.resourcematcher.RangerPathResourceMatcher",
+      "matcherOptions": {
+        "wildCard": true,
+        "ignoreCase": true
+      },
+      "validationRegEx": "",
+      "validationMessage": "",
+      "uiHint": "",
+      "label": "S3 Bucket",
+      "description": "S3 Bucket"
+    }
+  ],
+  "accessTypes": [
+    {
+      "itemId": 1,
+      "name": "read",
+      "label": "read"
+    },
+    {
+      "itemId": 2,
+      "name": "write",
+      "label": "write"
+    }
+  ],
+  "configs": [
+    {
+      "itemId": 1,
+      "name": "endpoint",
+      "type": "string",
+      "subType": "",
+      "mandatory": true,
+      "validationRegEx": "",
+      "validationMessage": "",
+      "uiHint": "",
+      "label": "S3 Endpoint"
+    },
+    {
+      "itemId": 2,
+      "name": "accesskey",
+      "type": "string",
+      "subType": "",
+      "mandatory": true,
+      "validationRegEx": "",
+      "validationMessage": "",
+      "uiHint": "",
+      "label": "Access key"
+    },
+    {
+      "itemId": 3,
+      "name": "password",
+      "type": "password",
+      "subType": "",
+      "mandatory": true,
+      "validationRegEx": "",
+      "validationMessage": "",
+      "uiHint": "",
+      "label": "Secret key"
+    }
+  ],
+  "enums": [],
+  "contextEnrichers": [],
+  "policyConditions": [
+    {
+      "itemId": 1,
+      "name": "cidrAllUserIPs",
+      "label": "All user IP addresses within any cidr range?",
+      "description": "All user IP addresses within any cidr range?",
+      "evaluator": "com.ing.wbaa.ranger.plugin.conditionevaluator.AllIpCidrMatcher",
+      "evaluatorOptions": {}
+    },
+    {
+      "itemId": 2,
+      "name": "cidrAnyUserIPs",
+      "label": "Any user IP address within any cidr range?",
+      "description": "Any user IP address within any cidr range?",
+      "evaluator": "com.ing.wbaa.ranger.plugin.conditionevaluator.AnyIpCidrMatcher",
+      "evaluatorOptions": {}
+    }
+  ]
+}

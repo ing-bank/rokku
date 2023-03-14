@@ -1,0 +1,50 @@
+{
+  "service": "testservice",
+  "name": "shared bucket",
+  "policyType": 0,
+  "policyPriority": 0,
+  "description": "",
+  "isAuditEnabled": true,
+  "resources": {
+    "path": {
+      "values": [
+        "/shared"
+      ],
+      "isExcludes": false,
+      "isRecursive": true
+    }
+  },
+  "policyItems": [
+    {
+      "accesses": [
+        {
+          "type": "read",
+          "isAllowed": true
+        },
+        {
+          "type": "write",
+          "isAllowed": true
+        }
+      ],
+      "users": [
+        "{USER}"
+      ],
+      "groups": [
+        "role_test"
+      ],
+      "conditions": [],
+      "delegateAdmin": false
+    }
+  ],
+  "denyPolicyItems": [],
+  "allowExceptions": [],
+  "denyExceptions": [],
+  "dataMaskPolicyItems": [],
+  "rowFilterPolicyItems": [],
+  "options": {},
+  "validitySchedules": [],
+  "policyLabels": [],
+  "id": 5,
+  "isEnabled": true,
+  "version": 5
+}

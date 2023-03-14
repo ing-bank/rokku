@@ -1,0 +1,13 @@
+{
+  "loginId": "rokkuadmin",
+  "name": "rokkuadmin",
+  "password": "password123",
+  "firstName": "firstname",
+  "lastName": "lastname",
+  "publicScreenName": "rokkuadmin",
+  "userRoleList": [
+    "ROLE_USER"
+  ],
+  "userPermList": [],
+  "groupPermissions": []
+}

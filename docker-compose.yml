@@ -22,12 +22,15 @@ services:
     image: wbaa/rokku-dev-apache-ranger-postgres:0.0.21
 
   ranger-admin:
-    image: wbaa/rokku-dev-apache-ranger:0.0.21
+    image: wbaa/rokku-dev-apache-ranger:2.2.1-genesis-dev
     stdin_open: true
     tty: true
     depends_on:
       - "postgres-server"
       - "ceph"
+    volumes:
+      - ./dev-setup/ranger:/setup
+    entrypoint: /setup/scripts/setup.sh
     ports:
       - "6080:6080"
 

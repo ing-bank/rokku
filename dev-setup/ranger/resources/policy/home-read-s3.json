@@ -1,0 +1,41 @@
+{
+  "service": "testservice",
+  "name": "home_read",
+  "description": "All user can read the home dir no recursive",
+  "isAuditEnabled": true,
+  "resources": {
+    "path": {
+      "values": [
+        "/home"
+      ],
+      "isExcludes": false,
+      "isRecursive": false
+    }
+  },
+  "policyItems": [
+    {
+      "accesses": [
+        {
+          "type": "read",
+          "isAllowed": true
+        }
+      ],
+      "users": [
+        "{USER}"
+      ],
+      "groups": [],
+      "conditions": [],
+      "delegateAdmin": false
+    }
+  ],
+  "denyPolicyItems": [],
+  "allowExceptions": [],
+  "denyExceptions": [],
+  "dataMaskPolicyItems": [],
+  "rowFilterPolicyItems": [],
+  "options": {},
+  "validitySchedules": [],
+  "policyLabels": [],
+  "isEnabled": true,
+  "version": 1
+}
