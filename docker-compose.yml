@@ -32,7 +32,7 @@ services:
       - "6080:6080"
 
   rokku-sts:
-    image: wbaa/rokku-sts:0.3.4
+    image: wbaa/rokku-sts:v1.0.3
     environment:
       - STS_HOST=0.0.0.0
       - STS_PORT=12345
@@ -40,12 +40,13 @@ services:
       - KEYCLOAK_URL=http://keycloak:8080
       - KEYCLOAK_CHECK_REALM_URL=false
       - KEYCLOAK_CHECK_ISSUER_FOR_LIST=sts-rokku
-      - MARIADB_URL=jdbc:mysql:loadbalance://mariadb:3306,mariadb:3306/rokku
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     ports:
       - "12345:12345"
     depends_on:
       - "keycloak"
-      - "mariadb"
+      - "redis"
 
   keycloak:
     image: wbaa/rokku-dev-keycloak:0.0.8
@@ -56,12 +57,13 @@ services:
     ports:
       - "8080:8080"
 
-  mariadb:
-    image: wbaa/rokku-dev-mariadb:0.0.8
+  redis:
+    image: redislabs/redisearch
     environment:
-      - MYSQL_ROOT_PASSWORD=admin
+      - TZ=Europe/Amsterdam
+    command: "redis-server  --requirepass password  --loadmodule '/usr/lib/redis/modules/redisearch.so'"
     ports:
-      - 3307:3306
+      - 6379:6379
 
   zookeeper:
     image: confluentinc/cp-zookeeper:5.4.0
