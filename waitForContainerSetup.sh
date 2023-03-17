@@ -11,7 +11,7 @@ function cephIsReady() {
   docker-compose logs ceph | grep "* Running on http://\[::\]:5000/"
 }
 function rangerAdminIsReady() {
-  docker-compose logs ranger-admin | grep "Policy created"
+  docker-compose logs ranger-admin | grep "Ranger setup completed"
 }
 function rokkuStsIsReady() {
   docker-compose logs rokku-sts | grep "Sts service started listening:"
@@ -19,8 +19,8 @@ function rokkuStsIsReady() {
 function keycloakIsReady() {
   docker-compose logs keycloak | grep "Admin console listening"
 }
-function mariadbIsReady() {
-  docker-compose logs mariadb | grep "Version: '10.3.9-MariaDB-1:10.3.9+maria~bionic'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  mariadb.org binary distribution"
+function redisIsReady() {
+  docker-compose logs redis | grep "Ready to accept connections"
 }
 
 function waitUntilServiceIsReady() {
@@ -44,5 +44,5 @@ waitUntilServiceIsReady rokkuStsIsReady "Rokku STS"
 waitUntilServiceIsReady cephIsReady "Ceph"
 waitUntilServiceIsReady rangerAdminIsReady "Ranger Admin"
 waitUntilServiceIsReady keycloakIsReady "Keycloack"
-waitUntilServiceIsReady mariadbIsReady "MariaDB"
+waitUntilServiceIsReady redisIsReady "Redis"
 

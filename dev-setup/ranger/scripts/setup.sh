@@ -50,5 +50,6 @@ for p in $(find "$RESOURCES_PATH/policy/" -name *.json ); do
 	curl -i -X POST --user $USERNAME:$PASSWORD  "$RANGER_URL/service/public/v2/api/policy" -H "Content-Type: application/json" --data  "@$p"
 done
 
+echo -e "\n\nRanger setup completed"
 
 tail -f /dev/null
