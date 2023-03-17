@@ -128,7 +128,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
   }
 
   "Rokku" should {
-    "not allow to multi delete others objects" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
+    "not allow to multi delete from bucket you have no write policy" in withSdkToMockProxy { (stsSdk, s3ProxyAuthority) =>
       retrieveKeycloackToken(validKeycloakCredentialsUserone) flatMap { keycloackToken =>
         val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
 
@@ -148,7 +148,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
         val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
 
         import scala.jdk.CollectionConverters._
-        val deleteRequest = new DeleteObjectsRequest("home")
+        val deleteRequest = new DeleteObjectsRequest("shared")
         deleteRequest.setKeys(List(
           new KeyVersion("userone/issue"),
         ).asJava)
@@ -161,7 +161,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
       retrieveKeycloackToken(validKeycloakCredentialsTestuser) flatMap { keycloackToken =>
         val s3Client = getSdk(stsSdk, s3ProxyAuthority, keycloackToken)
 
-        val deleteRequest = new DeleteObjectsRequest("home")
+        val deleteRequest = new DeleteObjectsRequest("shared")
         deleteRequest.setKeys(generateMultideleteRequest.map(k => new KeyVersion(k)).asJava)
         deleteRequest.setQuiet(false)
 

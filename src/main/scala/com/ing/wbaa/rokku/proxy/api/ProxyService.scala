@@ -5,7 +5,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
-import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
@@ -50,7 +49,7 @@ trait ProxyService {
 
   protected[this] def awsRequestFromRequest(request: HttpRequest): AWSRequestType
 
-  def rokkuExceptionHandler: ExceptionHandler =
+  private val rokkuExceptionHandler: ExceptionHandler =
     ExceptionHandler {
       case _: RokkuNamespaceBucketNotFoundException =>
         complete(StatusCodes.NotFound -> AwsErrorCodes.response(StatusCodes.NotFound))
@@ -60,40 +59,39 @@ trait ProxyService {
         complete(StatusCodes.MethodNotAllowed -> AwsErrorCodes.response(StatusCodes.MethodNotAllowed))
     }
 
-  val proxyServiceRoute: Route =
+  val proxyServiceRoute: Route = {
     handleExceptions(rokkuExceptionHandler) {
-      cors() {
-        metricDuration {
-          implicit val requestId: RequestId = RequestId(UUID.randomUUID().toString)
-          withoutSizeLimit {
-            extractRequest { httpRequest =>
-              extracts3Request { s3Request =>
-                val requestStartTime = System.nanoTime()
-                onComplete(areCredentialsActive(s3Request.credential)) {
-                  case Success(Some(userSTS: User)) =>
-                    logger.info("STS credentials active for request, user retrieved: {} (response time {})", userSTS, System.nanoTime() - requestStartTime)
-                    onComplete(processRequestForValidUser(httpRequest, s3Request, userSTS)) {
-                      case Success(r) => r
-                      case Failure(exception) =>
-                        implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
-                        logger.error("An error occurred while processing request for valid user ex={}", exception)
-                        complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
-                    }
-                  case Success(None) =>
-                    implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
-                    logger.warn("STS credentials not active: {} (response time {})", s3Request, System.nanoTime() - requestStartTime)
-                    complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
-                  case Failure(exception) =>
-                    implicit val returnStatusCode: StatusCodes.ServerError = StatusCodes.InternalServerError
-                    logger.error("An error occurred when checking credentials with STS service ex={} (response time {})", exception, System.nanoTime() - requestStartTime)
-                    complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
-                }
+      metricDuration {
+        implicit val requestId: RequestId = RequestId(UUID.randomUUID().toString)
+        withoutSizeLimit {
+          extractRequest { httpRequest =>
+            extracts3Request { s3Request =>
+              val requestStartTime = System.nanoTime()
+              onComplete(areCredentialsActive(s3Request.credential)) {
+                case Success(Some(userSTS: User)) =>
+                  logger.info("STS credentials active for request, user retrieved: {} (response time {})", userSTS, System.nanoTime() - requestStartTime)
+                  onComplete(processRequestForValidUser(httpRequest, s3Request, userSTS)) {
+                    case Success(r) => r
+                    case Failure(exception) =>
+                      implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
+                      logger.error("An error occurred while processing request for valid user ex={}", exception)
+                      complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
+                  }
+                case Success(None) =>
+                  implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
+                  logger.warn("STS credentials not active: {} (response time {})", s3Request, System.nanoTime() - requestStartTime)
+                  complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
+                case Failure(exception) =>
+                  implicit val returnStatusCode: StatusCodes.ServerError = StatusCodes.InternalServerError
+                  logger.error("An error occurred when checking credentials with STS service ex={} (response time {})", exception, System.nanoTime() - requestStartTime)
+                  complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
               }
             }
           }
         }
       }
     }
+  }
 
   private def checkExtractedPostContents(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Future[Route] = {
     import scala.concurrent.duration._
@@ -109,7 +107,7 @@ trait ProxyService {
         }
       }.map { permittedObjects =>
         if (permittedObjects.nonEmpty && permittedObjects.contains(false)) {
-          implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Forbidden
+          implicit val returnStatusCode: StatusCodes.ClientError = StatusCodes.Unauthorized
           logger.warn("Multidelete - one of objects not allowed to be accessed")
           complete(returnStatusCode -> AwsErrorCodes.response(returnStatusCode))
         } else {
@@ -140,7 +138,7 @@ trait ProxyService {
         val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")
         val isMultideletePost =
           (httpRequest.entity.contentType.mediaType == MediaTypes.`application/xml` || httpRequest.entity.contentType.mediaType == MediaTypes.`application/octet-stream`) &&
-            httpRequest.method == HttpMethods.POST && rawQueryString == "delete"
+            httpRequest.method == HttpMethods.POST && (rawQueryString == "delete" || rawQueryString.contains("delete="))
 
         if (isMultideletePost) {
           checkExtractedPostContents(
