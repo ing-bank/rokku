@@ -107,7 +107,7 @@ trait AuthorizationProviderRanger {
       case S3Request(_, Some(s3path), None, accessType, _, _, mediaType) if accessType.isInstanceOf[Post] &&
         (mediaType == MediaTypes.`application/xml` || mediaType == MediaTypes.`application/octet-stream`) =>
         logger.debug(s"Passing ranger check for multi object deletion to check method")
-        true
+        isAuthorisedByRanger(s3path) //we assume user has to have access to bucket
 
       // create / delete bucket operation
       case S3Request(_, Some(bucket), None, accessType, _, _, _) if (accessType.isInstanceOf[Write] || accessType.isInstanceOf[Delete]) =>
