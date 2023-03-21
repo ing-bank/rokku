@@ -32,12 +32,6 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
     response
   }
 
-  /**
-   * Updates the URI for S3 and sends the request to S3.
-   *
-   * If we get back a Forbidden code, we can try to check if there's new credentials for Ceph first.
-   * If so, we can retry the request.
-   */
   protected[this] def executeRequest(request: HttpRequest, userSTS: User, s3request: S3Request)(implicit id: RequestId): Future[HttpResponse] = {
 
     val npaRequest = getNpaRequest(request, storageNPACredentials)
@@ -85,10 +79,10 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
    * @return response from S3
    */
   protected[this] def fireRequestToS3(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
-    logger.info(s"Request sent to Ceph: method: {} uri: {}", request.method.value, request.uri.toString())
+    logger.info(s"Request sent to backend storage: method: {} uri: {}", request.method.value, request.uri.toString())
     Http()
       .singleRequest(request)
-      .andThen { case Success(r) => logger.info(s"Received response from Ceph: {}", r.status) }
+      .andThen { case Success(r) => logger.info(s"Received response from backend storage: {}", r.status) }
       .map(r => r.withEntity(r.entity.withoutSizeLimit()))
   }
 
