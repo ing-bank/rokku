@@ -1,0 +1,45 @@
+{
+  "service": "testservice",
+  "name": "testuser_deny_subdir",
+  "description": "FOR TESTING PURPOSES, Deny access for testuser to subfolder of demobucket",
+  "isAuditEnabled": true,
+  "resources": {
+    "path": {
+      "values": [
+        "/demobucket/subdir"
+      ],
+      "isExcludes": false,
+      "isRecursive": true
+    }
+  },
+  "policyItems": [],
+  "denyPolicyItems": [
+    {
+      "accesses": [
+        {
+          "type": "read",
+          "isAllowed": true
+        },
+        {
+          "type": "write",
+          "isAllowed": true
+        }
+      ],
+      "users": [
+        "testuser"
+      ],
+      "groups": [],
+      "conditions": [],
+      "delegateAdmin": false
+    }
+  ],
+  "allowExceptions": [],
+  "denyExceptions": [],
+  "dataMaskPolicyItems": [],
+  "rowFilterPolicyItems": [],
+  "options": {},
+  "validitySchedules": [],
+  "policyLabels": [],
+  "isEnabled": true,
+  "version": 1
+}

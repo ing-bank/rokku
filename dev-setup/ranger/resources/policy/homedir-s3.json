@@ -1,0 +1,45 @@
+{
+  "service": "testservice",
+  "name": "home_dirs",
+  "description": "FOR TESTING PURPOSES, Allow access for testuser to home subfolder",
+  "isAuditEnabled": true,
+  "resources": {
+    "path": {
+      "values": [
+        "/home/{USER}"
+      ],
+      "isExcludes": false,
+      "isRecursive": true
+    }
+  },
+  "policyItems": [
+    {
+      "accesses": [
+        {
+          "type": "read",
+          "isAllowed": true
+        },
+        {
+          "type": "write",
+          "isAllowed": true
+        }
+      ],
+      "users": [
+        "{USER}"
+      ],
+      "groups": [],
+      "conditions": [],
+      "delegateAdmin": false
+    }
+  ],
+  "denyPolicyItems": [],
+  "allowExceptions": [],
+  "denyExceptions": [],
+  "dataMaskPolicyItems": [],
+  "rowFilterPolicyItems": [],
+  "options": {},
+  "validitySchedules": [],
+  "policyLabels": [],
+  "isEnabled": true,
+  "version": 1
+}

@@ -1,0 +1,12 @@
+{
+  "isEnabled": true,
+  "version": 1,
+  "type": "s3",
+  "name": "testservice",
+  "description": "FOR TESTING PURPOSES, test service",
+  "configs": {
+    "endpoint": "http://ceph:8010",
+    "password": "secretkey",
+    "accesskey": "accesskey"
+  }
+}

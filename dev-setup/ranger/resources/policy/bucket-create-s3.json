@@ -1,0 +1,41 @@
+{
+  "service": "testservice",
+  "name": "bucket management",
+  "description": "Create/Delete buckets",
+  "isAuditEnabled": true,
+  "resources": {
+    "path": {
+      "values": [
+        "/"
+      ],
+      "isExcludes": false,
+      "isRecursive": false
+    }
+  },
+  "policyItems": [
+    {
+      "accesses": [
+        {
+          "type": "write",
+          "isAllowed": true
+        }
+      ],
+      "users": [
+        "rokkuadmin"
+      ],
+      "groups": [],
+      "conditions": [],
+      "delegateAdmin": false
+    }
+  ],
+  "denyPolicyItems": [],
+  "allowExceptions": [],
+  "denyExceptions": [],
+  "dataMaskPolicyItems": [],
+  "rowFilterPolicyItems": [],
+  "options": {},
+  "validitySchedules": [],
+  "policyLabels": [],
+  "isEnabled": true,
+  "version": 1
+}
