@@ -188,6 +188,7 @@ object ProxyDirectives extends LazyLogging {
           Seq(
             `Access-Control-Allow-Origin`.*,
             RawHeader("Access-Control-Allow-Methods", "*"),
+            RawHeader("Access-Control-Expose-Headers", "ETag"),
             RawHeader("Access-Control-Allow-Headers", "*")) ++ oldHeaders
         }
       } else {
