@@ -1,16 +1,17 @@
 package com.ing.wbaa.rokku.proxy.provider.aws
 
-import java.util
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.headers.RawHeader
 import com.amazonaws.DefaultRequest
-import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.auth.{ AWSCredentials, BasicAWSCredentials }
 import com.amazonaws.util.DateUtils
-import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.extractHeaderOption
 import com.ing.wbaa.rokku.proxy.data
 import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.extractHeaderOption
 
+import java.util
+import java.util.Date
 import scala.jdk.CollectionConverters._
 
 class SignatureHelpersV4 extends SignatureHelpersCommon {
@@ -105,5 +106,15 @@ class SignatureHelpersV4 extends SignatureHelpersCommon {
         val requestWithoutAuth = request.removeHeader(authHeaderName)
         requestWithoutAuth.addHeader(RawHeader(authHeaderName, newSignedHeaders))
     }.getOrElse(request)
+  }
+
+  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
+    logger.debug("presign - using version 4 signer")
+
+    val signer = new CustomV4Signer()
+    signer.setRegionName(region)
+    signer.setServiceName(request.getServiceName)
+    signer.setOverrideDate(DateUtils.parseCompressedISO8601Date(date))
+    signer.presignRequest(request, credentials, new Date(System.currentTimeMillis() + 1000 * 3600))
   }
 }

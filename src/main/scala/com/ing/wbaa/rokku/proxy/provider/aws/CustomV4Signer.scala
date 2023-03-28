@@ -9,6 +9,6 @@ import com.typesafe.scalalogging.LazyLogging
 sealed class CustomV4Signer() extends AWS4Signer with LazyLogging {
 
   this.doubleUrlEncode = false
-  override def calculateContentHash(request: SignableRequest[_]): String = request.getHeaders.get("X-Amz-Content-SHA256")
+  override def calculateContentHash(request: SignableRequest[_]): String = request.getHeaders.getOrDefault("X-Amz-Content-SHA256", "UNSIGNED-PAYLOAD")
   override def sign(request: SignableRequest[_], credentials: AWSCredentials): Unit = super.sign(request, credentials)
 }

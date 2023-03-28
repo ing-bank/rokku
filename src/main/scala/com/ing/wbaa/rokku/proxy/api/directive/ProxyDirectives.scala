@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origi
 import akka.http.scaladsl.server.{ Directive, Directive0, Directive1 }
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
+import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon._
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 import com.typesafe.scalalogging.LazyLogging
 
@@ -22,13 +23,6 @@ object ProxyDirectives extends LazyLogging {
   private[this] val X_REAL_IP_HEADER = "X-Real-IP"
   private[this] val REMOTE_ADDRESS_HEADER = "Remote-Address"
   private[this] val ORIGIN = "Origin"
-  private[this] val X_AMZ_ALGORITHM = "X-Amz-Algorithm"
-  private[this] val X_AMZ_SECURITY_TOKEN = "X-Amz-Security-Token"
-  private[this] val X_AMZ_SIGNED_HEADERS = "X-Amz-SignedHeaders"
-  private[this] val X_AMZ_SIGNATURE = "X-Amz-Signature"
-  private[this] val X_AMZ_EXPIRES = "X-Amz-Expires"
-  private[this] val X_AMZ_CREDENTIAL = "X-Amz-Credential"
-  private[this] val X_AMZ_DATE = "X-Amz-Date"
 
   private[this] val ipv4Regex = "\\s*([0-9\\.]+)(:([0-9]+))?\\s*" r
 

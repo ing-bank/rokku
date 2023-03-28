@@ -90,6 +90,29 @@ class SignatureProviderAwsSpec extends AnyWordSpec with Diagrams with SignatureP
 
       assert(isUserAuthenticated(getACLRequest, awsSecretKey, s3Request))
     }
+
+    "return true on correct V4 request with presign" in {
+      val s3Request = S3Request(
+        AwsRequestCredential(AwsAccessKey("ApcRSGcV9zc9pas8aiGQZbpBMfHCY3rt"), Some(AwsSessionToken("dsHF4DzdeNmIfXNLEgTVNXEx86z8HTIc"))),
+        Some("/shared/1.sh"),
+        None,
+        Read(),
+        presignParams = Some(Map(
+          "X-Amz-Credential" -> "ApcRSGcV9zc9pas8aiGQZbpBMfHCY3rt/20230328/us-east-1/s3/aws4_request",
+          "X-Amz-Algorithm" -> "AWS4-HMAC-SHA256",
+          "X-Amz-SignedHeaders" -> "host",
+          "X-Amz-Expires" -> "3600",
+          "X-Amz-Date" -> "20230328T153144Z",
+          "X-Amz-Signature" -> "08dd037251c1c6a8205e246c9c9d55fe77fedcc3a6f7cf1c2fbd4a0d469bd34b",
+          "X-Amz-Security-Token" -> "dsHF4DzdeNmIfXNLEgTVNXEx86z8HTIc"
+        ))
+      )
+      val awsSecretKey = AwsSecretKey("ApQilwDeBI9SmfVymLy0DITcRtlo7LO5")
+      val headers = List()
+      val putRequest = fakeIncomingHttpRequest(HttpMethods.GET, "/shared/1.sh", headers)
+      assert(isUserAuthenticated(putRequest, awsSecretKey, s3Request))
+    }
+
   }
 
   import scala.jdk.CollectionConverters._
