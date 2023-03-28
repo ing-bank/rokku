@@ -39,30 +39,48 @@ object ProxyDirectives extends LazyLogging {
     if (httpHeader.is(AUTHORIZATION_HTTP_HEADER_NAME)) {
       val signerType = httpHeader.value().split(" ").headOption
       logger.debug("Signertype used: {}", signerType)
-
-      signerType match {
-        case Some("AWS4-HMAC-SHA256") =>
-          val credential =
-            """\S+ Credential=(\S+), """.r
-              .findFirstMatchIn(httpHeader.value())
-              .map(_ group 1)
-
-          credential.flatMap(_.split("/").headOption).map(AwsAccessKey)
-
-        case Some("AWS") =>
-          val accessKey =
-            """AWS (\S+):\S+""".r
-              .findFirstMatchIn(httpHeader.value())
-              .map(_ group 1)
-
-          accessKey.map(AwsAccessKey)
-
-        case _ =>
-          logger.warn("The necessary information couldn't be extracted from the authorization header, " +
-            s"this could be caused by a signer type that we don't support yet...: {}", httpHeader)
-          None
-      }
+      getAccessKeyFromAuthString(httpHeader.value(), signerType)
     } else None
+
+  private[this] def getAccessKeyFromAuthString(authString: String, signerType: Option[String]): Option[AwsAccessKey] = {
+    signerType match {
+      case Some("AWS4-HMAC-SHA256") =>
+        val credential =
+          """\S+ Credential=(\S+), """.r
+            .findFirstMatchIn(authString)
+            .map(_ group 1)
+
+        credential.flatMap(_.split("/").headOption).map(AwsAccessKey)
+
+      case Some("AWS") =>
+        val accessKey =
+          """AWS (\S+):\S+""".r
+            .findFirstMatchIn(authString)
+            .map(_ group 1)
+
+        accessKey.map(AwsAccessKey)
+
+      case _ =>
+        logger.warn("The necessary information couldn't be extracted from the authorization header, " +
+          s"this could be caused by a signer type that we don't support yet...: {}", authString)
+        None
+    }
+  }
+
+  private[this] def extractAuthorizationS3(signerType: String, authString: String): Option[AwsAccessKey] = {
+    //TODO to use the method getAccessKeyFromAuthString we need to add something at the beginning and colon after - maybe we need think about sth else
+    val authStringWithPrefixAnsPostfix = "x Credential=" + authString + ", x"
+    getAccessKeyFromAuthString(authStringWithPrefixAnsPostfix, Some(signerType))
+  }
+
+  private[this] def extractAuthorizationS3: Directive1[AwsAccessKey] = {
+    headerValue[AwsAccessKey](extractAuthorizationS3) |
+      parameter(X_AMZ_ALGORITHM.optional, X_AMZ_CREDENTIAL.optional).tflatMap {
+        case (Some(algorithm), Some(credential)) =>
+          extractAuthorizationS3(algorithm, credential).map(provide).getOrElse(reject)
+        case _ => reject
+      }
+  }
 
   val extracts3Request: Directive1[S3Request] =
     extractClientIP tflatMap { case Tuple1(clientIPAddress) =>
@@ -74,7 +92,7 @@ object ProxyDirectives extends LazyLogging {
           extractRequest tflatMap { case Tuple1(httpRequest) =>
             optionalHeaderValueByName(X_AMZ_SECURITY_TOKEN) & parameter(X_AMZ_SECURITY_TOKEN.optional) tflatMap {
               case (optionalSessionToken, optionalSessionTokenFromParam) =>
-                headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
+                extractAuthorizationS3 tmap { case Tuple1(awsAccessKey) =>
                   // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
                   val s3path = S3Utils.getS3FullPathWithBucketName(httpRequest)
                   val s3Request = S3Request(
