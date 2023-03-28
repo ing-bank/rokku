@@ -31,7 +31,7 @@ trait SignatureHelpersCommon {
 
   final def cleanURLEncoding(param: String): String = URLDecoder.decode(param, StandardCharsets.UTF_8.toString)
 
-  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit
+  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, expirationInSecond: Int, region: String = "us-east-1")(implicit id: RequestId): Unit
 
   // we have different extract pattern for V2 and V4
   def getSignatureFromAuthorization(authorization: String): String =

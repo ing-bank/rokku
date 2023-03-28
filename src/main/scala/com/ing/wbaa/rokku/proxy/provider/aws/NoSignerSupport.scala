@@ -25,7 +25,7 @@ class NoSignerSupport(authorization: String) extends SignatureHelpersCommon {
 
   override def setMinimalSignedHeaders(request: HttpRequest)(implicit id: RequestId): HttpRequest = throw new SignatureNotSupported(exceptionMsg)
 
-  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, region: String)(implicit id: RequestId): Unit = new SignatureNotSupported(exceptionMsg)
+  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, expirationInSecond: Int, region: String)(implicit id: RequestId): Unit = new SignatureNotSupported(exceptionMsg)
 }
 
 object NoSignerSupport {

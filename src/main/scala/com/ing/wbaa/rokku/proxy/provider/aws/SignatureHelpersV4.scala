@@ -108,13 +108,13 @@ class SignatureHelpersV4 extends SignatureHelpersCommon {
     }.getOrElse(request)
   }
 
-  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
+  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, expirationInSecond: Int, region: String = "us-east-1")(implicit id: RequestId): Unit = {
     logger.debug("presign - using version 4 signer")
 
     val signer = new CustomV4Signer()
     signer.setRegionName(region)
     signer.setServiceName(request.getServiceName)
     signer.setOverrideDate(DateUtils.parseCompressedISO8601Date(date))
-    signer.presignRequest(request, credentials, new Date(System.currentTimeMillis() + 1000 * 3600))
+    signer.presignRequest(request, credentials, new Date(System.currentTimeMillis() + 1000 * expirationInSecond))
   }
 }

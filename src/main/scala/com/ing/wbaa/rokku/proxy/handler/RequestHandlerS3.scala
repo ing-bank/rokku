@@ -65,10 +65,9 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
     val requestWithModifiedSignedHeaders = awsSignature.setMinimalSignedHeaders(request)
     val awsHeaders = awsSignature.getAWSHeaders(requestWithModifiedSignedHeaders)
     val npaRequest = awsSignature.getSignableRequest(requestWithModifiedSignedHeaders)
-
     awsSignature.addHeadersToRequest(npaRequest, awsHeaders, requestWithModifiedSignedHeaders.entity.contentType.mediaType.value)
     awsSignature.signS3Request(npaRequest, credentials, awsHeaders.signedHeadersMap.getOrElse("X-Amz-Date", ""), storageS3Settings.awsRegion)
-    logger.debug("Request sign by NPA: {}", npaRequest)
+    logger.debug("Request sign by NPA: {}, {}, {}", npaRequest, npaRequest.getParameters, npaRequest.getHeaders)
     npaRequest
   }
 
@@ -79,7 +78,7 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
    * @return response from S3
    */
   protected[this] def fireRequestToS3(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
-    logger.info(s"Request sent to backend storage: method: {} uri: {}", request.method.value, request.uri.toString())
+    logger.info(s"Request sent to backend storage: method: {} uri: {}, {}", request.method.value, request.uri.toString(), request)
     Http()
       .singleRequest(request)
       .andThen { case Success(r) => logger.info(s"Received response from backend storage: {}", r.status) }

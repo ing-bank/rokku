@@ -3,7 +3,8 @@ package com.ing.wbaa.rokku.proxy.provider
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
-import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsRequestCredential, AwsSecretKey, AwsSessionToken, Read, RequestId, S3Request }
+import com.ing.wbaa.rokku.proxy.data._
+import com.ing.wbaa.rokku.proxy.handler.exception.RokkuPresignExpiredException
 import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.awsVersion
 import com.typesafe.config.ConfigFactory
 import org.scalatest.diagrams.Diagrams
@@ -91,7 +92,7 @@ class SignatureProviderAwsSpec extends AnyWordSpec with Diagrams with SignatureP
       assert(isUserAuthenticated(getACLRequest, awsSecretKey, s3Request))
     }
 
-    "return true on correct V4 request with presign" in {
+    "throw RokkuPresignExpiredException on correct V4 request with presign but expired" in {
       val s3Request = S3Request(
         AwsRequestCredential(AwsAccessKey("ApcRSGcV9zc9pas8aiGQZbpBMfHCY3rt"), Some(AwsSessionToken("dsHF4DzdeNmIfXNLEgTVNXEx86z8HTIc"))),
         Some("/shared/1.sh"),
@@ -109,10 +110,33 @@ class SignatureProviderAwsSpec extends AnyWordSpec with Diagrams with SignatureP
       )
       val awsSecretKey = AwsSecretKey("ApQilwDeBI9SmfVymLy0DITcRtlo7LO5")
       val headers = List()
-      val putRequest = fakeIncomingHttpRequest(HttpMethods.GET, "/shared/1.sh", headers)
-      assert(isUserAuthenticated(putRequest, awsSecretKey, s3Request))
+      val getRequest = fakeIncomingHttpRequest(HttpMethods.GET, "/shared/1.sh", headers)
+      val exceptionMessage = intercept[RokkuPresignExpiredException](isUserAuthenticated(getRequest, awsSecretKey, s3Request))
+      assert(exceptionMessage.getMessage.equals("presign request expired"))
     }
 
+    "throw RokkuPresignExpiredException on correct V4 request with presign and additional query parameters but expired" in {
+      val s3Request = S3Request(
+        AwsRequestCredential(AwsAccessKey("ApcRSGcV9zc9pas8aiGQZbpBMfHCY3rt"), Some(AwsSessionToken("dsHF4DzdeNmIfXNLEgTVNXEx86z8HTIc"))),
+        Some("/shared/1.sh"),
+        None,
+        Read(),
+        presignParams = Some(Map(
+          "X-Amz-Credential" -> "ApcRSGcV9zc9pas8aiGQZbpBMfHCY3rt/20230330/us-east-1/s3/aws4_request",
+          "X-Amz-Algorithm" -> "AWS4-HMAC-SHA256",
+          "X-Amz-SignedHeaders" -> "host",
+          "X-Amz-Expires" -> "3600",
+          "X-Amz-Date" -> "20230328T153144Z",
+          "X-Amz-Signature" -> "ccef167afa7bddb23f53b8f91cc8b4e7a37a22102831e5d441a5dda808cb7bef",
+          "X-Amz-Security-Token" -> "dsHF4DzdeNmIfXNLEgTVNXEx86z8HTIc"
+        ))
+      )
+      val awsSecretKey = AwsSecretKey("ApQilwDeBI9SmfVymLy0DITcRtlo7LO5")
+      val headers = List()
+      val getRequest = fakeIncomingHttpRequest(HttpMethods.GET, "/shared/1.sh", headers, "x-id=GetObject&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD")
+      val exceptionMessage = intercept[RokkuPresignExpiredException](isUserAuthenticated(getRequest, awsSecretKey, s3Request))
+      assert(exceptionMessage.getMessage.equals("presign request expired"))
+    }
   }
 
   import scala.jdk.CollectionConverters._

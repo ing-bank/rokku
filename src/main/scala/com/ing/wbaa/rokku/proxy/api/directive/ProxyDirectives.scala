@@ -23,6 +23,8 @@ object ProxyDirectives extends LazyLogging {
   private[this] val X_REAL_IP_HEADER = "X-Real-IP"
   private[this] val REMOTE_ADDRESS_HEADER = "Remote-Address"
   private[this] val ORIGIN = "Origin"
+  private[this] val X_AMZ_CONTENT_SHA256 = "X-Amz-Content-SHA256"
+  private[this] val RAW_REQUEST_URI = "Raw-Request-URI"
 
   private[this] val ipv4Regex = "\\s*([0-9\\.]+)(:([0-9]+))?\\s*" r
 
@@ -62,7 +64,7 @@ object ProxyDirectives extends LazyLogging {
   }
 
   private[this] def extractAuthorizationS3(signerType: String, authString: String): Option[AwsAccessKey] = {
-    //TODO to use the method getAccessKeyFromAuthString we need to add something at the beginning and colon after - maybe we need think about sth else
+    //to use the method getAccessKeyFromAuthString we need to add something at the beginning and colon after - maybe we need think about sth else (to have one method the extract auth)
     val authStringWithPrefixAnsPostfix = "x Credential=" + authString + ", x"
     getAccessKeyFromAuthString(authStringWithPrefixAnsPostfix, Some(signerType))
   }
@@ -84,13 +86,13 @@ object ProxyDirectives extends LazyLogging {
         extractPresignParams tflatMap { case Tuple1(presignParams) =>
           logger.debug(s"Extracted presign params : {}", presignParams)
           extractRequest tflatMap { case Tuple1(httpRequest) =>
-            optionalHeaderValueByName(X_AMZ_SECURITY_TOKEN) & parameter(X_AMZ_SECURITY_TOKEN.optional) tflatMap {
-              case (optionalSessionToken, optionalSessionTokenFromParam) =>
+            getAWSSessionToken tflatMap {
+              case Tuple1(optionalSessionToken) =>
                 extractAuthorizationS3 tmap { case Tuple1(awsAccessKey) =>
                   // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
                   val s3path = S3Utils.getS3FullPathWithBucketName(httpRequest)
                   val s3Request = S3Request(
-                    AwsRequestCredential(awsAccessKey, optionalSessionToken.map(AwsSessionToken).orElse(optionalSessionTokenFromParam.map(AwsSessionToken))),
+                    AwsRequestCredential(awsAccessKey, optionalSessionToken),
                     s3path,
                     httpRequest.method,
                     clientIPAddress,
@@ -111,26 +113,39 @@ object ProxyDirectives extends LazyLogging {
   /**
    * Updates the forward headers for a request.
    * Since we're proxy requests through Rokku to S3, we need to add the remote address to the forward headers.
+   * If the request is presign we add authorization header to work with executeRequest method
    */
   def updateHeadersForRequest(httpRequest: HttpRequest): Directive1[HttpRequest] =
     optionalHeaderValueByName(REMOTE_ADDRESS_HEADER) tflatMap { case Tuple1(remoteAddressHeader) =>
-      optionalHeaderValueByName(X_FORWARDED_FOR_HEADER) tmap { case Tuple1(xForwardedForHeader) =>
+      optionalHeaderValueByName(X_FORWARDED_FOR_HEADER) tflatMap { case Tuple1(xForwardedForHeader) =>
+        extractPresignParams tmap { case Tuple1(presignParams) =>
+          val prependForwardedFor = xForwardedForHeader match {
+            case Some(forwardHeader)       => s"$forwardHeader, "
+            case None                      => ""
+          }
 
-        val prependForwardedFor = xForwardedForHeader match {
-          case Some(forwardHeader)     => s"$forwardHeader, "
-          case None                    => ""
-        }
+          var newHeaders: Seq[HttpHeader] =
+            httpRequest.headers
+              .filter(h =>
+                h.isNot(X_FORWARDED_FOR_HEADER.toLowerCase) && h.isNot(X_FORWARDED_PROTO_HEADER.toLowerCase)
+              ) ++ List(
+                RawHeader(X_FORWARDED_FOR_HEADER, prependForwardedFor + remoteAddressHeader.map(_.split(":").head).getOrElse("unknown")),
+                RawHeader(X_FORWARDED_PROTO_HEADER, httpRequest._5.value)
+              )
 
-        val newHeaders: Seq[HttpHeader] =
-          httpRequest.headers
-            .filter(h =>
-              h.isNot(X_FORWARDED_FOR_HEADER.toLowerCase) && h.isNot(X_FORWARDED_PROTO_HEADER.toLowerCase)
-            ) ++ List(
-              RawHeader(X_FORWARDED_FOR_HEADER, prependForwardedFor + remoteAddressHeader.map(_.split(":").head).getOrElse("unknown")),
-              RawHeader(X_FORWARDED_PROTO_HEADER, httpRequest._5.value)
+          var uri = httpRequest.uri
+
+          if (presignParams.isDefined) {
+            val authStr = s"${presignParams.get(X_AMZ_ALGORITHM)} Credential=${presignParams.get(X_AMZ_CREDENTIAL)}, SignedHeaders=${presignParams.get(X_AMZ_SIGNED_HEADERS)}, Signature=${presignParams.get(X_AMZ_SIGNATURE)}"
+            uri = httpRequest.uri.withQuery(Uri.Query.Empty)
+            newHeaders = newHeaders.filter(_.isNot(RAW_REQUEST_URI.toLowerCase)) ++ List(
+              RawHeader(AUTHORIZATION_HTTP_HEADER_NAME, authStr),
+              RawHeader(X_AMZ_DATE, presignParams.get(X_AMZ_DATE)),
+              RawHeader(X_AMZ_CONTENT_SHA256, "UNSIGNED-PAYLOAD")
             )
-
-        httpRequest.withHeaders(newHeaders.toList)
+          }
+          httpRequest.withHeaders(newHeaders.toList).withUri(uri)
+        }
       }
     }
 
@@ -244,5 +259,10 @@ object ProxyDirectives extends LazyLogging {
           provide(None)
       }
   }
+
+  private def getAWSSessionToken: Directive[Tuple1[Option[AwsSessionToken]]] =
+    optionalHeaderValueByName(X_AMZ_SECURITY_TOKEN) & parameter(X_AMZ_SECURITY_TOKEN.optional) tmap {
+      case (optionalSessionToken, optionalSessionTokenFromParam) => optionalSessionToken.map(AwsSessionToken).orElse(optionalSessionTokenFromParam.map(AwsSessionToken))
+    }
 }
 

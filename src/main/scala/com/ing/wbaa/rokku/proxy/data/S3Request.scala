@@ -3,14 +3,17 @@ package com.ing.wbaa.rokku.proxy.data
 import akka.http.scaladsl.model.RemoteAddress.Unknown
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{ HttpMethod, MediaType, MediaTypes, RemoteAddress }
+import com.amazonaws.util.DateUtils
+import com.ing.wbaa.rokku.proxy.handler.exception.RokkuPresignExpiredException
+import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.{ X_AMZ_DATE, X_AMZ_EXPIRES }
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 import com.typesafe.scalalogging.LazyLogging
 
 /**
  * @param credential
- * @param s3BucketPath     A None for bucket means this is an operation not targeted to a specific bucket (e.g. list buckets)
+ * @param s3BucketPath A None for bucket means this is an operation not targeted to a specific bucket (e.g. list buckets)
  * @param s3Object
- * @param accessType The access type for this request, write includes actions like write/update/delete
+ * @param accessType   The access type for this request, write includes actions like write/update/delete
  *
  */
 case class S3Request(
@@ -23,9 +26,27 @@ case class S3Request(
     mediaType: MediaType = MediaTypes.`text/plain`,
     presignParams: Option[Map[String, String]] = None
 ) {
+
   def userIps: UserIps = UserIps(clientIPAddress, headerIPs)
 
   def isPresign: Boolean = presignParams.isDefined
+
+  def isNotPresign: Boolean = !isPresign
+
+  def isPresgnNotExpired: Boolean = {
+    if (presignParams.isDefined) {
+      val date = DateUtils.parseCompressedISO8601Date(presignParams.get(X_AMZ_DATE))
+      val expiration = presignParams.get(X_AMZ_EXPIRES).toInt
+      val isNotExpired = System.currentTimeMillis() <= date.getTime + expiration * 1000
+      if (!isNotExpired) {
+        throw new RokkuPresignExpiredException("presign request expired")
+      }
+      isNotExpired
+    } else {
+      throw new RokkuPresignExpiredException("it is not presign request")
+    }
+  }
+
 }
 
 object S3Request extends LazyLogging {

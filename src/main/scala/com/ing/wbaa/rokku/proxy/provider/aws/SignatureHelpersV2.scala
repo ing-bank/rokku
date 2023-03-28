@@ -104,7 +104,7 @@ class SignatureHelpersV2 extends SignatureHelpersCommon {
     awsHeaders.signedHeadersMap.foreach { case (k, v) => request.addHeader(k, v) }
   }
 
-  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, region: String = "us-east-1")(implicit id: RequestId): Unit = {
+  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, expirationInSecond: Int, region: String = "us-east-1")(implicit id: RequestId): Unit = {
     new Exception("signature V2 not supported")
   }
 }

@@ -9,7 +9,7 @@ import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
-import com.ing.wbaa.rokku.proxy.handler.exception.{ RokkuListingBucketsException, RokkuNamespaceBucketNotFoundException, RokkuThrottlingException }
+import com.ing.wbaa.rokku.proxy.handler.exception.{ RokkuListingBucketsException, RokkuNamespaceBucketNotFoundException, RokkuPresignExpiredException, RokkuThrottlingException }
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
@@ -57,6 +57,8 @@ trait ProxyService {
         complete(StatusCodes.ServiceUnavailable -> AwsErrorCodes.response(StatusCodes.ServiceUnavailable))
       case _: RokkuListingBucketsException =>
         complete(StatusCodes.MethodNotAllowed -> AwsErrorCodes.response(StatusCodes.MethodNotAllowed))
+      case _: RokkuPresignExpiredException =>
+        complete(StatusCodes.BadRequest -> AwsErrorCodes.response(StatusCodes.BadRequest))
     }
 
   val proxyServiceRoute: Route = {
