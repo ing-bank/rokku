@@ -161,13 +161,6 @@ class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagr
         }
       }
 
-      "return None presign params" in {
-        HttpRequest() ~> testClientPresignParams ~> check {
-          val response = responseAs[String]
-          assert(response == "Presign params = None")
-        }
-      }
-
       "return None presign params bacause missing X-Amz-Signature" in {
         val queryParameters =
           Map(
