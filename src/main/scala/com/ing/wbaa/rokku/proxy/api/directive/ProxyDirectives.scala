@@ -1,8 +1,8 @@
 package com.ing.wbaa.rokku.proxy.api.directive
 
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{RawHeader, `Access-Control-Allow-Origin`}
-import akka.http.scaladsl.server.{Directive, Directive0, Directive1}
+import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin` }
+import akka.http.scaladsl.server.{ Directive, Directive0, Directive1 }
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
 import com.ing.wbaa.rokku.proxy.util.S3Utils
@@ -72,14 +72,13 @@ object ProxyDirectives extends LazyLogging {
         extractPresignParams tflatMap { case Tuple1(presignParams) =>
           logger.debug(s"Extracted presign params : {}", presignParams)
           extractRequest tflatMap { case Tuple1(httpRequest) =>
-            optionalHeaderValueByName("x-amz-security-token") tflatMap {
-              case Tuple1(optionalSessionToken) =>
+            optionalHeaderValueByName(X_AMZ_SECURITY_TOKEN) & parameter(X_AMZ_SECURITY_TOKEN.optional) tflatMap {
+              case (optionalSessionToken, optionalSessionTokenFromParam) =>
                 headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
-
                   // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
                   val s3path = S3Utils.getS3FullPathWithBucketName(httpRequest)
                   val s3Request = S3Request(
-                    AwsRequestCredential(awsAccessKey, optionalSessionToken.map(AwsSessionToken)),
+                    AwsRequestCredential(awsAccessKey, optionalSessionToken.map(AwsSessionToken).orElse(optionalSessionTokenFromParam.map(AwsSessionToken))),
                     s3path,
                     httpRequest.method,
                     clientIPAddress,
@@ -106,8 +105,8 @@ object ProxyDirectives extends LazyLogging {
       optionalHeaderValueByName(X_FORWARDED_FOR_HEADER) tmap { case Tuple1(xForwardedForHeader) =>
 
         val prependForwardedFor = xForwardedForHeader match {
-          case Some(forwardHeader) => s"$forwardHeader, "
-          case None => ""
+          case Some(forwardHeader)     => s"$forwardHeader, "
+          case None                    => ""
         }
 
         val newHeaders: Seq[HttpHeader] =
@@ -115,9 +114,9 @@ object ProxyDirectives extends LazyLogging {
             .filter(h =>
               h.isNot(X_FORWARDED_FOR_HEADER.toLowerCase) && h.isNot(X_FORWARDED_PROTO_HEADER.toLowerCase)
             ) ++ List(
-            RawHeader(X_FORWARDED_FOR_HEADER, prependForwardedFor + remoteAddressHeader.map(_.split(":").head).getOrElse("unknown")),
-            RawHeader(X_FORWARDED_PROTO_HEADER, httpRequest._5.value)
-          )
+              RawHeader(X_FORWARDED_FOR_HEADER, prependForwardedFor + remoteAddressHeader.map(_.split(":").head).getOrElse("unknown")),
+              RawHeader(X_FORWARDED_PROTO_HEADER, httpRequest._5.value)
+            )
 
         httpRequest.withHeaders(newHeaders.toList)
       }
@@ -130,12 +129,12 @@ object ProxyDirectives extends LazyLogging {
     optionalRawHeaderValueByName(X_REAL_IP_HEADER) &
       optionalRawHeaderValueByName(X_FORWARDED_FOR_HEADER) &
       optionalRawHeaderValueByName(REMOTE_ADDRESS_HEADER) tflatMap { case (xRealIP, xForwardedFor, remoteAddress) =>
-      provide(HeaderIPs(
-        `X-Real-IP` = xRealIP.map(extractIP),
-        `X-Forwarded-For` = xForwardedFor.map(_.split(',').toIndexedSeq.map(extractIP)),
-        `Remote-Address` = remoteAddress.map(extractIP)
-      ))
-    }
+        provide(HeaderIPs(
+          `X-Real-IP` = xRealIP.map(extractIP),
+          `X-Forwarded-For` = xForwardedFor.map(_.split(',').toIndexedSeq.map(extractIP)),
+          `Remote-Address` = remoteAddress.map(extractIP)
+        ))
+      }
 
   /*
    *  This directive is required to correctly intercept the user provided headers.
@@ -170,8 +169,8 @@ object ProxyDirectives extends LazyLogging {
         MetricsFactory.markRequestTime(took)
         response.status match {
           case StatusCodes.InternalServerError => MetricsFactory.countRequest(MetricsFactory.FAILURE_REQUEST)
-          case StatusCodes.Forbidden => MetricsFactory.countRequest(MetricsFactory.UNAUTHENTICATED_REQUEST)
-          case _ => MetricsFactory.countRequest(MetricsFactory.SUCCESS_REQUEST)
+          case StatusCodes.Forbidden           => MetricsFactory.countRequest(MetricsFactory.UNAUTHENTICATED_REQUEST)
+          case _                               => MetricsFactory.countRequest(MetricsFactory.SUCCESS_REQUEST)
         }
         val responseContentLength = response.entity.contentLengthOption.getOrElse(0L)
         metricsContentLengthCount(requestMethodName, responseContentLength, "in")
@@ -209,27 +208,29 @@ object ProxyDirectives extends LazyLogging {
   }
 
   private def extractPresignParams: Directive[Tuple1[Option[Map[String, String]]]] = {
-    parameters(X_AMZ_CREDENTIAL.optional,
+    parameters(
+      X_AMZ_CREDENTIAL.optional,
       X_AMZ_ALGORITHM.optional,
       X_AMZ_SIGNED_HEADERS.optional,
       X_AMZ_SIGNATURE.optional,
       X_AMZ_EXPIRES.optional,
       X_AMZ_DATE.optional,
       X_AMZ_SECURITY_TOKEN.optional) tflatMap {
-      case (Some(credential), Some(algorithm), Some(sighnedHeaders), Some(signature), Some(expires), Some(date), Some(token)) =>
-        provide(
-          Some(Map(X_AMZ_CREDENTIAL -> credential,
-            X_AMZ_ALGORITHM -> algorithm,
-            X_AMZ_SIGNED_HEADERS -> sighnedHeaders,
-            X_AMZ_SIGNATURE -> signature,
-            X_AMZ_EXPIRES -> expires,
-            X_AMZ_DATE -> date,
-            X_AMZ_SECURITY_TOKEN -> token
-          )
-        ))
-      case _ =>
-        provide(None)
-    }
+        case (Some(credential), Some(algorithm), Some(sighnedHeaders), Some(signature), Some(expires), Some(date), Some(token)) =>
+          provide(
+            Some(Map(
+              X_AMZ_CREDENTIAL -> credential,
+              X_AMZ_ALGORITHM -> algorithm,
+              X_AMZ_SIGNED_HEADERS -> sighnedHeaders,
+              X_AMZ_SIGNATURE -> signature,
+              X_AMZ_EXPIRES -> expires,
+              X_AMZ_DATE -> date,
+              X_AMZ_SECURITY_TOKEN -> token
+            )
+            ))
+        case _ =>
+          provide(None)
+      }
   }
 }
 

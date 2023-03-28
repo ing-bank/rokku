@@ -1,7 +1,7 @@
 package com.ing.wbaa.rokku.proxy.api.directive
 
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.{HttpRequest, RemoteAddress, Uri}
+import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress, Uri }
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.ing.wbaa.rokku.proxy.data.AwsAccessKey
@@ -170,7 +170,8 @@ class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagr
 
       "return None presign params bacause missing X-Amz-Signature" in {
         val queryParameters =
-          Map("X-Amz-Credential" -> "testuser/20230327/eu-west-1/s3/aws4_request",
+          Map(
+            "X-Amz-Credential" -> "testuser/20230327/eu-west-1/s3/aws4_request",
             "X-Amz-Algorithm" -> "AWS4-HMAC-SHA256",
             "X-Amz-SignedHeaders" -> "host",
             "X-Amz-Expires" -> "3600",
@@ -186,10 +187,10 @@ class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagr
         }
       }
 
-
       "return presign params" in {
         val queryParameters =
-          Map("X-Amz-Credential" -> "testuser/20230327/eu-west-1/s3/aws4_request",
+          Map(
+            "X-Amz-Credential" -> "testuser/20230327/eu-west-1/s3/aws4_request",
             "X-Amz-Algorithm" -> "AWS4-HMAC-SHA256",
             "X-Amz-SignedHeaders" -> "host",
             "X-Amz-Signature" -> "1158d3ca4d8c7a13341a99f213256fe38758e03291790d71ecf73adcc57f91cb",
@@ -205,7 +206,6 @@ class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagr
           assert(response == "Presign params = Some(HashMap(X-Amz-Algorithm -> AWS4-HMAC-SHA256, X-Amz-Signature -> 1158d3ca4d8c7a13341a99f213256fe38758e03291790d71ecf73adcc57f91cb, X-Amz-SignedHeaders -> host, X-Amz-Expires -> 3600, X-Amz-Credential -> testuser/20230327/eu-west-1/s3/aws4_request, X-Amz-Security-Token -> gyBdFLKlLiw24oZM3Umsv8gOKNt1d1VS, X-Amz-Date -> 20230327T091409Z))")
         }
       }
-
 
     }
   }
