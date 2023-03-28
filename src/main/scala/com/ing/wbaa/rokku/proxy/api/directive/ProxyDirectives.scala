@@ -75,7 +75,8 @@ object ProxyDirectives extends LazyLogging {
                   httpRequest.method,
                   clientIPAddress,
                   headerIPs,
-                  httpRequest.entity.contentType.mediaType
+                  httpRequest.entity.contentType.mediaType,
+                  None
                 )
 
                 logger.debug(s"Extracted S3 Request: {}", s3Request)

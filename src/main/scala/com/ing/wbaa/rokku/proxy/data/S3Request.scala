@@ -20,15 +20,18 @@ case class S3Request(
     accessType: AccessType,
     clientIPAddress: RemoteAddress = Unknown,
     headerIPs: HeaderIPs = HeaderIPs(),
-    mediaType: MediaType = MediaTypes.`text/plain`
+    mediaType: MediaType = MediaTypes.`text/plain`,
+    presignParams: Option[Map[String, String]] = None
 ) {
   def userIps: UserIps = UserIps(clientIPAddress, headerIPs)
+
+  def isPresign: Boolean = presignParams.isDefined
 }
 
 object S3Request extends LazyLogging {
 
   def apply(credential: AwsRequestCredential, path: Path, httpMethod: HttpMethod,
-      clientIPAddress: RemoteAddress, headerIPs: HeaderIPs, mediaType: MediaType): S3Request = {
+      clientIPAddress: RemoteAddress, headerIPs: HeaderIPs, mediaType: MediaType, presignParams: Option[Map[String, String]]): S3Request = {
 
     val pathString = path.toString()
     val s3path = S3Utils.getS3PathWithoutBucketName(pathString)
@@ -45,6 +48,6 @@ object S3Request extends LazyLogging {
         NoAccess
     }
 
-    S3Request(credential, s3path, s3Object, accessType, clientIPAddress, headerIPs, mediaType)
+    S3Request(credential, s3path, s3Object, accessType, clientIPAddress, headerIPs, mediaType, presignParams)
   }
 }
