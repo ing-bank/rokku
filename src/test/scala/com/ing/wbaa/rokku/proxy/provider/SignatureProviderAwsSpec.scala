@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy.provider
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
-import com.ing.wbaa.rokku.proxy.data.{ AwsSecretKey, RequestId }
+import com.ing.wbaa.rokku.proxy.data.{ AwsAccessKey, AwsRequestCredential, AwsSecretKey, AwsSessionToken, Read, RequestId, S3Request }
 import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.awsVersion
 import com.typesafe.config.ConfigFactory
 import org.scalatest.diagrams.Diagrams
@@ -39,6 +39,13 @@ class SignatureProviderAwsSpec extends AnyWordSpec with Diagrams with SignatureP
     fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket", v4Authheader)
   }
 
+  private val s3Request = S3Request(
+    AwsRequestCredential(AwsAccessKey("accesskey"), Some(AwsSessionToken("sessiontoken"))),
+    Some("/demobucket"),
+    None,
+    Read()
+  )
+
   "SignatureProviderAws" should {
     "return false on incorrect request" in {
       val awsSecretKey = AwsSecretKey("Qhd7Fe94KF0IwdnDr4zJEbLjqhfLKJat")
@@ -52,7 +59,7 @@ class SignatureProviderAwsSpec extends AnyWordSpec with Diagrams with SignatureP
           HttpMethods.GET,
           "/demobucket",
           headers),
-        awsSecretKey))
+        awsSecretKey, s3Request))
     }
 
     "return true on correct V4 request" in {
@@ -68,7 +75,7 @@ class SignatureProviderAwsSpec extends AnyWordSpec with Diagrams with SignatureP
 
       val putRequest = fakeIncomingHttpRequest(HttpMethods.PUT, "/demobucket/fakeObject", headers)
 
-      assert(isUserAuthenticated(putRequest, awsSecretKey))
+      assert(isUserAuthenticated(putRequest, awsSecretKey, s3Request))
     }
 
     "return true on correct V2 request" in {
@@ -81,7 +88,7 @@ class SignatureProviderAwsSpec extends AnyWordSpec with Diagrams with SignatureP
       )
       val getACLRequest = fakeIncomingHttpRequest(HttpMethods.GET, "/demobucket/", headers)
 
-      assert(isUserAuthenticated(getACLRequest, awsSecretKey))
+      assert(isUserAuthenticated(getACLRequest, awsSecretKey, s3Request))
     }
   }
 

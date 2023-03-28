@@ -31,7 +31,7 @@ class ProxyServiceSpec extends AnyFlatSpec with Diagrams with ScalatestRouteTest
 
     override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = true
 
-    override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = true
+    override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey, s3Request: S3Request)(implicit id: RequestId): Boolean = true
 
     override protected[this] def handlePostRequestActions(response: HttpResponse, httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Unit = ()
 
@@ -91,7 +91,7 @@ class ProxyServiceSpec extends AnyFlatSpec with Diagrams with ScalatestRouteTest
 
   it should "return an accessDenied when user is not authenticated" in {
     testRequest() ~> new ProxyServiceMock {
-      override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean = false
+      override def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey, s3Request: S3Request)(implicit id: RequestId): Boolean = false
     }.proxyServiceRoute ~> check {
       assert(status == StatusCodes.Forbidden)
       val response = requestIdString.replaceAllIn(responseAs[String].replaceAll("\\s", ""), "")
