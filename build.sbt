@@ -50,6 +50,7 @@ libraryDependencies ++= Seq(
 dependencyOverrides  ++= Seq(
     "net.minidev"                  %  "json-smart"             % "2.4.9",
     "com.nimbusds"                 %  "nimbus-jose-jwt"        % "9.31",
+    "org.codehaus.jettison"        %  "jettison"               % "1.5.4",
 )
 // Fix logging dependencies:
 //  - Our logging implementation is Logback, via the Slf4j API.
