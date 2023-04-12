@@ -76,7 +76,7 @@ javaOptions += "-Dlogback.configurationFile=/etc/rokku/logback.xml"
 
 dockerExposedPorts := Seq(8987) // should match PROXY_PORT
 dockerCommands     += ExecCmd("ENV", "PROXY_HOST", "0.0.0.0")
-dockerBaseImage    := "openjdk:11-slim-bullseye"
+dockerBaseImage    := "eclipse-temurin:17-alpine"
 dockerAlias        := docker.DockerAlias(Some("docker.io"), Some("wbaa"), "rokku", Some(rokkuVersion))
 
 scalariformPreferences := scalariformPreferences.value
