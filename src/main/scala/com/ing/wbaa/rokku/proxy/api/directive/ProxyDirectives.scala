@@ -243,12 +243,12 @@ object ProxyDirectives extends LazyLogging {
       X_AMZ_EXPIRES.optional,
       X_AMZ_DATE.optional,
       X_AMZ_SECURITY_TOKEN.optional) tflatMap {
-        case (Some(credential), Some(algorithm), Some(sighnedHeaders), Some(signature), Some(expires), Some(date), Some(token)) =>
+        case (Some(credential), Some(algorithm), Some(signedHeaders), Some(signature), Some(expires), Some(date), Some(token)) =>
           provide(
             Some(Map(
               X_AMZ_CREDENTIAL -> credential,
               X_AMZ_ALGORITHM -> algorithm,
-              X_AMZ_SIGNED_HEADERS -> sighnedHeaders,
+              X_AMZ_SIGNED_HEADERS -> signedHeaders,
               X_AMZ_SIGNATURE -> signature,
               X_AMZ_EXPIRES -> expires,
               X_AMZ_DATE -> date,
