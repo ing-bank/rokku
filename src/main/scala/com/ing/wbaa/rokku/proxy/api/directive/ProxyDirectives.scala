@@ -63,17 +63,17 @@ object ProxyDirectives extends LazyLogging {
     }
   }
 
-  private[this] def extractAuthorizationS3(signerType: String, authString: String): Option[AwsAccessKey] = {
+  private[this] def extractAuthorizationS3FromParameters(signerType: String, authString: String): Option[AwsAccessKey] = {
     //to use the method getAccessKeyFromAuthString we need to add something at the beginning and colon after - maybe we need think about sth else (to have one method the extract auth)
     val authStringWithPrefixAnsPostfix = "x Credential=" + authString + ", x"
     getAccessKeyFromAuthString(authStringWithPrefixAnsPostfix, Some(signerType))
   }
 
-  private[this] def extractAuthorizationS3: Directive1[AwsAccessKey] = {
+  private[this] def extractAuthorizationS3FromHeaders: Directive1[AwsAccessKey] = {
     headerValue[AwsAccessKey](extractAuthorizationS3) |
       parameter(X_AMZ_ALGORITHM.optional, X_AMZ_CREDENTIAL.optional).tflatMap {
         case (Some(algorithm), Some(credential)) =>
-          extractAuthorizationS3(algorithm, credential).map(provide).getOrElse(reject)
+          extractAuthorizationS3FromParameters(algorithm, credential).map(provide).getOrElse(reject)
         case _ => reject
       }
   }
@@ -88,7 +88,7 @@ object ProxyDirectives extends LazyLogging {
           extractRequest tflatMap { case Tuple1(httpRequest) =>
             getAWSSessionToken tflatMap {
               case Tuple1(optionalSessionToken) =>
-                extractAuthorizationS3 tmap { case Tuple1(awsAccessKey) =>
+                extractAuthorizationS3FromHeaders tmap { case Tuple1(awsAccessKey) =>
                   // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
                   val s3path = S3Utils.getS3FullPathWithBucketName(httpRequest)
                   val s3Request = S3Request(
