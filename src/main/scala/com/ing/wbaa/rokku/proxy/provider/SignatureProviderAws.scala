@@ -53,6 +53,6 @@ trait SignatureProviderAws {
     val orgSignature = s3Request.presignParams.get(X_AMZ_SIGNATURE)
     val newSignature = incomingRequest.getParameters.get(X_AMZ_SIGNATURE).get(0)
     logger.debug(s"New Signature: $newSignature Original Signature: $orgSignature")
-    orgSignature.equals(newSignature) && s3Request.isPresgnNotExpired
+    orgSignature.equals(newSignature) && s3Request.isPresignNotExpired
   }
 }

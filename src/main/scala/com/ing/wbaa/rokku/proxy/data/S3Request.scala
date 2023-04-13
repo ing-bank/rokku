@@ -33,7 +33,7 @@ case class S3Request(
 
   def isNotPresign: Boolean = !isPresign
 
-  def isPresgnNotExpired: Boolean = {
+  def isPresignNotExpired: Boolean = {
     if (presignParams.isDefined) {
       val date = DateUtils.parseCompressedISO8601Date(presignParams.get(X_AMZ_DATE))
       val expiration = presignParams.get(X_AMZ_EXPIRES).toInt
