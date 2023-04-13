@@ -91,26 +91,26 @@ trait AuthorizationProviderRanger {
 
     request match {
       // object operations, put / delete etc.
-      case S3Request(_, Some(s3path), Some(_), _, _, _, _) =>
+      case S3Request(_, Some(s3path), Some(_), _, _, _, _, _) =>
         isAuthorisedByRanger(s3path)
 
       // object operation as subfolder, in this case object can be empty
       // we need this to differentiate subfolder create/delete from bucket create/delete
-      case S3Request(_, Some(s3path), None, accessType, _, _, _) if s3path.endsWith("/") && (accessType.isInstanceOf[Delete] || accessType.isInstanceOf[Write]) =>
+      case S3Request(_, Some(s3path), None, accessType, _, _, _, _) if s3path.endsWith("/") && (accessType.isInstanceOf[Delete] || accessType.isInstanceOf[Write]) =>
         isAuthorisedByRanger(s3path)
 
       // list-objects in the bucket operation
-      case S3Request(_, Some(s3path), None, accessType, _, _, _) if accessType.isInstanceOf[Read] || accessType.isInstanceOf[Head] =>
+      case S3Request(_, Some(s3path), None, accessType, _, _, _, _) if accessType.isInstanceOf[Read] || accessType.isInstanceOf[Head] =>
         isAuthorisedByRanger(s3path)
 
       // multidelete with xml list of objects in post
-      case S3Request(_, Some(s3path), None, accessType, _, _, mediaType) if accessType.isInstanceOf[Post] &&
+      case S3Request(_, Some(s3path), None, accessType, _, _, mediaType, _) if accessType.isInstanceOf[Post] &&
         (mediaType == MediaTypes.`application/xml` || mediaType == MediaTypes.`application/octet-stream`) =>
         logger.debug(s"Passing ranger check for multi object deletion to check method")
         isAuthorisedByRanger(s3path) //we assume user has to have access to bucket
 
       // create / delete bucket operation
-      case S3Request(_, Some(bucket), None, accessType, _, _, _) if (accessType.isInstanceOf[Write] || accessType.isInstanceOf[Delete]) =>
+      case S3Request(_, Some(bucket), None, accessType, _, _, _, _) if (accessType.isInstanceOf[Write] || accessType.isInstanceOf[Delete]) =>
         if (rangerSettings.createDeleteBucketsEnabled) {
           isAuthorisedByRanger("/")
         } else {
@@ -119,7 +119,7 @@ trait AuthorizationProviderRanger {
         }
 
       // list buckets
-      case S3Request(_, None, None, accessType, _, _, _) if accessType.isInstanceOf[Read] =>
+      case S3Request(_, None, None, accessType, _, _, _, _) if accessType.isInstanceOf[Read] =>
         if (rangerSettings.listBucketsEnabled) {
           logger.debug("Skipping ranger for listing of buckets with request: {}", request)
           true

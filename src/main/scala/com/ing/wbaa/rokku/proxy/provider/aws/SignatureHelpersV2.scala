@@ -1,14 +1,13 @@
 package com.ing.wbaa.rokku.proxy.provider.aws
 
-import java.util
-
 import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.DefaultRequest
-import com.amazonaws.auth.BasicAWSCredentials
-import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.extractHeaderOption
+import com.amazonaws.auth.{ AWSCredentials, BasicAWSCredentials }
 import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.extractHeaderOption
 
+import java.util
 import scala.jdk.CollectionConverters._
 
 class SignatureHelpersV2 extends SignatureHelpersCommon {
@@ -103,5 +102,9 @@ class SignatureHelpersV2 extends SignatureHelpersCommon {
     awsHeaders.securityToken.foreach(token => request.addHeader("X-Amz-Security-Token", token))
     awsHeaders.contentMD5.foreach(contentMD5 => request.addHeader("Content-MD5", contentMD5))
     awsHeaders.signedHeadersMap.foreach { case (k, v) => request.addHeader(k, v) }
+  }
+
+  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, expirationInSecond: Int, region: String = "us-east-1")(implicit id: RequestId): Unit = {
+    new Exception("signature V2 not supported")
   }
 }

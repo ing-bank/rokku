@@ -1,15 +1,15 @@
 package com.ing.wbaa.rokku.proxy.api.directive
 
-import java.net.InetAddress
-
-import akka.http.scaladsl.model.headers.{ RawHeader, _ }
-import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress }
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.model.{ HttpRequest, RemoteAddress, Uri }
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.ing.wbaa.rokku.proxy.data.AwsAccessKey
 import org.scalatest.PrivateMethodTester
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.net.InetAddress
 
 class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagrams with PrivateMethodTester {
 
@@ -154,6 +154,52 @@ class ProxyDirectivesSpec extends AnyWordSpec with ScalatestRouteTest with Diagr
             assert(response == "Client ip = 1.2.3.4, Header ips = HeaderIPs(Some(4.5.6.7),Some(ArraySeq(3.4.5.6)),Some(2.3.4.5))")
           }
       }
+
+      def testClientPresignParams = {
+        ProxyDirectives.extracts3Request { s3Request =>
+          complete(s"Presign params = ${s3Request.presignParams}")
+        }
+      }
+
+      "return None presign params bacause missing X-Amz-Signature" in {
+        val queryParameters =
+          Map(
+            "X-Amz-Credential" -> "testuser/20230327/eu-west-1/s3/aws4_request",
+            "X-Amz-Algorithm" -> "AWS4-HMAC-SHA256",
+            "X-Amz-SignedHeaders" -> "host",
+            "X-Amz-Expires" -> "3600",
+            "X-Amz-Date" -> "20230327T091409Z",
+            "X-Amz-Security-Token" -> "gyBdFLKlLiw24oZM3Umsv8gOKNt1d1VS"
+          )
+
+        val uri = Uri().withQuery(Uri.Query(queryParameters))
+
+        HttpRequest(uri = uri) ~> testClientPresignParams ~> check {
+          val response = responseAs[String]
+          assert(response == "Presign params = None")
+        }
+      }
+
+      "return presign params" in {
+        val queryParameters =
+          Map(
+            "X-Amz-Credential" -> "testuser/20230327/eu-west-1/s3/aws4_request",
+            "X-Amz-Algorithm" -> "AWS4-HMAC-SHA256",
+            "X-Amz-SignedHeaders" -> "host",
+            "X-Amz-Signature" -> "1158d3ca4d8c7a13341a99f213256fe38758e03291790d71ecf73adcc57f91cb",
+            "X-Amz-Expires" -> "3600",
+            "X-Amz-Date" -> "20230327T091409Z",
+            "X-Amz-Security-Token" -> "gyBdFLKlLiw24oZM3Umsv8gOKNt1d1VS"
+          )
+
+        val uri = Uri().withQuery(Uri.Query(queryParameters))
+
+        HttpRequest(uri = uri) ~> testClientPresignParams ~> check {
+          val response = responseAs[String]
+          assert(response == "Presign params = Some(HashMap(X-Amz-Algorithm -> AWS4-HMAC-SHA256, X-Amz-Signature -> 1158d3ca4d8c7a13341a99f213256fe38758e03291790d71ecf73adcc57f91cb, X-Amz-SignedHeaders -> host, X-Amz-Expires -> 3600, X-Amz-Credential -> testuser/20230327/eu-west-1/s3/aws4_request, X-Amz-Security-Token -> gyBdFLKlLiw24oZM3Umsv8gOKNt1d1VS, X-Amz-Date -> 20230327T091409Z))")
+        }
+      }
+
     }
   }
 }

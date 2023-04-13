@@ -2,9 +2,10 @@ package com.ing.wbaa.rokku.proxy.api.directive
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin` }
-import akka.http.scaladsl.server.{ Directive0, Directive1 }
+import akka.http.scaladsl.server.{ Directive, Directive0, Directive1 }
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
+import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon._
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 import com.typesafe.scalalogging.LazyLogging
 
@@ -22,6 +23,8 @@ object ProxyDirectives extends LazyLogging {
   private[this] val X_REAL_IP_HEADER = "X-Real-IP"
   private[this] val REMOTE_ADDRESS_HEADER = "Remote-Address"
   private[this] val ORIGIN = "Origin"
+  private[this] val X_AMZ_CONTENT_SHA256 = "X-Amz-Content-SHA256"
+  private[this] val RAW_REQUEST_URI = "Raw-Request-URI"
 
   private[this] val ipv4Regex = "\\s*([0-9\\.]+)(:([0-9]+))?\\s*" r
 
@@ -32,55 +35,76 @@ object ProxyDirectives extends LazyLogging {
     if (httpHeader.is(AUTHORIZATION_HTTP_HEADER_NAME)) {
       val signerType = httpHeader.value().split(" ").headOption
       logger.debug("Signertype used: {}", signerType)
-
-      signerType match {
-        case Some("AWS4-HMAC-SHA256") =>
-          val credential =
-            """\S+ Credential=(\S+), """.r
-              .findFirstMatchIn(httpHeader.value())
-              .map(_ group 1)
-
-          credential.flatMap(_.split("/").headOption).map(AwsAccessKey)
-
-        case Some("AWS") =>
-          val accessKey =
-            """AWS (\S+):\S+""".r
-              .findFirstMatchIn(httpHeader.value())
-              .map(_ group 1)
-
-          accessKey.map(AwsAccessKey)
-
-        case _ =>
-          logger.warn("The necessary information couldn't be extracted from the authorization header, " +
-            s"this could be caused by a signer type that we don't support yet...: {}", httpHeader)
-          None
-      }
+      getAccessKeyFromAuthString(httpHeader.value(), signerType)
     } else None
+
+  private[this] def getAccessKeyFromAuthString(authString: String, signerType: Option[String]): Option[AwsAccessKey] = {
+    signerType match {
+      case Some("AWS4-HMAC-SHA256") =>
+        val credential =
+          """\S+ Credential=(\S+), """.r
+            .findFirstMatchIn(authString)
+            .map(_ group 1)
+
+        credential.flatMap(_.split("/").headOption).map(AwsAccessKey)
+
+      case Some("AWS") =>
+        val accessKey =
+          """AWS (\S+):\S+""".r
+            .findFirstMatchIn(authString)
+            .map(_ group 1)
+
+        accessKey.map(AwsAccessKey)
+
+      case _ =>
+        logger.warn("The necessary information couldn't be extracted from the authorization header, " +
+          s"this could be caused by a signer type that we don't support yet...: {}", authString)
+        None
+    }
+  }
+
+  private[this] def extractAuthorizationS3FromParameters(signerType: String, authString: String): Option[AwsAccessKey] = {
+    //to use the method getAccessKeyFromAuthString we need to add something at the beginning and colon after - maybe we need think about sth else (to have one method the extract auth)
+    val authStringWithPrefixAnsPostfix = "x Credential=" + authString + ", x"
+    getAccessKeyFromAuthString(authStringWithPrefixAnsPostfix, Some(signerType))
+  }
+
+  private[this] def extractAuthorizationS3FromHeaders: Directive1[AwsAccessKey] = {
+    headerValue[AwsAccessKey](extractAuthorizationS3) |
+      parameter(X_AMZ_ALGORITHM.optional, X_AMZ_CREDENTIAL.optional).tflatMap {
+        case (Some(algorithm), Some(credential)) =>
+          extractAuthorizationS3FromParameters(algorithm, credential).map(provide).getOrElse(reject)
+        case _ => reject
+      }
+  }
 
   val extracts3Request: Directive1[S3Request] =
     extractClientIP tflatMap { case Tuple1(clientIPAddress) =>
       logger.debug(s"Extracted Client IP: {}", clientIPAddress.toOption.map(_.getHostAddress).getOrElse("unknown"))
       extractHeaderIPs tflatMap { case Tuple1(headerIPs) =>
         logger.debug(s"Extracted headers IPs : {}", headerIPs)
-        extractRequest tflatMap { case Tuple1(httpRequest) =>
-          optionalHeaderValueByName("x-amz-security-token") tflatMap {
-            case Tuple1(optionalSessionToken) =>
-              headerValue[AwsAccessKey](extractAuthorizationS3) tmap { case Tuple1(awsAccessKey) =>
+        extractPresignParams tflatMap { case Tuple1(presignParams) =>
+          logger.debug(s"Extracted presign params : {}", presignParams)
+          extractRequest tflatMap { case Tuple1(httpRequest) =>
+            getAWSSessionToken tflatMap {
+              case Tuple1(optionalSessionToken) =>
+                extractAuthorizationS3FromHeaders tmap { case Tuple1(awsAccessKey) =>
+                  // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
+                  val s3path = S3Utils.getS3FullPathWithBucketName(httpRequest)
+                  val s3Request = S3Request(
+                    AwsRequestCredential(awsAccessKey, optionalSessionToken),
+                    s3path,
+                    httpRequest.method,
+                    clientIPAddress,
+                    headerIPs,
+                    httpRequest.entity.contentType.mediaType,
+                    presignParams
+                  )
 
-                // aws is passing subdir in prefix parameter if no object is used, eg. list bucket objects
-                val s3path = S3Utils.getS3FullPathWithBucketName(httpRequest)
-                val s3Request = S3Request(
-                  AwsRequestCredential(awsAccessKey, optionalSessionToken.map(AwsSessionToken)),
-                  s3path,
-                  httpRequest.method,
-                  clientIPAddress,
-                  headerIPs,
-                  httpRequest.entity.contentType.mediaType
-                )
-
-                logger.debug(s"Extracted S3 Request: {}", s3Request)
-                s3Request
-              }
+                  logger.debug(s"Extracted S3 Request: {}", s3Request)
+                  s3Request
+                }
+            }
           }
         }
       }
@@ -89,26 +113,39 @@ object ProxyDirectives extends LazyLogging {
   /**
    * Updates the forward headers for a request.
    * Since we're proxy requests through Rokku to S3, we need to add the remote address to the forward headers.
+   * If the request is presign we add authorization header to work with executeRequest method
    */
   def updateHeadersForRequest(httpRequest: HttpRequest): Directive1[HttpRequest] =
     optionalHeaderValueByName(REMOTE_ADDRESS_HEADER) tflatMap { case Tuple1(remoteAddressHeader) =>
-      optionalHeaderValueByName(X_FORWARDED_FOR_HEADER) tmap { case Tuple1(xForwardedForHeader) =>
+      optionalHeaderValueByName(X_FORWARDED_FOR_HEADER) tflatMap { case Tuple1(xForwardedForHeader) =>
+        extractPresignParams tmap { case Tuple1(presignParams) =>
+          val prependForwardedFor = xForwardedForHeader match {
+            case Some(forwardHeader)       => s"$forwardHeader, "
+            case None                      => ""
+          }
 
-        val prependForwardedFor = xForwardedForHeader match {
-          case Some(forwardHeader)     => s"$forwardHeader, "
-          case None                    => ""
-        }
+          var newHeaders: Seq[HttpHeader] =
+            httpRequest.headers
+              .filter(h =>
+                h.isNot(X_FORWARDED_FOR_HEADER.toLowerCase) && h.isNot(X_FORWARDED_PROTO_HEADER.toLowerCase)
+              ) ++ List(
+                RawHeader(X_FORWARDED_FOR_HEADER, prependForwardedFor + remoteAddressHeader.map(_.split(":").head).getOrElse("unknown")),
+                RawHeader(X_FORWARDED_PROTO_HEADER, httpRequest._5.value)
+              )
 
-        val newHeaders: Seq[HttpHeader] =
-          httpRequest.headers
-            .filter(h =>
-              h.isNot(X_FORWARDED_FOR_HEADER.toLowerCase) && h.isNot(X_FORWARDED_PROTO_HEADER.toLowerCase)
-            ) ++ List(
-              RawHeader(X_FORWARDED_FOR_HEADER, prependForwardedFor + remoteAddressHeader.map(_.split(":").head).getOrElse("unknown")),
-              RawHeader(X_FORWARDED_PROTO_HEADER, httpRequest._5.value)
+          var uri = httpRequest.uri
+
+          if (presignParams.isDefined) {
+            val authStr = s"${presignParams.get(X_AMZ_ALGORITHM)} Credential=${presignParams.get(X_AMZ_CREDENTIAL)}, SignedHeaders=${presignParams.get(X_AMZ_SIGNED_HEADERS)}, Signature=${presignParams.get(X_AMZ_SIGNATURE)}"
+            uri = httpRequest.uri.withQuery(Uri.Query.Empty)
+            newHeaders = newHeaders.filter(_.isNot(RAW_REQUEST_URI.toLowerCase)) ++ List(
+              RawHeader(AUTHORIZATION_HTTP_HEADER_NAME, authStr),
+              RawHeader(X_AMZ_DATE, presignParams.get(X_AMZ_DATE)),
+              RawHeader(X_AMZ_CONTENT_SHA256, "UNSIGNED-PAYLOAD")
             )
-
-        httpRequest.withHeaders(newHeaders.toList)
+          }
+          httpRequest.withHeaders(newHeaders.toList).withUri(uri)
+        }
       }
     }
 
@@ -196,5 +233,36 @@ object ProxyDirectives extends LazyLogging {
       }
     }
   }
+
+  private def extractPresignParams: Directive[Tuple1[Option[Map[String, String]]]] = {
+    parameters(
+      X_AMZ_CREDENTIAL.optional,
+      X_AMZ_ALGORITHM.optional,
+      X_AMZ_SIGNED_HEADERS.optional,
+      X_AMZ_SIGNATURE.optional,
+      X_AMZ_EXPIRES.optional,
+      X_AMZ_DATE.optional,
+      X_AMZ_SECURITY_TOKEN.optional) tflatMap {
+        case (Some(credential), Some(algorithm), Some(signedHeaders), Some(signature), Some(expires), Some(date), Some(token)) =>
+          provide(
+            Some(Map(
+              X_AMZ_CREDENTIAL -> credential,
+              X_AMZ_ALGORITHM -> algorithm,
+              X_AMZ_SIGNED_HEADERS -> signedHeaders,
+              X_AMZ_SIGNATURE -> signature,
+              X_AMZ_EXPIRES -> expires,
+              X_AMZ_DATE -> date,
+              X_AMZ_SECURITY_TOKEN -> token
+            )
+            ))
+        case _ =>
+          provide(None)
+      }
+  }
+
+  private def getAWSSessionToken: Directive[Tuple1[Option[AwsSessionToken]]] =
+    optionalHeaderValueByName(X_AMZ_SECURITY_TOKEN) & parameter(X_AMZ_SECURITY_TOKEN.optional) tmap {
+      case (optionalSessionToken, optionalSessionTokenFromParam) => optionalSessionToken.map(AwsSessionToken).orElse(optionalSessionTokenFromParam.map(AwsSessionToken))
+    }
 }
 

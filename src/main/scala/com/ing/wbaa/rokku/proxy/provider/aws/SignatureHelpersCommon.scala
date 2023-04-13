@@ -1,17 +1,16 @@
 package com.ing.wbaa.rokku.proxy.provider.aws
 
-import java.io.ByteArrayInputStream
-import java.net.{ URI, URLDecoder }
-import java.nio.charset.StandardCharsets
-import java.util
-
 import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.DefaultRequest
-import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.auth.{ AWSCredentials, BasicAWSCredentials }
 import com.amazonaws.http.HttpMethodName
 import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 
+import java.io.ByteArrayInputStream
+import java.net.{ URI, URLDecoder }
+import java.nio.charset.StandardCharsets
+import java.util
 import scala.jdk.CollectionConverters._
 
 trait SignatureHelpersCommon {
@@ -31,6 +30,8 @@ trait SignatureHelpersCommon {
   def setMinimalSignedHeaders(request: HttpRequest)(implicit id: RequestId): HttpRequest
 
   final def cleanURLEncoding(param: String): String = URLDecoder.decode(param, StandardCharsets.UTF_8.toString)
+
+  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, expirationInSecond: Int, region: String = "us-east-1")(implicit id: RequestId): Unit
 
   // we have different extract pattern for V2 and V4
   def getSignatureFromAuthorization(authorization: String): String =
@@ -122,18 +123,31 @@ trait SignatureHelpersCommon {
 }
 
 object SignatureHelpersCommon {
+
+  val X_AMZ_ALGORITHM = "X-Amz-Algorithm"
+  val X_AMZ_SECURITY_TOKEN = "X-Amz-Security-Token"
+  val X_AMZ_SIGNED_HEADERS = "X-Amz-SignedHeaders"
+  val X_AMZ_SIGNATURE = "X-Amz-Signature"
+  val X_AMZ_EXPIRES = "X-Amz-Expires"
+  val X_AMZ_CREDENTIAL = "X-Amz-Credential"
+  val X_AMZ_DATE = "X-Amz-Date"
+
   def extractHeaderOption(header: String)(implicit httpRequest: HttpRequest): Option[String] =
     if (httpRequest.getHeader(header).isPresent)
       Some(httpRequest.getHeader(header).get().value())
     else None
 
   val awsVersion: HttpRequest => SignatureHelpersCommon = { implicit request =>
-    extractHeaderOption("authorization").map {
-      case a if a.contains("AWS4") => new SignatureHelpersV4
-      case a if a.contains("AWS")  => new SignatureHelpersV2
-      case a                       => new NoSignerSupport(a)
-    }.getOrElse {
+    extractHeaderOption("authorization").map(awsVersion(_)).getOrElse {
       throw new Exception("Unable to determine AWS signature version")
+    }
+  }
+
+  def awsVersion(xAMZAlgorithm: String): SignatureHelpersCommon = {
+    xAMZAlgorithm match {
+      case a if (a.contains("AWS4")) => new SignatureHelpersV4
+      case a if a.contains("AWS")    => new SignatureHelpersV2
+      case a                         => new NoSignerSupport(a)
     }
   }
 

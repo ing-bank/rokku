@@ -9,7 +9,7 @@ import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
-import com.ing.wbaa.rokku.proxy.handler.exception.{ RokkuListingBucketsException, RokkuNamespaceBucketNotFoundException, RokkuThrottlingException }
+import com.ing.wbaa.rokku.proxy.handler.exception.{ RokkuListingBucketsException, RokkuNamespaceBucketNotFoundException, RokkuPresignExpiredException, RokkuThrottlingException }
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
@@ -38,7 +38,7 @@ trait ProxyService {
   protected[this] def areCredentialsActive(awsRequestCredential: AwsRequestCredential)(implicit id: RequestId): Future[Option[User]]
 
   // AWS Signature methods
-  protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey)(implicit id: RequestId): Boolean
+  protected[this] def isUserAuthenticated(httpRequest: HttpRequest, awsSecretKey: AwsSecretKey, s3Request: S3Request)(implicit id: RequestId): Boolean
 
   // Authorization methods
   protected[this] def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean
@@ -57,6 +57,8 @@ trait ProxyService {
         complete(StatusCodes.ServiceUnavailable -> AwsErrorCodes.response(StatusCodes.ServiceUnavailable))
       case _: RokkuListingBucketsException =>
         complete(StatusCodes.MethodNotAllowed -> AwsErrorCodes.response(StatusCodes.MethodNotAllowed))
+      case _: RokkuPresignExpiredException =>
+        complete(StatusCodes.BadRequest -> AwsErrorCodes.response(StatusCodes.BadRequest))
     }
 
   val proxyServiceRoute: Route = {
@@ -132,7 +134,7 @@ trait ProxyService {
     auditLog(s3Request, httpRequest, userSTS.userName.value, awsRequestFromRequest(httpRequest)).andThen({
       case Failure(err) => logger.error(s"Error while sending audit log: $err")
     })
-    if (isUserAuthenticated(httpRequest, userSTS.secretKey)) {
+    if (isUserAuthenticated(httpRequest, userSTS.secretKey, s3Request)) {
       logger.info("Request authenticated: {}", httpRequest)
       if (isUserAuthorizedForRequest(s3Request, userSTS)) {
         val rawQueryString = httpRequest.uri.rawQueryString.getOrElse("")

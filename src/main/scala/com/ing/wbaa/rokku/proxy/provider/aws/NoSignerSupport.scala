@@ -1,10 +1,9 @@
 package com.ing.wbaa.rokku.proxy.provider.aws
 
 import java.util
-
 import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.DefaultRequest
-import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.auth.{ AWSCredentials, BasicAWSCredentials }
 import com.ing.wbaa.rokku.proxy.provider.aws.NoSignerSupport.SignatureNotSupported
 import com.ing.wbaa.rokku.proxy.data.{ AWSHeaderValues, RequestId }
 
@@ -22,9 +21,11 @@ class NoSignerSupport(authorization: String) extends SignatureHelpersCommon {
   override def signS3Request(request: DefaultRequest[_], credentials: BasicAWSCredentials, date: String, region: String)(implicit id: RequestId): Unit =
     throw new SignatureNotSupported(exceptionMsg)
 
-  def getSignedHeaders(authorization: String): String = throw new Exception("V2 signature protocol doesn't support SignedHeaders")
+  def getSignedHeaders(authorization: String): String = throw new SignatureNotSupported(exceptionMsg)
 
-  override def setMinimalSignedHeaders(request: HttpRequest)(implicit id: RequestId): HttpRequest = throw new Exception("V2 signature protocol doesn't support SignedHeaders")
+  override def setMinimalSignedHeaders(request: HttpRequest)(implicit id: RequestId): HttpRequest = throw new SignatureNotSupported(exceptionMsg)
+
+  def presignS3Request(request: DefaultRequest[_], credentials: AWSCredentials, date: String, expirationInSecond: Int, region: String)(implicit id: RequestId): Unit = new SignatureNotSupported(exceptionMsg)
 }
 
 object NoSignerSupport {
