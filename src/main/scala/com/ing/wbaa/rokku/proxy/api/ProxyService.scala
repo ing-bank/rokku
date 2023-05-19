@@ -5,6 +5,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
+import akka.stream.BufferOverflowException
 import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMultideleteObjectsFlow
@@ -49,7 +50,7 @@ trait ProxyService {
 
   protected[this] def awsRequestFromRequest(request: HttpRequest): AWSRequestType
 
-  private val rokkuExceptionHandler: ExceptionHandler =
+  private def rokkuExceptionHandler(implicit requestId: RequestId): ExceptionHandler =
     ExceptionHandler {
       case _: RokkuNamespaceBucketNotFoundException =>
         complete(StatusCodes.NotFound -> AwsErrorCodes.response(StatusCodes.NotFound))
@@ -59,12 +60,15 @@ trait ProxyService {
         complete(StatusCodes.MethodNotAllowed -> AwsErrorCodes.response(StatusCodes.MethodNotAllowed))
       case _: RokkuPresignExpiredException =>
         complete(StatusCodes.BadRequest -> AwsErrorCodes.response(StatusCodes.BadRequest))
+      case ex: BufferOverflowException =>
+        logger.error("{}", ex)
+        complete(StatusCodes.ServiceUnavailable -> AwsErrorCodes.response(StatusCodes.ServiceUnavailable))
     }
 
   val proxyServiceRoute: Route = {
+    implicit val requestId: RequestId = RequestId(UUID.randomUUID().toString)
     handleExceptions(rokkuExceptionHandler) {
       metricDuration {
-        implicit val requestId: RequestId = RequestId(UUID.randomUUID().toString)
         withoutSizeLimit {
           extractRequest { httpRequest =>
             extracts3Request { s3Request =>
