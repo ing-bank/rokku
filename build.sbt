@@ -26,15 +26,15 @@ libraryDependencies ++= Seq(
     "ch.qos.logback"               %  "logback-classic"        % "1.4.5",
     "ch.qos.logback.contrib"       %  "logback-json-classic"   % logbackJson,
     "ch.qos.logback.contrib"       %  "logback-jackson"        % logbackJson exclude("com.fasterxml.jackson.core", "jackson-databind"),
-    "com.fasterxml.jackson.core"   %  "jackson-databind"       % "2.14.0-rc2",
+    "com.fasterxml.jackson.core"   %  "jackson-databind"       % "2.15.1",
     "com.typesafe.akka"            %% "akka-slf4j"             % akkaVersion,
     "com.typesafe.akka"            %% "akka-http"              % akkaHttpVersion,
     "com.typesafe.akka"            %% "akka-stream"            % akkaVersion,
     "com.typesafe.akka"            %% "akka-http-spray-json"   % akkaHttpVersion,
     "com.typesafe.akka"            %% "akka-http-xml"          % akkaHttpVersion,
-    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.12.387",
+    "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.12.470",
     "org.apache.kafka"             %  "kafka-clients"          % "3.3.2",
-    "org.apache.ranger"            %  "ranger-plugins-common"  % "2.3.0" exclude("org.eclipse.jetty", "jetty-io") exclude("com.amazonaws", "aws-java-sdk-bundle") exclude("org.elasticsearch", "elasticsearch-x-content") exclude("org.elasticsearch", "elasticsearch") exclude("org.apache.hadoop", "hadoop-common"),
+    "org.apache.ranger"            %  "ranger-plugins-common"  % "2.4.0" exclude("org.eclipse.jetty", "jetty-io") exclude("com.amazonaws", "aws-java-sdk-bundle") exclude("org.elasticsearch", "elasticsearch-x-content") exclude("org.elasticsearch", "elasticsearch") exclude("org.apache.hadoop", "hadoop-common"),
     "org.apache.hadoop"            %  "hadoop-common"          % "3.3.5" exclude("org.apache.hadoop.thirdparty", "hadoop-shaded-protobuf_3_7") exclude("org.eclipse.jetty", "jetty-io") exclude("org.apache.zookeeper", "zookeeper") exclude("com.google.protobuf", "protobuf-java"), //needed for ranger 2.3.0 - if vulnerabilities are fixed remove this
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "3.0.4",
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
@@ -44,18 +44,18 @@ libraryDependencies ++= Seq(
     "com.github.cb372"             %% "scalacache-caffeine"    % "0.28.0",
     "com.typesafe.akka"            %% "akka-testkit"           % akkaVersion       % Test,
     "com.typesafe.akka"            %% "akka-http-testkit"      % akkaHttpVersion   % Test,
-    "org.scalatest"                %% "scalatest"              % "3.2.15"           % "it,test",
-    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.12.387"        % IntegrationTest,
+    "org.scalatest"                %% "scalatest"              % "3.2.16"           % "it,test",
+    "com.amazonaws"                %  "aws-java-sdk-sts"       % "1.12.470"        % IntegrationTest,
     )
 dependencyOverrides  ++= Seq(
-    "net.minidev"                  %  "json-smart"             % "2.4.9",
+    "net.minidev"                  %  "json-smart"             % "2.4.11",
     "com.nimbusds"                 %  "nimbus-jose-jwt"        % "9.31",
     "org.codehaus.jettison"        %  "jettison"               % "1.5.4",
 )
 // Fix logging dependencies:
 //  - Our logging implementation is Logback, via the Slf4j API.
 //  - Therefore we suppress the Log4j implementation and re-route its API calls over Slf4j.
-libraryDependencies += "org.slf4j" % "log4j-over-slf4j" % "2.0.3" % Runtime
+libraryDependencies += "org.slf4j" % "log4j-over-slf4j" % "2.0.7" % Runtime
 excludeDependencies += "org.slf4j" % "slf4j-log4j12"
 excludeDependencies += "log4j" % "log4j"
 
