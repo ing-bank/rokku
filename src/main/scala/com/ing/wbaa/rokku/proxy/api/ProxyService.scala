@@ -15,6 +15,7 @@ import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
@@ -102,10 +103,11 @@ trait ProxyService {
   private def checkExtractedPostContents(httpRequest: HttpRequest, s3Request: S3Request, userSTS: User)(implicit id: RequestId): Future[Route] = {
     import scala.concurrent.duration._
 
+    val responseTimeout = system.settings.config.getDuration("akka.http.host-connection-pool.response-entity-subscription-timeout")
     // we need to materialize here to avoid error - failed to materialize stream more than once, when http client in handler will
     // try to send the same entity to s3
     // also this prevents line spits to chunks for large requests
-    httpRequest.entity.toStrict(5.seconds).flatMap { strictE =>
+    httpRequest.entity.toStrict(FiniteDuration(responseTimeout.getSeconds, TimeUnit.SECONDS)).flatMap { strictE =>
       exctractMultideleteObjectsFlow(strictE.dataBytes).map { s3Objects =>
         s3Objects.map { s3Object =>
           val bucket = s3Request.s3BucketPath.getOrElse("")
