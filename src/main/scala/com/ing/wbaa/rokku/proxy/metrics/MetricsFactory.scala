@@ -29,6 +29,7 @@ object MetricsFactory {
   val REQUEST_BUCKET_NAMESPACES_SEARCH_TOTAL = "request.bucket_namespaces.search.total"
   val REQUEST_BUCKET_NAMESPACES_CACHE_HIT_TOTAL = "request.bucket_namespaces.in.cache.total"
   val REQUEST_BUCKET_NAMESPACES_NOT_FOUND_TOTAL = "request.bucket_namespaces.not.found.total"
+  val REQUEST_MAX_OPEN_CONNECTION_BUFFER_OVERFLOW = "request.max_open_connection_buffer_overflow.total"
 
   private[this] val metrics = new MetricRegistry()
   JmxReporter.forRegistry(metrics).inDomain("rokku").build.start()
@@ -94,5 +95,9 @@ object MetricsFactory {
 
   def incrementBucketNamespacesNotFound(): Unit = {
     metrics.counter(REQUEST_BUCKET_NAMESPACES_NOT_FOUND_TOTAL).inc()
+  }
+
+  def incrementMaxOpenConnectionBufferOverflow(): Unit = {
+    metrics.counter(REQUEST_MAX_OPEN_CONNECTION_BUFFER_OVERFLOW).inc()
   }
 }
