@@ -12,6 +12,7 @@ import com.ing.wbaa.rokku.proxy.handler.FilterRecursiveMultiDelete.exctractMulti
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.handler.exception.{ RokkuListingBucketsException, RokkuNamespaceBucketNotFoundException, RokkuPresignExpiredException, RokkuThrottlingException }
 import com.ing.wbaa.rokku.proxy.handler.parsers.RequestParser.AWSRequestType
+import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory.incrementMaxOpenConnectionBufferOverflow
 import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
 import java.util.UUID
@@ -62,7 +63,8 @@ trait ProxyService {
       case _: RokkuPresignExpiredException =>
         complete(StatusCodes.BadRequest -> AwsErrorCodes.response(StatusCodes.BadRequest))
       case ex: BufferOverflowException =>
-        logger.error("{}", ex)
+        incrementMaxOpenConnectionBufferOverflow()
+        logger.error("BufferOverflowException - {}", ex)
         complete(StatusCodes.ServiceUnavailable -> AwsErrorCodes.response(StatusCodes.ServiceUnavailable))
     }
 
