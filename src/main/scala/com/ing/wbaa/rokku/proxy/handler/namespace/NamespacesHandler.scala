@@ -68,8 +68,8 @@ trait NamespacesHandler {
           getBucketLocation(bucketName.name, credentials)
         } match {
           case Failure(ex) if ex.isInstanceOf[AmazonS3Exception] =>
-            if (ex.asInstanceOf[AmazonS3Exception].getStatusCode != 403) {
-              logger.error("namespace {} returned exception {} for credentials {} but should only status code 403", namespaceName, ex, credentials.getAWSAccessKeyId)
+            if (ex.asInstanceOf[AmazonS3Exception].getStatusCode != 404) {
+              logger.error("namespace {} returned exception {} for credentials {} but should only status code 404", namespaceName, ex, credentials.getAWSAccessKeyId)
             }
             false
           case Failure(ex) =>
