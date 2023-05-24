@@ -63,4 +63,8 @@ trait S3Client {
     result
   }
 
+  def getBucketLocation(bucketName: String, credentials: BasicAWSCredentials): String = {
+    s3Client(credentials).getBucketLocation(bucketName)
+  }
+
 }

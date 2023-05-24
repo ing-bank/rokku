@@ -2,7 +2,7 @@ package com.ing.wbaa.rokku.proxy.handler.namespace
 
 import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.services.s3.model.{ AmazonS3Exception, ListObjectsV2Result }
+import com.amazonaws.services.s3.model.AmazonS3Exception
 import com.ing.wbaa.rokku.proxy.config.NamespaceSettings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
@@ -31,7 +31,7 @@ trait NamespacesHandler {
     }
   }
 
-  protected[this] def listBucket(bucketName: String, credentials: BasicAWSCredentials, maxKeys: Int = 5): ListObjectsV2Result
+  protected[this] def getBucketLocation(bucketName: String, credentials: BasicAWSCredentials): String
 
   protected[this] def bucketNamespaceCredentials(request: HttpRequest)(implicit id: RequestId): Option[BasicAWSCredentials] = {
     val bucketName = BucketName(S3Utils.getBucketName(S3Utils.getPathNameFromUrlOrHost(request)))
@@ -65,11 +65,11 @@ trait NamespacesHandler {
       case Some(credentials) =>
         logger.debug("checking namespace {} for bucket {} with key {}", namespaceName, bucketName.name, credentials.getAWSAccessKeyId)
         Try {
-          listBucket(bucketName.name, credentials, 1)
+          getBucketLocation(bucketName.name, credentials)
         } match {
           case Failure(ex) if ex.isInstanceOf[AmazonS3Exception] =>
-            if (ex.asInstanceOf[AmazonS3Exception].getStatusCode != 404) {
-              logger.error("namespace {} returned exception {} for credentials {} but should only status code 404", namespaceName, ex, credentials.getAWSAccessKeyId)
+            if (ex.asInstanceOf[AmazonS3Exception].getStatusCode != 403) {
+              logger.error("namespace {} returned exception {} for credentials {} but should only status code 403", namespaceName, ex, credentials.getAWSAccessKeyId)
             }
             false
           case Failure(ex) =>
