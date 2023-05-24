@@ -34,15 +34,15 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
     }
   }
 
-  it should "respond to /ping with 'pong' when probe is S3ListBucket" in new HealthServiceMock() {
+  it should "respond to /pingecs with 'pongecs' when probe is S3ListBucket" in new HealthServiceMock() {
     override def storageS3Settings: StorageS3Settings = new StorageS3Settings(system.settings.config) {
       override val hcMethod: HealthCheck.HCMethod = S3ListBucket
       override val hcInterval: Long = 0
     }
     override def listBucket: String = "rokku_hc_bucket"
-    Get("/ping") ~> healthRoute ~> check {
+    Get("/pingstorage") ~> healthRoute ~> check {
       assert(status == StatusCodes.OK)
-      assert(responseAs[String] == "pong")
+      assert(responseAs[String] == "pongStorage")
     }
   }
 
@@ -53,7 +53,7 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
     }
 
     override def listBucket: String = throw new Exception("S3 not available")
-    Get("/ping") ~> healthRoute ~> check {
+    Get("/pingstorage") ~> healthRoute ~> check {
       assert(status == StatusCodes.InternalServerError)
     }
 
@@ -90,7 +90,7 @@ class HealthServiceSpec extends AnyFlatSpec with ScalatestRouteTest with Diagram
 
     route.map(r =>
       Get() ~> r ~> check {
-        assert(responseAs[String].contains("pong"))
+        assert(responseAs[String].contains("pongStorage"))
       })
 
   }
