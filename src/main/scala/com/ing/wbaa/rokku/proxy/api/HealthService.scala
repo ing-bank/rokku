@@ -71,7 +71,7 @@ trait HealthService extends S3Client {
     Try {
       p()
     } match {
-      case Success(_) => complete("pong")
+      case Success(_) => complete("pongStorage")
       case Failure(ex) =>
         implicit val returnStatusCode: StatusCodes.ServerError = StatusCodes.InternalServerError
         logger.error("storage status error {}", ex.getMessage)
@@ -81,6 +81,10 @@ trait HealthService extends S3Client {
 
   final val healthRoute: Route =
     path("ping") {
+      get {
+        complete(StatusCodes.OK -> "pong")
+      }
+    } ~ path("pingstorage") {
       get {
         implicit val requestId: RequestId = RequestId(UUID.randomUUID().toString)
         onComplete(getStatus(timestamp)) {
