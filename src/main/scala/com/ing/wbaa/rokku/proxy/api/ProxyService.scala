@@ -68,7 +68,7 @@ trait ProxyService {
         complete(StatusCodes.ServiceUnavailable -> AwsErrorCodes.response(StatusCodes.ServiceUnavailable))
     }
 
-  val proxyServiceRoute: Route = {
+  def proxyServiceRoute: Route = {
     implicit val requestId: RequestId = RequestId(UUID.randomUUID().toString)
     handleExceptions(rokkuExceptionHandler) {
       metricDuration {
