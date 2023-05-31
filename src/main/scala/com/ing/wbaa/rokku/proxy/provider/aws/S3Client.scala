@@ -6,11 +6,15 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.model.{ ListObjectsV2Request, ListObjectsV2Result }
 import com.amazonaws.services.s3.{ AmazonS3, AmazonS3ClientBuilder }
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
+import com.ing.wbaa.rokku.proxy.data.RequestId
+import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
 
 import scala.concurrent.ExecutionContext
 
 trait S3Client {
+
+  private val logger = new LoggerHandlerWithId
   protected[this] implicit def executionContext: ExecutionContext
 
   protected[this] def storageS3Settings: StorageS3Settings
@@ -59,6 +63,7 @@ trait S3Client {
     val start = System.nanoTime()
     val result = listBucket(storageS3Settings.bucketName)
     val took = System.nanoTime() - start
+    logger.info("list bucket {} took={}", storageS3Settings.bucketName, took)(RequestId("listBucket-1"))
     MetricsFactory.markRequestStorageTime(took)
     result
   }
