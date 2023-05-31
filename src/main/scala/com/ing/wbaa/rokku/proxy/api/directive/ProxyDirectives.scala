@@ -1,13 +1,14 @@
 package com.ing.wbaa.rokku.proxy.api.directive
 
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin` }
+import akka.http.scaladsl.model.headers.{ RawHeader, `Access-Control-Allow-Origin`, `Raw-Request-URI` }
 import akka.http.scaladsl.server.{ Directive, Directive0, Directive1 }
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory
 import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon._
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.commons.lang.StringUtils
 
 import java.net.InetAddress
 import scala.language.postfixOps
@@ -137,11 +138,13 @@ object ProxyDirectives extends LazyLogging {
 
           if (presignParams.isDefined) {
             val authStr = s"${presignParams.get(X_AMZ_ALGORITHM)} Credential=${presignParams.get(X_AMZ_CREDENTIAL)}, SignedHeaders=${presignParams.get(X_AMZ_SIGNED_HEADERS)}, Signature=${presignParams.get(X_AMZ_SIGNATURE)}"
+            val path = newHeaders.find(_.is(RAW_REQUEST_URI.toLowerCase)).map(r => StringUtils.substringBefore(r.value(), "?")).getOrElse("")
             uri = httpRequest.uri.withQuery(Uri.Query.Empty)
             newHeaders = newHeaders.filter(_.isNot(RAW_REQUEST_URI.toLowerCase)) ++ List(
               RawHeader(AUTHORIZATION_HTTP_HEADER_NAME, authStr),
               RawHeader(X_AMZ_DATE, presignParams.get(X_AMZ_DATE)),
-              RawHeader(X_AMZ_CONTENT_SHA256, "UNSIGNED-PAYLOAD")
+              RawHeader(X_AMZ_CONTENT_SHA256, "UNSIGNED-PAYLOAD"),
+              `Raw-Request-URI`(path)
             )
           }
           httpRequest.withHeaders(newHeaders.toList).withUri(uri)
