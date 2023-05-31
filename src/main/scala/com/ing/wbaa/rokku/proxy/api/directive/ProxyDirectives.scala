@@ -192,18 +192,21 @@ object ProxyDirectives extends LazyLogging {
     requestCtx =>
       val start = System.nanoTime()
       val requestMethodName = requestCtx.request.method.value.toLowerCase
-      val requestContentLength = requestCtx.request.entity.contentLengthOption.getOrElse(0L)
-      metricsContentLengthCount(requestMethodName, requestContentLength, "out")
+      val requestContentLengthOut = requestCtx.request.entity.contentLengthOption.getOrElse(0L)
       mapResponse { response =>
         val took = System.nanoTime() - start
         MetricsFactory.markRequestTime(took)
         response.status match {
           case StatusCodes.InternalServerError => MetricsFactory.countRequest(MetricsFactory.FAILURE_REQUEST)
           case StatusCodes.Forbidden           => MetricsFactory.countRequest(MetricsFactory.UNAUTHENTICATED_REQUEST)
-          case _                               => MetricsFactory.countRequest(MetricsFactory.SUCCESS_REQUEST)
+          case StatusCodes.Unauthorized        => MetricsFactory.countRequest(MetricsFactory.UNAUTHORIZED_REQUEST)
+          case StatusCodes.OK | StatusCodes.PartialContent =>
+            MetricsFactory.countRequest(MetricsFactory.SUCCESS_REQUEST)
+            metricsContentLengthCount(requestMethodName, requestContentLengthOut, "out")
+            val responseContentLengthIn = response.entity.contentLengthOption.getOrElse(0L)
+            metricsContentLengthCount(requestMethodName, responseContentLengthIn, "in")
+          case status => logger.warn("no count status in metrics {}", status)
         }
-        val responseContentLength = response.entity.contentLengthOption.getOrElse(0L)
-        metricsContentLengthCount(requestMethodName, responseContentLength, "in")
         response
       }
   }
