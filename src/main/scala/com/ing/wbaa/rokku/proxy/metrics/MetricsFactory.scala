@@ -10,6 +10,7 @@ object MetricsFactory {
   val SUCCESS_REQUEST = "requests.status.success.total"
   val FAILURE_REQUEST = "requests.status.failure.total"
   val UNAUTHENTICATED_REQUEST = "requests.status.unauthenticated.total"
+  val UNAUTHORIZED_REQUEST = "requests.status.unauthorized.total"
   val REQUEST_TIME = "requests.nanoseconds.total"
   val REQUEST_TIME_HIST = "requests.time.histogram"
   val HTTP_METHOD = "{httpMethod}"

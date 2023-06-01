@@ -82,6 +82,7 @@ trait HealthService extends S3Client {
   final val healthRoute: Route =
     path("ping") {
       get {
+        logger.debug("ping-pong")(RequestId("ping-1"))
         complete(StatusCodes.OK -> "pong")
       }
     } ~ path("pingstorage") {
