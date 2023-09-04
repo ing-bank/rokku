@@ -8,3 +8,12 @@ target/
 
 # macOS detritus
 .DS_Store
+
+# ranger config
+/src/main/resources/ranger-s3-security.xml
+
+# vscode and metals junk
+.bloop/
+/.metals/
+/.vscode/
+metals.sbt
