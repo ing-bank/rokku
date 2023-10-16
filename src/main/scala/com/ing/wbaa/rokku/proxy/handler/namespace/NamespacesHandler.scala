@@ -4,8 +4,10 @@ import akka.http.scaladsl.model.HttpRequest
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.s3.model.AmazonS3Exception
 import com.ing.wbaa.rokku.proxy.config.NamespaceSettings
+import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
 import com.ing.wbaa.rokku.proxy.data.RequestId
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.rokku.proxy.handler.exception.RokkuThrottlingException
 import com.ing.wbaa.rokku.proxy.metrics.MetricsFactory.{ incrementBucketNamespaceCacheHit, incrementBucketNamespacesNotFound, incrementBucketNamespacesSearch }
 import com.ing.wbaa.rokku.proxy.util.S3Utils
 
@@ -21,6 +23,7 @@ trait NamespacesHandler {
   private val bucketCredentials: scala.collection.concurrent.Map[BucketName, BasicAWSCredentials] = scala.collection.concurrent.TrieMap[BucketName, BasicAWSCredentials]()
 
   protected[this] val namespaceSettings: NamespaceSettings
+  protected[this] def storageS3Settings: StorageS3Settings
 
   private def namespaceCredentials: ListMap[NamespaceName, BasicAWSCredentials] = namespaceSettings.namespaceCredentialsMap
 
@@ -71,6 +74,10 @@ trait NamespacesHandler {
             if (ex.asInstanceOf[AmazonS3Exception].getStatusCode == 403) {
               logger.info("bucket {} in namespace {} return 403 for credentials {} so bucket exist but the credentials cannot see location ", bucketName.name, namespaceName, ex, credentials.getAWSAccessKeyId)
               return true
+            }
+            if (storageS3Settings.slowdownCodes contains ex.asInstanceOf[AmazonS3Exception].getStatusCode) {
+              logger.info("throttling, cannot check bucket location")
+              throw new RokkuThrottlingException("cannot check bucket location")
             }
             if (ex.asInstanceOf[AmazonS3Exception].getStatusCode != 404) {
               logger.error("namespace {} returned exception {} for credentials {} but should only status code 404", namespaceName, ex, credentials.getAWSAccessKeyId)
