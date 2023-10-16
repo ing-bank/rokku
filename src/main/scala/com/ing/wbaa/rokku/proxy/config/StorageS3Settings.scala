@@ -14,6 +14,7 @@ class StorageS3Settings(config: Config) extends Extension {
   val storageS3AdminSecretkey: String = config.getString("rokku.storage.s3.admin.secretkey")
   val awsRegion: String = config.getString("rokku.storage.s3.region")
   val v2SignatureEnabled: Boolean = config.getBoolean("rokku.storage.s3.v2SignatureEnabled")
+  val slowdownCodes: Array[Int] = config.getString("rokku.storage.s3.slowdownCodes").split(",").map(o => o.toInt)
   val isRequestUserQueueEnabled: Boolean = config.getBoolean("rokku.storage.s3.request.queue.enable")
   private val hcMethodString = config.getString("rokku.storage.s3.healthCheck.method")
   val hcMethod: HCMethod = hcMethodString match {
