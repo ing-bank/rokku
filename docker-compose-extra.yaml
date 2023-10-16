@@ -1,0 +1,17 @@
+version: "3"
+services:
+
+  mockServer:
+    image: mockserver/mockserver:5.14.0
+    ports:
+      - 1080:1080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/simulateBucketNotFoundDuringMultipartUpload.jsonc
+      genericJVMOptions: "-Xmx1024m -Xms512m"
+    volumes:
+      - type: bind
+        source: ./mockServer
+        target: /config
