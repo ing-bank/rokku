@@ -1,5 +1,5 @@
 // To use this configuration make sure it is selected as MOCKSERVER_INITIALIZATION_JSON_PATH and switch rokku to go through proxy port: 1080
-// Remember to disable `updateBucketCredentials` so rokku will try to refetch bucket location before each request and to enable rokku multiple namespace feature
+// Remember to comment out `updateBucketCredentials` in `NamespacesHandler.scala:52` so rokku will try to refetch bucket location before each request and to enable rokku multiple namespace feature
 [
     {
         // Allow first few requests to start multipart upload
