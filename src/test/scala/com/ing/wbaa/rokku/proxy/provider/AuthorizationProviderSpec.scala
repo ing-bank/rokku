@@ -1,7 +1,7 @@
 package com.ing.wbaa.rokku.proxy.provider
 
 import akka.actor.ActorSystem
-import com.ing.wbaa.rokku.proxy.config.RangerSettings
+import com.ing.wbaa.rokku.proxy.config.AuthorizerSettings
 import com.ing.wbaa.rokku.proxy.provider.AuthorizationProviderRanger.RangerException
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AnyWordSpec
@@ -10,7 +10,7 @@ class AuthorizationProviderSpec extends AnyWordSpec with Diagrams with Authoriza
 
   private[this] final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
-  override val rangerSettings: RangerSettings = new RangerSettings(testSystem.settings.config) {
+  override val authorizerSettings: AuthorizerSettings = new AuthorizerSettings(testSystem.settings.config) {
     override val appId: String = "nonexistent"
     override val serviceType: String = "nonexistent"
   }
