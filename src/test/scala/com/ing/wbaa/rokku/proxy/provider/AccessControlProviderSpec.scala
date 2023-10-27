@@ -1,16 +1,16 @@
 package com.ing.wbaa.rokku.proxy.provider
 
 import akka.actor.ActorSystem
-import com.ing.wbaa.rokku.proxy.config.AuthorizerSettings
-import com.ing.wbaa.rokku.proxy.provider.AuthorizationProviderRanger.RangerException
+import com.ing.wbaa.rokku.proxy.config.AccessControlSettings
+import com.ing.wbaa.rokku.proxy.provider.AccessControlProviderRanger.RangerException
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AnyWordSpec
 
-class AuthorizationProviderSpec extends AnyWordSpec with Diagrams with AuthorizationProviderRanger {
+class AccessControlProviderSpec extends AnyWordSpec with Diagrams with AccessControlProviderClassForName {
 
   private[this] final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
-  override val authorizerSettings: AuthorizerSettings = new AuthorizerSettings(testSystem.settings.config) {
+  override val authorizerSettings: AccessControlSettings = new AccessControlSettings(testSystem.settings.config) {
     override val appId: String = "nonexistent"
     override val serviceType: String = "nonexistent"
   }
@@ -18,7 +18,7 @@ class AuthorizationProviderSpec extends AnyWordSpec with Diagrams with Authoriza
   "Authorization Provider" should {
     "throw a Ranger exception for unknown appId or serviceType" in {
       assertThrows[RangerException] {
-        rangerPluginForceInit
+        init()
       }
     }
   }

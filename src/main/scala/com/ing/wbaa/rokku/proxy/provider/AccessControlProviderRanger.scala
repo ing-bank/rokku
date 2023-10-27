@@ -1,7 +1,9 @@
 package com.ing.wbaa.rokku.proxy.provider
 
+import com.ing.wbaa.rokku.proxy.config.AccessControlSettings
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
+import com.ing.wbaa.rokku.proxy.security.{ AccessControl, AccessControlRequest }
 import org.apache.ranger.plugin.audit.RangerDefaultAuditHandler
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
 import org.apache.ranger.plugin.service.RangerBasePlugin
@@ -11,11 +13,13 @@ import scala.util.{ Failure, Success, Try }
 /**
  * Interface for security provider implementations.
  */
-trait AuthorizationProviderRanger extends AuthorizationProvider {
+class AccessControlProviderRanger(settings: AccessControlSettings) extends AccessControl {
+
+  override protected[this] def authorizerSettings: AccessControlSettings = settings
 
   private val logger = new LoggerHandlerWithId
 
-  import AuthorizationProviderRanger.RangerException
+  import AccessControlProviderRanger.RangerException
 
   private[this] lazy val rangerPlugin = {
     try {
@@ -32,6 +36,10 @@ trait AuthorizationProviderRanger extends AuthorizationProvider {
     }
   }
 
+  def init(): Unit = {
+    rangerPluginForceInit
+  }
+
   /**
    * Force initialization of the Ranger plugin.
    * This ensures we get connection errors on startup instead of when the first call is made.
@@ -45,26 +53,24 @@ trait AuthorizationProviderRanger extends AuthorizationProvider {
 
   import scala.jdk.CollectionConverters._
 
-  def isAuthorised(s3Path: String, request: S3Request, user: User)(implicit id: RequestId): Boolean = {
+  def isAccessAllowed(request: AccessControlRequest)(implicit id: RequestId): Boolean = {
     val rangerResource = new RangerAccessResourceImpl(
-      Map[String, AnyRef]("path" -> URLDecoder.decode(s3Path, "UTF-8")).asJava
+      Map[String, AnyRef]("path" -> URLDecoder.decode(request.path, "UTF-8")).asJava
     )
 
-    val rangerRequest = user.userRole match {
-      case UserAssumeRole(roleValue) if roleValue.nonEmpty =>
-        prepareAccessRequest(rangerResource, request.accessType.rangerName, null, Set(UserGroup(s"${authorizerSettings.rolePrefix}${roleValue}")).map(_.value.toLowerCase))
+    val rangerRequest = request.userRole match {
+      case roleValue if roleValue.isInstanceOf[String] && roleValue.nonEmpty =>
+        prepareAccessRequest(rangerResource, request.accessType, null, Set(UserGroup(s"${authorizerSettings.rolePrefix}${roleValue}")).map(_.value.toLowerCase))
       case _ =>
         prepareAccessRequest(
-          rangerResource, request.accessType.rangerName, user.userName.value + authorizerSettings.userDomainPostfix, user.userGroups.map(_.value.toLowerCase))
+          rangerResource, request.accessType, request.user + authorizerSettings.userDomainPostfix, request.userGroups.map(_.toLowerCase))
     }
 
-    rangerRequest.setAction(request.accessType.auditAction)
-    val MAX_CHARACTER_NUMBERS = 100
-    //clientIp is used in audit - we limit the log length because user can put anything in ip headers
-    rangerRequest.setClientIPAddress(request.userIps.toString.take(MAX_CHARACTER_NUMBERS))
+    rangerRequest.setAction(request.action)
+    rangerRequest.setClientIPAddress(request.clientIpAddress)
     //RemoteIp and Forwarded are used in policies (check - AbstractIpCidrMatcher)
-    rangerRequest.setRemoteIPAddress(request.clientIPAddress.toOption.map(_.getHostAddress).orNull)
-    rangerRequest.setForwardedAddresses(request.headerIPs.allIPs.map(_.toOption.map(_.getHostAddress).orNull).asJava)
+    rangerRequest.setRemoteIPAddress(request.remoteIpAddress)
+    rangerRequest.setForwardedAddresses(request.forwardedIpAddresses.toList.asJava)
 
     logger.debug(s"Checking ranger with request: $rangerRequest")
     Try {
@@ -86,7 +92,7 @@ trait AuthorizationProviderRanger extends AuthorizationProvider {
   )
 }
 
-object AuthorizationProviderRanger {
+object AccessControlProviderRanger {
   final case class RangerException(private val message: String, private val cause: Throwable = None.orNull)
     extends Exception(message, cause)
 }
