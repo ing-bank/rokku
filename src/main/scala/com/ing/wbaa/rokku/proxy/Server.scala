@@ -19,7 +19,7 @@ object Server extends App {
     override def kerberosSettings: KerberosSettings = KerberosSettings(system)
 
     override val httpSettings: HttpSettings = HttpSettings(system)
-    override val authorizerSettings: AccessControlSettings = AccessControlSettings(system)
+    override val accessControlProviderSettings: AccessControlProviderSettings = AccessControlProviderSettings(system)
     override val storageS3Settings: StorageS3Settings = StorageS3Settings(system)
     override val stsSettings: StsSettings = StsSettings(system)
     override val kafkaSettings: KafkaSettings = KafkaSettings(system)

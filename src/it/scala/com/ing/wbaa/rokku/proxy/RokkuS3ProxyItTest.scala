@@ -87,7 +87,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
       override val stsSettings: StsSettings = StsSettings(testSystem)
       override val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
-      override protected def authorizerSettings: AccessControlSettings = AccessControlSettings(testSystem)
+      override protected def accessControlProviderSettings: AccessControlProviderSettings = AccessControlProviderSettings(testSystem)
 
       override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
         user match {

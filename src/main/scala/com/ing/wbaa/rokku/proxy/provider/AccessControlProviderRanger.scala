@@ -1,36 +1,38 @@
 package com.ing.wbaa.rokku.proxy.provider
 
-import com.ing.wbaa.rokku.proxy.config.AccessControlSettings
 import com.ing.wbaa.rokku.proxy.data._
-import com.ing.wbaa.rokku.proxy.handler.LoggerHandlerWithId
 import com.ing.wbaa.rokku.proxy.security.{ AccessControl, AccessControlRequest }
 import org.apache.ranger.plugin.audit.RangerDefaultAuditHandler
 import org.apache.ranger.plugin.policyengine.{ RangerAccessRequestImpl, RangerAccessResourceImpl }
 import org.apache.ranger.plugin.service.RangerBasePlugin
+import org.slf4j.LoggerFactory
 
 import java.net.URLDecoder
 import scala.util.{ Failure, Success, Try }
 /**
  * Interface for security provider implementations.
  */
-class AccessControlProviderRanger(settings: AccessControlSettings) extends AccessControl {
+class AccessControlProviderRanger(config: java.util.Map[String, String]) extends AccessControl {
 
-  override protected[this] def authorizerSettings: AccessControlSettings = settings
+  private val APP_ID_PARAM = "appId"
+  private val SERVICE_TYPE_PARAM = "serviceType"
+  private val ROLE_PREFIX_PARAM = "rolePrefix"
+  private val USER_DOMAIN_POSTFIX_PARAM = "userDomainPostfix"
 
-  private val logger = new LoggerHandlerWithId
+  private val logger = LoggerFactory.getLogger(getClass.getName)
 
   import AccessControlProviderRanger.RangerException
 
   private[this] lazy val rangerPlugin = {
     try {
-      val p = new RangerBasePlugin(authorizerSettings.serviceType, authorizerSettings.appId)
+      val p = new RangerBasePlugin(config.get(SERVICE_TYPE_PARAM), config.get(APP_ID_PARAM))
       p.init()
-      if (authorizerSettings.auditEnabled) p.setResultProcessor(new RangerDefaultAuditHandler())
+      if ("true".equals(config.get(AccessControl.AUDIT_ENABLED_PARAM))) p.setResultProcessor(new RangerDefaultAuditHandler())
       p
     } catch {
       case ex: java.lang.NullPointerException =>
-        throw RangerException(s"Ranger serviceType or appId not found (serviceType=${authorizerSettings.serviceType}, " +
-          s"appId=${authorizerSettings.appId})", ex)
+        throw RangerException(s"Ranger serviceType or appId not found (serviceType=${config.get(SERVICE_TYPE_PARAM)}, " +
+          s"appId=${config.get(APP_ID_PARAM)})", ex)
       case ex: Throwable =>
         throw RangerException("Unknown exception from Ranger plugin caught", ex)
     }
@@ -52,33 +54,31 @@ class AccessControlProviderRanger(settings: AccessControlSettings) extends Acces
    */
 
   import scala.jdk.CollectionConverters._
-
-  def isAccessAllowed(request: AccessControlRequest)(implicit id: RequestId): Boolean = {
+  def isAccessAllowed(request: AccessControlRequest): Boolean = {
     val rangerResource = new RangerAccessResourceImpl(
       Map[String, AnyRef]("path" -> URLDecoder.decode(request.path, "UTF-8")).asJava
     )
 
     val rangerRequest = request.userRole match {
       case roleValue if roleValue.isInstanceOf[String] && roleValue.nonEmpty =>
-        prepareAccessRequest(rangerResource, request.accessType, null, Set(UserGroup(s"${authorizerSettings.rolePrefix}${roleValue}")).map(_.value.toLowerCase))
+        prepareAccessRequest(rangerResource, request.accessType, null, Set(UserGroup(s"${config.get(ROLE_PREFIX_PARAM)}${roleValue}")).map(_.value.toLowerCase))
       case _ =>
         prepareAccessRequest(
-          rangerResource, request.accessType, request.user + authorizerSettings.userDomainPostfix, request.userGroups.map(_.toLowerCase))
+          rangerResource, request.accessType, request.user + config.get(USER_DOMAIN_POSTFIX_PARAM), request.userGroups.asScala.map(_.toLowerCase).toSet)
     }
 
     rangerRequest.setAction(request.action)
     rangerRequest.setClientIPAddress(request.clientIpAddress)
     //RemoteIp and Forwarded are used in policies (check - AbstractIpCidrMatcher)
     rangerRequest.setRemoteIPAddress(request.remoteIpAddress)
-    rangerRequest.setForwardedAddresses(request.forwardedIpAddresses.toList.asJava)
-
+    rangerRequest.setForwardedAddresses(request.forwardedIpAddresses)
     logger.debug(s"Checking ranger with request: $rangerRequest")
     Try {
       rangerPlugin.isAccessAllowed(rangerRequest).getIsAllowed
     } match {
       case Success(authorization) => authorization
       case Failure(err) =>
-        logger.warn("Exception during authorization of the request:{}", err)
+        logger.warn("Exception during authorization of the request", err)
         false
     }
   }
