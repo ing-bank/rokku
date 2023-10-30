@@ -12,7 +12,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
 
-class AccessControlProviderProviderRangerItTest extends AsyncWordSpec with Diagrams {
+class AccessControlProviderRangerItTest extends AsyncWordSpec with Diagrams {
   final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
   implicit val requestId: RequestId = RequestId("test")
