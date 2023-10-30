@@ -86,6 +86,6 @@ trait AccessControlProviderClassForName extends AccessControl {
     import scala.jdk.CollectionConverters._
     //clientIp is used in audit - we limit the log length because user can put anything in ip headers
     val MAX_CHARACTER_NUMBERS = 100
-    new AccessControlRequest(user.userName.value, user.userGroups.map(_.value).asJava, user.userRole.value, s3Path, request.accessType.rangerName, request.accessType.auditAction, request.userIps.toString.take(MAX_CHARACTER_NUMBERS), request.clientIPAddress.toOption.map(_.getHostAddress).orNull, request.headerIPs.allIPs.map(_.toOption.map(_.getHostAddress).orNull).toList.asJava, null)
+    new AccessControlRequest(user.userName.value, user.userGroups.map(_.value).asJava, user.userRole.value, s3Path, request.accessType.rangerName, request.accessType.auditAction, request.userIps.toString.take(MAX_CHARACTER_NUMBERS), request.clientIPAddress.toOption.map(_.getHostAddress).orNull, request.headerIPs.allIPs.map(_.toOption.map(_.getHostAddress).orNull).toList.asJava)
   }
 }
