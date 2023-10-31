@@ -9,7 +9,7 @@ import com.ing.wbaa.rokku.proxy.security.{ AccessControl, AccessControlRequest }
 
 import scala.jdk.CollectionConverters._
 
-trait AccessControlProviderClassForName extends AccessControl {
+trait AccessControlProvider extends AccessControl {
 
   private val logger = new LoggerHandlerWithId
 

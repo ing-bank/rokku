@@ -6,7 +6,7 @@ import com.ing.wbaa.rokku.proxy.provider.AccessControlProviderRanger.RangerExcep
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.wordspec.AnyWordSpec
 
-class RangerAccessControlProviderSpec extends AnyWordSpec with Diagrams with AccessControlProviderClassForName {
+class RangerAccessControlProviderSpec extends AnyWordSpec with Diagrams with AccessControlProvider {
 
   private[this] final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 

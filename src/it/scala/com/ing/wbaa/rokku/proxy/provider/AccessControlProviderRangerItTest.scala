@@ -59,8 +59,8 @@ class AccessControlProviderRangerItTest extends AsyncWordSpec with Diagrams {
     */
   def withAuthorizationProviderRanger(rangerTestSettings: AccessControlProviderSettings =
                                       AccessControlProviderSettings(testSystem))
-                                     (testCode: AccessControlProviderClassForName => Future[Assertion]): Future[Assertion] = {
-    testCode(new AccessControlProviderClassForName {
+                                     (testCode: AccessControlProvider => Future[Assertion]): Future[Assertion] = {
+    testCode(new AccessControlProvider {
       override def accessControlProviderSettings: AccessControlProviderSettings = rangerTestSettings
     })
   }

@@ -11,7 +11,7 @@ import com.ing.wbaa.rokku.proxy.queue.MemoryUserRequestQueue
 
 object Server extends App {
 
-  new RokkuS3Proxy with AccessControlProviderClassForName with RequestHandlerS3WithNamespaces with AuthenticationCachedProviderSTS with SignatureProviderAws with KerberosLoginProvider with FilterRecursiveListBucketHandler with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue with RequestParser {
+  new RokkuS3Proxy with AccessControlProvider with RequestHandlerS3WithNamespaces with AuthenticationCachedProviderSTS with SignatureProviderAws with KerberosLoginProvider with FilterRecursiveListBucketHandler with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue with RequestParser {
 
     override implicit lazy val system: ActorSystem = ActorSystem.create("rokku")
     override implicit def materializer: Materializer = Materializer(system)
