@@ -78,7 +78,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
   def withSdkToMockProxy(testCode: (AWSSecurityTokenService, Authority) => Future[Assertion]): Future[Assertion] = {
     val proxy: RokkuS3Proxy = new RokkuS3Proxy with RequestHandlerS3
       with FilterRecursiveListBucketHandler with AuthenticationProviderSTS
-      with AuthorizationProviderRanger with SignatureProviderAws
+      with AccessControlProvider with SignatureProviderAws
       with MessageProviderKafka with AuditLogProvider with MemoryUserRequestQueue with RequestParser {
       override implicit lazy val system: ActorSystem = testSystem
       override def materializer: Materializer = Materializer(system)
@@ -87,7 +87,7 @@ class RokkuS3ProxyItTest extends AsyncWordSpec with Diagrams
       override val stsSettings: StsSettings = StsSettings(testSystem)
       override val kafkaSettings: KafkaSettings = KafkaSettings(testSystem)
 
-      override protected def rangerSettings: RangerSettings = RangerSettings(testSystem)
+      override protected def accessControlProviderSettings: AccessControlProviderSettings = AccessControlProviderSettings(testSystem)
 
       override def isUserAuthorizedForRequest(request: S3Request, user: User)(implicit id: RequestId): Boolean = {
         user match {

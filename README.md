@@ -176,35 +176,6 @@ debug civetweb = 20
 
 2. Restart rgw process (either docker stop <ceph/daemon rgw> or whole ceph/demo)
 
-# Lineage to Atlas
-
-Currently it is possible to create lineage based on incoming request to proxy server. It is however disabled by
-default (preview feature). To enable lineage shipment to Atlas, following setting has to be added to application.conf:
-
-```
-rokku {
-     atlas {
-        enabled = true
-     }
-}
-```
-
-As alternative environment value `ROKKU_ATLAS_ENABLED` should be set to true.
-
-Lineage is done according to model
-
-![alt text](./docs/img/atlas_model.jpg)
-
-To check lineage that has been created, login to Atlas web UI console, [default url](http://localhost:21000) with
-admin user and password
-
-## Classifications and metadata
-
-You can set classifications and metadata to objects in lineage by setting http headers:
-
-* **rokku-metadata** - key value pair in format _key1=val1,key2=val2_ - the matadata is presented in lineage entity as "awsTags" properties.
-* **rokku-classifications**  - comma separated classifications names (the classifications must exist)
-
 # Events Notification
 
 Rokku can send event notification to message queue based on user requests, in [AWS format](https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html).
@@ -338,15 +309,26 @@ ROKKU_KERBEROS_KEYTAB: "keytab_full_path"
 ROKKU_KERBEROS_PRINCIPAL: "user"
 ```
 
-# Ranger Audit Log
+# Authorization plugin
+
+By default rokku uses Apache Ranger for authorization but you can change it.
+To provide other implementation you need:
+
+1. implement [AccessControl](./src/main/java/com/ing/wbaa/rokku/proxy/security/AccessControl.java) - example is [Ranger](./src/main/scala/com/ing/wbaa/rokku/proxy/provider/AccessControlProviderRanger.scala)
+2. configure
+   * set the access control class in the config [access-control.class-name](./src/main/resources/reference.conf) or environment ```ROKKU_ACCESS_CONTROL_CLASS_NAME=...```
+   * if you need any specific configuration for the plugin add it to [access-control.plugin-param](./src/main/resources/reference.conf)
+3. add the access control class to rokku classpath
+
+# Authorization Audit Log
 
 To enable the log set:
 
 ```bash
-ROKKU_RANGER_ENABLED_AUDIT="true"
+ROKKU_ENABLED_AUDIT="true"
 ```
 
-and provide on the classpath the ranger-s3-audit.xml configuration.
+For AccessControlProviderRanger you need to provide on the classpath the ranger-s3-audit.xml configuration.
 
 # ECS multi namespace support
 

@@ -3,7 +3,7 @@ package com.ing.wbaa.rokku.proxy.provider
 import java.net.InetAddress
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.RemoteAddress
-import com.ing.wbaa.rokku.proxy.config.RangerSettings
+import com.ing.wbaa.rokku.proxy.config.AccessControlProviderSettings
 import com.ing.wbaa.rokku.proxy.data._
 import com.ing.wbaa.rokku.proxy.handler.exception.RokkuListingBucketsException
 import org.scalatest.Assertion
@@ -12,7 +12,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 
 import scala.concurrent.Future
 
-class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
+class AccessControlProviderRangerItTest extends AsyncWordSpec with Diagrams {
   final implicit val testSystem: ActorSystem = ActorSystem.create("test-system")
 
   implicit val requestId: RequestId = RequestId("test")
@@ -57,11 +57,11 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
     * @param testCode Code that accepts the created authorization provider
     * @return Assertion
     */
-  def withAuthorizationProviderRanger(rangerTestSettings: RangerSettings =
-                                      RangerSettings(testSystem))
-                                     (testCode: AuthorizationProviderRanger => Future[Assertion]): Future[Assertion] = {
-    testCode(new AuthorizationProviderRanger {
-      override def rangerSettings: RangerSettings = rangerTestSettings
+  def withAuthorizationProviderRanger(rangerTestSettings: AccessControlProviderSettings =
+                                      AccessControlProviderSettings(testSystem))
+                                     (testCode: AccessControlProvider => Future[Assertion]): Future[Assertion] = {
+    testCode(new AccessControlProvider {
+      override def accessControlProviderSettings: AccessControlProviderSettings = rangerTestSettings
     })
   }
 
@@ -108,14 +108,14 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
           accessType = Read(), clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
-      "throw exception allow-list-buckets set to false" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
+      "throw exception allow-list-buckets set to false" in withAuthorizationProviderRanger(new AccessControlProviderSettings(testSystem.settings.config) {
         override val listBucketsEnabled: Boolean = false
       }) { apr =>
         assertThrows[RokkuListingBucketsException](apr.isUserAuthorizedForRequest(s3Request.copy(s3BucketPath = None, s3Object = None,
           accessType = Read(), clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
-      "does not authorize allow-create-delete-buckets set to false" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
+      "does not authorize allow-create-delete-buckets set to false" in withAuthorizationProviderRanger(new AccessControlProviderSettings(testSystem.settings.config) {
         override val createDeleteBucketsEnabled: Boolean = false
       }) { apr =>
         assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Put(),
@@ -124,25 +124,25 @@ class AuthorizationProviderRangerItTest extends AsyncWordSpec with Diagrams {
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
-      "does authorize creating bucket for an admin" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
+      "does authorize creating bucket for an admin" in withAuthorizationProviderRanger(new AccessControlProviderSettings(testSystem.settings.config) {
       }) { apr =>
         assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Put(),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), adminUser))
       }
 
-      "does authorize deleting bucket for an admin" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
+      "does authorize deleting bucket for an admin" in withAuthorizationProviderRanger(new AccessControlProviderSettings(testSystem.settings.config) {
       }) { apr =>
         assert(apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Delete(),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), adminUser))
       }
 
-      "does not authorize creating bucket for a user" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
+      "does not authorize creating bucket for a user" in withAuthorizationProviderRanger(new AccessControlProviderSettings(testSystem.settings.config) {
       }) { apr =>
         assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Put(),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
       }
 
-      "does not authorize deleting bucket for a user" in withAuthorizationProviderRanger(new RangerSettings(testSystem.settings.config) {
+      "does not authorize deleting bucket for a user" in withAuthorizationProviderRanger(new AccessControlProviderSettings(testSystem.settings.config) {
       }) { apr =>
         assert(!apr.isUserAuthorizedForRequest(s3Request.copy(s3Object = None, accessType = Delete(),
           clientIPAddress = clientIPAddress, headerIPs = headerIPs), user))
