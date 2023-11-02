@@ -1,6 +1,7 @@
+import com.typesafe.sbt.packager.MappingsHelper.contentOf
 import com.typesafe.sbt.packager.docker
-import com.typesafe.sbt.packager.docker.ExecCmd
-import scalariform.formatter.preferences._
+import com.typesafe.sbt.packager.docker.{Cmd, DockerChmodType, ExecCmd}
+import scalariform.formatter.preferences.*
 
 val rokkuVersion = scala.sys.env.getOrElse("ROKKU_VERSION", "SNAPSHOT")
 
@@ -87,8 +88,11 @@ scalariformPreferences := scalariformPreferences.value
     .setPreference(NewlineAtEndOfFile, true)
     .setPreference(SingleCasePatternOnNewline, false)
 
+dockerChmodType := DockerChmodType.UserGroupWriteExecute
+dockerCommands     += ExecCmd("RUN", "mkdir", "-p", "/opt/docker/lib/plugins")  //additional libs e.g. for authorization plugin
+
 // hack for ranger conf dir - should contain files like ranger-s3-security.xml etc.
-bashScriptDefines / scriptClasspath ~= (cp => cp :+ ":/etc/rokku"+ ":/opt/docker/libs")
+bashScriptDefines / scriptClasspath ~= (cp => cp :+ ":/etc/rokku"+ ":/opt/docker/lib/plugins/*")
 
 //Coverage settings
 Compile / coverageMinimum := 70
