@@ -88,7 +88,7 @@ scalariformPreferences := scalariformPreferences.value
     .setPreference(SingleCasePatternOnNewline, false)
 
 // hack for ranger conf dir - should contain files like ranger-s3-security.xml etc.
-bashScriptDefines / scriptClasspath ~= (cp => cp :+ ":/etc/rokku")
+bashScriptDefines / scriptClasspath ~= (cp => cp :+ ":/etc/rokku"+ ":/opt/docker/libs")
 
 //Coverage settings
 Compile / coverageMinimum := 70
