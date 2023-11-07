@@ -64,7 +64,7 @@ class AccessControlProviderRanger(config: java.util.Map[String, String]) extends
         prepareAccessRequest(rangerResource, request.accessType, null, Set(UserGroup(s"${config.get(ROLE_PREFIX_PARAM)}${roleValue}")).map(_.value.toLowerCase))
       case _ =>
         prepareAccessRequest(
-          rangerResource, request.accessType, request.user + config.get(USER_DOMAIN_POSTFIX_PARAM), request.userGroups.asScala.map(_.toLowerCase).toSet)
+          rangerResource, request.accessType, request.user + config.getOrDefault(USER_DOMAIN_POSTFIX_PARAM, ""), request.userGroups.asScala.map(_.toLowerCase).toSet)
     }
 
     rangerRequest.setAction(request.action)

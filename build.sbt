@@ -1,6 +1,5 @@
-import com.typesafe.sbt.packager.MappingsHelper.contentOf
 import com.typesafe.sbt.packager.docker
-import com.typesafe.sbt.packager.docker.{Cmd, DockerChmodType, ExecCmd}
+import com.typesafe.sbt.packager.docker.{DockerChmodType, ExecCmd}
 import scalariform.formatter.preferences.*
 
 val rokkuVersion = scala.sys.env.getOrElse("ROKKU_VERSION", "SNAPSHOT")
