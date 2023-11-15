@@ -35,7 +35,7 @@ libraryDependencies ++= Seq(
     "com.amazonaws"                %  "aws-java-sdk-s3"        % "1.12.470",
     "org.apache.kafka"             %  "kafka-clients"          % "3.4.0",
     "org.apache.ranger"            %  "ranger-plugins-common"  % "2.4.0" exclude("org.eclipse.jetty", "jetty-io") exclude("com.amazonaws", "aws-java-sdk-bundle") exclude("org.elasticsearch", "elasticsearch-x-content") exclude("org.elasticsearch", "elasticsearch") exclude("org.apache.hadoop", "hadoop-common"),
-    "org.apache.hadoop"            %  "hadoop-common"          % "3.3.5" exclude("org.apache.hadoop.thirdparty", "hadoop-shaded-protobuf_3_7") exclude("org.eclipse.jetty", "jetty-io") exclude("org.apache.zookeeper", "zookeeper") exclude("com.google.protobuf", "protobuf-java"), //needed for ranger 2.3.0 - if vulnerabilities are fixed remove this
+    "org.apache.hadoop"            %  "hadoop-common"          % "3.3.6" exclude("org.apache.hadoop.thirdparty", "hadoop-shaded-protobuf_3_7") exclude("org.eclipse.jetty", "jetty-io") exclude("org.apache.zookeeper", "zookeeper") exclude("com.google.protobuf", "protobuf-java") exclude("org.apache.avro", "avro"), //needed for ranger 2.3.0 - if vulnerabilities are fixed remove this
     "com.lightbend.akka"           %% "akka-stream-alpakka-xml"% "3.0.4",
     "io.dropwizard.metrics"        % "metrics-core"            % metricVersion,
     "io.dropwizard.metrics"        % "metrics-jmx"             % metricVersion,
