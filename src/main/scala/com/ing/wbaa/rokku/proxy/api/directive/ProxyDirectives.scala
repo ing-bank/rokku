@@ -226,7 +226,7 @@ object ProxyDirectives extends LazyLogging {
 
   def cors(): Directive0 = {
     extractRequest.flatMap { request =>
-      if (request.headers.exists(_.name().equals(ORIGIN))) {
+      if (request.headers.exists(_.name().toLowerCase.equals(ORIGIN.toLowerCase))) {
         mapResponseHeaders { oldHeaders =>
           Seq(
             `Access-Control-Allow-Origin`.*,
