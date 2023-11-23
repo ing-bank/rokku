@@ -17,7 +17,9 @@ import com.ing.wbaa.rokku.proxy.provider.aws.AwsErrorCodes
 
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import scala.concurrent.Await
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success }
 
 trait ProxyService {
@@ -132,9 +134,16 @@ trait ProxyService {
     updateHeadersForRequest(httpRequest) { newHttpRequest =>
       val httpResponse = executeRequest(newHttpRequest, userSTS, s3Request).andThen {
         case Success(response: HttpResponse) =>
+          logger.debug("Got response from S3 with headers: {}", response.headers)
           handlePostRequestActions(response, httpRequest, s3Request, userSTS)
       }
-      complete(httpResponse)
+      val evaluatedResponse = Await.result(httpResponse, Duration("60 seconds"))
+      if (evaluatedResponse.status == StatusCodes.BadGateway) {
+        logger.debug("Got 502, rewriting as 503 to indicate S3 overload")
+        throw new RokkuThrottlingException("Got 502, rewriting as 503")
+      }
+      logger.debug("Got response from S3 other then 502, returning it to user")
+      complete(evaluatedResponse)
     }
   }
 

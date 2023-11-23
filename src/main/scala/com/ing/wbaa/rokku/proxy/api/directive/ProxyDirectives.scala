@@ -235,6 +235,7 @@ object ProxyDirectives extends LazyLogging {
             RawHeader("Access-Control-Allow-Headers", "*")) ++ oldHeaders
         }
       } else {
+        logger.debug("Wont add CORS, request: {}", request)
         pass
       }
     }
