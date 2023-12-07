@@ -5,14 +5,14 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import com.ing.wbaa.rokku.proxy.api.directive.ProxyDirectives.cors
-import com.ing.wbaa.rokku.proxy.api.{ HealthService, OptionService, PostRequestActions, ProxyService }
+import com.ing.wbaa.rokku.proxy.api.{ HealthService, OptionService, PostRequestActions, ProxyService, TestService }
 import com.ing.wbaa.rokku.proxy.config.HttpSettings
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
-trait RokkuS3Proxy extends LazyLogging with ProxyService with PostRequestActions with HealthService with OptionService {
+trait RokkuS3Proxy extends LazyLogging with ProxyService with PostRequestActions with HealthService with OptionService with TestService {
 
   protected[this] implicit def system: ActorSystem
 
@@ -23,7 +23,7 @@ trait RokkuS3Proxy extends LazyLogging with ProxyService with PostRequestActions
   // The routes we serve.
   final val allRoutes =
     cors() {
-      healthRoute ~ optionRoute ~ proxyServiceRoute
+      testRoute ~ healthRoute ~ optionRoute ~ proxyServiceRoute
     }
 
   // Details about the server binding.
