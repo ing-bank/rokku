@@ -14,7 +14,7 @@ import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.awsVersion
 import com.ing.wbaa.rokku.proxy.queue.UserRequestQueue
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.Success
+import scala.util.{ Failure, Success }
 
 trait RequestHandlerS3 extends S3Client with UserRequestQueue {
 
@@ -81,7 +81,10 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
     logger.info(s"Request sent to backend storage: method: {} uri: {}, {}", request.method.value, request.uri.toString(), request)
     Http()
       .singleRequest(request)
-      .andThen { case Success(r) => logger.info(s"Received response from backend storage: {}", r.status) }
+      .andThen {
+        case Success(r)         => logger.info(s"Received response from backend storage: {}", r.status)
+        case Failure(exception) => logger.error("Backend error e={}", exception)
+      }
       .map(r => r.withEntity(r.entity.withoutSizeLimit()))
   }
 

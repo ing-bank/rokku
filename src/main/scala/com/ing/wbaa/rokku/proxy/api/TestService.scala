@@ -38,6 +38,33 @@ trait TestService {
           complete(StatusCodes.ServiceUnavailable -> "503")
         }
       }
+    } ~ path("test200") {
+      put {
+        parameters("timeout".as[Long]) { (timeout) =>
+          logger.debug("start test200")(RequestId("test200"))
+          Thread.sleep(timeout)
+          logger.debug("stop test200")(RequestId("test200"))
+          complete(StatusCodes.OK -> "test")
+        }
+      }
+    } ~ path("test502") {
+      put {
+        parameters("timeout".as[Long]) { (timeout) =>
+          logger.debug("start test502")(RequestId("test200"))
+          Thread.sleep(timeout)
+          logger.debug("stop test502")(RequestId("test200"))
+          complete(StatusCodes.BadGateway -> "502")
+        }
+      }
+    } ~ path("test503") {
+      put {
+        parameters("timeout".as[Long]) { (timeout) =>
+          logger.debug("start test503")(RequestId("test503"))
+          Thread.sleep(timeout)
+          logger.debug("stop test503")(RequestId("test503"))
+          complete(StatusCodes.ServiceUnavailable -> "503")
+        }
+      }
     }
 
 }
