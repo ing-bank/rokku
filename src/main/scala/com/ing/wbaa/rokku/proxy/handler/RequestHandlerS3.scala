@@ -2,19 +2,20 @@ package com.ing.wbaa.rokku.proxy.handler
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import com.amazonaws.Request
 import com.amazonaws.auth.BasicAWSCredentials
 import com.ing.wbaa.rokku.proxy.config.StorageS3Settings
-import com.ing.wbaa.rokku.proxy.data.{ RequestId, S3Request, User }
+import com.ing.wbaa.rokku.proxy.data.{RequestId, S3Request, User}
 import com.ing.wbaa.rokku.proxy.handler.exception.RokkuThrottlingException
 import com.ing.wbaa.rokku.proxy.provider.aws.S3Client
 import com.ing.wbaa.rokku.proxy.provider.aws.SignatureHelpersCommon.awsVersion
 import com.ing.wbaa.rokku.proxy.queue.UserRequestQueue
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 trait RequestHandlerS3 extends S3Client with UserRequestQueue {
 
@@ -79,13 +80,19 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
    */
   protected[this] def fireRequestToS3(request: HttpRequest)(implicit id: RequestId): Future[HttpResponse] = {
     logger.info(s"Request sent to backend storage: method: {} uri: {}, {}", request.method.value, request.uri.toString(), request)
-    Http()
-      .singleRequest(request)
-      .andThen {
-        case Success(r)         => logger.info(s"Received response from backend storage: {}", r.status)
-        case Failure(exception) => logger.error("Backend error e={}", exception)
+    println(request.uri.path)
+    if(request.method == HttpMethods.PUT && request.uri.path.startsWith(Path("/acckz")) ) {
+      Future(HttpResponse.apply(StatusCodes.BadGateway, entity = HttpEntity(ContentTypes.`text/html(UTF-8)`, "<html>\n<head><title>502 Bad Gateway</title></head>\n<body>\n<center><h1>502 Bad Gateway</h1></center>\n<hr><center>nginx/1.23.4</center>\n</body>\n</html>\n<!-- a padding to disable MSIE and Chrome friendly error page -->\n<!-- a padding to disable MSIE and Chrome friendly error page -->\n<!-- a padding to disable MSIE and Chrome friendly error page -->\n<!-- a padding to disable MSIE and Chrome friendly error page -->\n<!-- a padding to disable MSIE and Chrome friendly error page -->\n<!-- a padding to disable MSIE and Chrome friendly error page -->")))
+    }else {
+      Http()
+        .singleRequest(request)
+        .andThen {
+          case Success(r) => logger.info(s"Received response from backend storage: {}", r.status)
+          case Failure(exception) => logger.error("Backend error e={}", exception)
+        }
+        .map(r => r.withEntity(r.entity.withoutSizeLimit()))
       }
-      .map(r => r.withEntity(r.entity.withoutSizeLimit()))
+
   }
 
   /**
