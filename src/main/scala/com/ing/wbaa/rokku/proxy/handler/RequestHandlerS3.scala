@@ -46,6 +46,7 @@ trait RequestHandlerS3 extends S3Client with UserRequestQueue {
       .withEntity(originalRequest.entity)
       .addHeader(RawHeader("User-Agent", userAgent))
       .removeHeader("Authorization")
+      .removeHeader("x-amz-security-token")
       .addHeader(RawHeader("Authorization", npaRequest.getHeaders.get("Authorization")))
 
     fireRequestToS3(newRequest, userSTS).flatMap { response =>
