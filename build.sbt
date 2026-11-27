@@ -6,7 +6,7 @@ val rokkuVersion = scala.sys.env.getOrElse("ROKKU_VERSION", "SNAPSHOT")
 
 name := "rokku"
 version := rokkuVersion
-scalaVersion := "2.13.8"
+scalaVersion := "2.13.18"
 
 scalacOptions += "-unchecked"
 scalacOptions += "-deprecation"
