@@ -23,7 +23,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install docker-compose -y
       - name: "Starting dependent containers for testing"
-        run: docker-compose up -d keycloak ceph postgres-server redis ranger-admin rokku-sts
+        run: docker compose up -d keycloak ceph postgres-server redis ranger-admin rokku-sts
       - name: "Install aws cli"
         run: pip install --user awscli==1.18.222
       - name: "Compile the project while containers are starting up"
